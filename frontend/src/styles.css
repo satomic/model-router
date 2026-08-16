@@ -1,0 +1,1185 @@
+/* ── Microsoft Azure portal styling (Fluent design tokens) ───────────── */
+:root,
+:root[data-theme='light'] {
+  /* Azure accent ramp */
+  --accent: #0078d4;
+  --accent-hover: #106ebe;
+  --accent-pressed: #005a9e;
+  --accent-wash: #eff6fc;
+  --accent-wash-hi: #deecf9;
+  --header-bg: #0f5896;
+
+  /* Surfaces */
+  --bg: #faf9f8;
+  --bg-raise: #ffffff;
+  --bg-panel: #ffffff;
+  --bg-subtle: #f3f2f1;
+  --nav-bg: #ffffff;
+
+  /* Strokes */
+  --line: #edebe9;
+  --line-hi: #d2d0ce;
+  --line-strong: #8a8886;
+
+  /* Text */
+  --text: #201f1e;
+  --text-dim: #605e5c;
+  --text-faint: #a19f9d;
+  --text-on-accent: #ffffff;
+
+  /* Status (Fluent semantic colors) */
+  --green: #107c10;
+  --green-dim: #dff6dd;
+  --amber: #797673;
+  --amber-dim: #fff4ce;
+  --amber-icon: #ffb900;
+  --red: #a4262c;
+  --red-dim: #fde7e9;
+
+  /* Chart tokens (validated with the dataviz validator: #0078D4 on #FFFFFF) */
+  --chart-surface: #ffffff;
+  --chart-bar: #0078d4;
+  --chart-bar-dim: #c7e0f4;
+  --chart-grid: #edebe9;
+  --chart-axis: #d2d0ce;
+
+  /* JSON tree tokens, from the VS Code light-plus theme, measured against the #f3f2f1
+     surface the tree actually renders on rather than against VS Code's own editor
+     background. Two needed a step: number 4.12 and null 4.06 sat under the 4.5 AA
+     threshold for the 12px mono this is set in, so both were darkened 8% toward black,
+     which keeps the hue and clears it (4.74 / 4.63). The other four already pass. */
+  --json-key: #0451a5;    /* 6.89 */
+  --json-string: #a31515; /* 7.02 */
+  --json-number: #087b51; /* 4.74, was #098658 at 4.12 */
+  --json-bool: #0000c0;   /* 10.66 */
+  --json-null: #6d6d6d;   /* 4.63, was #767676 at 4.06 */
+  --json-punct: #605e5c;  /* 5.77 */
+
+  --shadow-2: 0 1.6px 3.6px rgba(0, 0, 0, 0.11), 0 0.3px 0.9px rgba(0, 0, 0, 0.07);
+  --shadow-4: 0 3.2px 7.2px rgba(0, 0, 0, 0.13), 0 0.6px 1.8px rgba(0, 0, 0, 0.1);
+  --shadow-8: 0 6.4px 14.4px rgba(0, 0, 0, 0.13), 0 1.2px 3.6px rgba(0, 0, 0, 0.11);
+
+  --radius: 2px;
+  --radius-lg: 4px;
+  /* CJK families are appended so Chinese/Japanese/Korean render in a real face rather
+     than the browser's last-resort fallback. All of these ship with the OS, so no
+     webfont is downloaded. Order matters: the SC/TC/JP/KR faces are listed separately
+     because each carries the glyph variants its own script expects. */
+  --mono: ui-monospace, Consolas, 'Cascadia Mono', 'Microsoft YaHei', 'PingFang SC',
+    monospace;
+  --sans: 'Segoe UI', -apple-system, system-ui, 'Helvetica Neue', 'Microsoft YaHei',
+    'PingFang SC', 'Microsoft JhengHei', 'PingFang TC', 'Yu Gothic UI', 'Hiragino Sans',
+    'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans CJK SC', sans-serif;
+}
+
+:root[data-theme='dark'] {
+  --accent: #2899f5;
+  --accent-hover: #3aa0f3;
+  --accent-pressed: #0078d4;
+  --accent-wash: #16273a;
+  --accent-wash-hi: #1c3a56;
+  --header-bg: #12100e;
+
+  --bg: #1b1a19;
+  --bg-raise: #292827;
+  --bg-panel: #252423;
+  --bg-subtle: #323130;
+  --nav-bg: #202020;
+
+  --line: #3b3a39;
+  --line-hi: #484644;
+  --line-strong: #797775;
+
+  --text: #f3f2f1;
+  --text-dim: #c8c6c4;
+  --text-faint: #979593;
+  --text-on-accent: #ffffff;
+
+  --green: #6bb700;
+  --green-dim: #1c2b10;
+  --amber: #d7d4d2;
+  --amber-dim: #40320a;
+  --amber-icon: #ffb900;
+  --red: #f1707b;
+  --red-dim: #3b1519;
+
+  /* Dark-mode chart tokens (validator: #3B9BE8 on #1B1A19) */
+  --chart-surface: #252423;
+  --chart-bar: #3b9be8;
+  --chart-bar-dim: #2b4a68;
+  --chart-grid: #3b3a39;
+  --chart-axis: #484644;
+
+  /* VS Code dark-plus, against the #323130 surface. Deliberately selected rather than an
+     automatic inversion of the light set -- #a31515 on a dark ground is unreadable. Same
+     4.5 AA pass as the light set: bool (4.40) and the shared null/punct grey (4.35) were
+     lifted a few per cent toward white to clear it. */
+  --json-key: #9cdcfe;    /* 8.71 */
+  --json-string: #ce9178; /* 4.91 */
+  --json-number: #b5cea8; /* 7.64 */
+  --json-bool: #5da0d8;   /* 4.63, was #569cd6 at 4.40 */
+  --json-null: #9d9b99;   /* 4.69, was #979593 at 4.35 */
+  --json-punct: #9d9b99;  /* 4.69 */
+
+  --shadow-2: 0 1.6px 3.6px rgba(0, 0, 0, 0.4), 0 0.3px 0.9px rgba(0, 0, 0, 0.3);
+  --shadow-4: 0 3.2px 7.2px rgba(0, 0, 0, 0.45), 0 0.6px 1.8px rgba(0, 0, 0, 0.35);
+  --shadow-8: 0 6.4px 14.4px rgba(0, 0, 0, 0.5), 0 1.2px 3.6px rgba(0, 0, 0, 0.4);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 14px;
+  line-height: 1.5;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Top header (the Azure portal's dark blue bar) ────────────────────── */
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  height: 48px;
+  padding: 0 12px 0 4px;
+  background: var(--header-bg);
+  color: #fff;
+  position: sticky;
+  top: 0;
+  z-index: 30;
+}
+.topbar .hamburger {
+  width: 40px;
+  height: 40px;
+  border: none;
+  background: none;
+  color: #fff;
+  font-size: 16px;
+  cursor: pointer;
+  border-radius: var(--radius);
+}
+.topbar .hamburger:hover { background: rgba(255, 255, 255, 0.1); }
+.brand {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+.brand .glyph { color: #50e6ff; font-size: 17px; }
+.topbar .status {
+  margin-left: auto;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.85);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.topbar .status .chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.12);
+  white-space: nowrap;
+}
+.dot { color: #6bb700; font-size: 10px; }
+.dot.off { color: #ffb900; }
+
+.icon-btn {
+  height: 32px;
+  min-width: 32px;
+  padding: 0 8px;
+  border: none;
+  border-radius: var(--radius);
+  background: none;
+  color: #fff;
+  font-size: 13px;
+  cursor: pointer;
+  font-family: var(--sans);
+}
+.icon-btn:hover { background: rgba(255, 255, 255, 0.12); }
+
+/* Language selector. In the topbar it sits on the dark header, so it borrows the
+   transparent-on-white treatment of .icon-btn; `.compact` is the variant used on the
+   sign-in / setup cards, which sit on the normal page background. */
+.locale-picker {
+  height: 32px;
+  padding: 0 6px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  font-size: 12.5px;
+  font-family: var(--sans);
+  cursor: pointer;
+  max-width: 118px;
+}
+.locale-picker:hover { background: rgba(255, 255, 255, 0.18); }
+/* The dropdown list itself is painted by the OS, which ignores the light-on-dark
+   colours above -- give the options readable colours explicitly. */
+.locale-picker option { color: var(--text); background: var(--bg-panel); }
+.locale-picker.compact {
+  border-color: var(--line);
+  background: var(--bg-panel);
+  color: var(--text);
+}
+.locale-picker.compact:hover { background: var(--bg-subtle); }
+/* The auth cards have no topbar, so the picker sits in their top-right corner. */
+.auth-lang { display: flex; justify-content: flex-end; margin-bottom: 8px; }
+
+/* User menu */
+.user-menu { position: relative; }
+.user-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 8px;
+  border: none;
+  background: none;
+  color: #fff;
+  cursor: pointer;
+  border-radius: var(--radius);
+  font-family: var(--sans);
+  font-size: 13px;
+}
+.user-pill:hover { background: rgba(255, 255, 255, 0.12); }
+.avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--accent-pressed);
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  font-weight: 600;
+  overflow: hidden;
+  flex: none;
+}
+.avatar img { width: 100%; height: 100%; object-fit: cover; }
+.menu-pop {
+  position: absolute;
+  right: 0;
+  top: 42px;
+  min-width: 240px;
+  background: var(--bg-raise);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-8);
+  padding: 12px;
+  z-index: 40;
+}
+.menu-pop .who { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; }
+.menu-pop .who .name { font-weight: 600; }
+
+/* ── Left navigation ──────────────────────────────────────────────────── */
+.shell { display: flex; min-height: calc(100vh - 48px); align-items: stretch; }
+.sidenav {
+  width: 216px;
+  flex: none;
+  background: var(--nav-bg);
+  border-right: 1px solid var(--line);
+  padding: 8px 0;
+  transition: width 0.15s ease;
+  /* Sticky rather than fixed: the nav stays in the flex row, so .content needs no left margin
+     and the collapsed-width transition keeps working. align-self is required -- .shell stretches
+     its items, and an item as tall as its container has nothing to stick within. 48px is the
+     .topbar height, which is itself sticky at top: 0. Keeping the document as the page's only
+     scroller is what lets .config-sticky go on using the same 48px offset. */
+  position: sticky;
+  top: 48px;
+  align-self: flex-start;
+  height: calc(100vh - 48px);
+  /* overflow-x replaces a plain `overflow: hidden` -- the collapsed labels rely on clipping
+     horizontally, while the nav's own list must be able to scroll on a short viewport. */
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+.sidenav.collapsed { width: 48px; }
+.sidenav .nav-group {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  padding: 12px 16px 4px;
+  white-space: nowrap;
+}
+.sidenav.collapsed .nav-group { visibility: hidden; height: 12px; padding: 6px 0; }
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 0 16px;
+  height: 36px;
+  border: none;
+  background: none;
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  white-space: nowrap;
+  border-left: 3px solid transparent;
+  /* These are <a href> elements, so that they can be bookmarked and middle-clicked; the
+     underline is the only thing the anchor default would add. */
+  text-decoration: none;
+}
+.nav-item .ico { width: 16px; text-align: center; flex: none; font-size: 14px; }
+.nav-item:hover { background: var(--bg-subtle); }
+.nav-item.active {
+  background: var(--accent-wash);
+  border-left-color: var(--accent);
+  font-weight: 600;
+  color: var(--accent-pressed);
+}
+:root[data-theme='dark'] .nav-item.active { color: var(--accent); }
+.sidenav.collapsed .nav-item { padding: 0 13px; }
+.sidenav.collapsed .nav-item .label { display: none; }
+
+/* ── Content area ─────────────────────────────────────────────────────── */
+.content { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 14px 24px 0;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+.breadcrumb .sep { color: var(--text-faint); }
+.page-title {
+  padding: 2px 24px 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.page-title h1 { font-size: 20px; font-weight: 600; margin: 6px 0 2px; }
+.page-title .sub { color: var(--text-dim); font-size: 12.5px; }
+.cmdbar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 20px;
+  border-bottom: 1px solid var(--line);
+  margin: 8px 0 0;
+  flex-wrap: wrap;
+}
+.cmdbar .spacer { margin-left: auto; }
+.page { padding: 18px 24px 60px; width: 100%; }
+.layout-split {
+  display: grid;
+  grid-template-columns: minmax(380px, 5fr) 7fr;
+  gap: 16px;
+  align-items: start;
+  width: 100%;
+}
+/* The single-column form of a split view -- the traces list with nothing selected. Its own class
+   rather than a bare <div> so the width stays capped the same way. */
+.layout-single { width: 100%; }
+
+/* ── A user-resizable split (Traces) ──────────────────────────────────── */
+/* Separate from .layout-split, which PlaygroundPage shares and whose column ratio is fixed.
+   The columns come from an inline style (`<pct>% 6px 1fr`), so only the non-varying parts are
+   declared here. No `gap`: the 6px handle *is* the gap, and the panes pad themselves. */
+.split-drag {
+  display: grid;
+  align-items: start;
+  width: 100%;
+}
+.split-drag > .panel { min-width: 0; }
+.split-pane { min-width: 0; padding-left: 10px; }
+.splitter {
+  /* Full-height hit area with a hairline down the middle: 6px is comfortable to grab, while a
+     1px rule is all the layout should show. */
+  position: relative;
+  cursor: col-resize;
+  align-self: stretch;
+  min-height: 120px;
+}
+.splitter::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 1px;
+  background: var(--line-hi);
+  transform: translateX(-0.5px);
+}
+.splitter:hover::after,
+body.dragging .splitter::after { background: var(--accent); width: 2px; }
+/* Set on <body> for the duration of a drag: without it the pointer sweeping across the table
+   selects its text instead of moving the divider. */
+body.dragging { user-select: none; cursor: col-resize; }
+
+/* ── Filter bar and list footer (Traces) ─────────────────────────────── */
+.filter-bar {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg-subtle);
+}
+.filter-field { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.filter-field .field-name { margin: 0; }
+.filter-field input { width: 100%; min-width: 110px; }
+.list-footer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  border-top: 1px solid var(--line);
+  font-size: 12.5px;
+}
+.list-footer .spacer { margin-left: auto; }
+
+/* ── JSON tree (components/JsonView) ─────────────────────────────────── */
+.json-view {
+  background: var(--bg-subtle);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.65;
+}
+.json-tools {
+  display: flex;
+  gap: 12px;
+  padding: 5px 10px;
+  border-bottom: 1px solid var(--line);
+  font-family: var(--sans);
+  font-size: 11.5px;
+}
+.json-body { padding: 8px 10px; overflow-x: auto; max-height: 420px; overflow-y: auto; }
+.json-row { white-space: pre; }
+/* The indent guide doubles as the nesting cue, so a deep object stays readable when several
+   levels are open at once. */
+.json-children { padding-left: 14px; margin-left: 4px; border-left: 1px dotted var(--line-hi); }
+.json-toggle {
+  border: none;
+  background: none;
+  color: var(--text-faint);
+  font-family: var(--mono);
+  font-size: 11px;
+  cursor: pointer;
+  padding: 0 3px 0 0;
+  width: 14px;
+}
+.json-toggle:hover { color: var(--accent); }
+.json-summary { color: var(--text-faint); padding: 0 2px; }
+.json-key { color: var(--json-key); }
+.json-string { color: var(--json-string); word-break: break-all; }
+.json-number { color: var(--json-number); }
+.json-boolean { color: var(--json-bool); }
+.json-null { color: var(--json-null); }
+.json-punct { color: var(--json-punct); }
+
+/* ── Sub-page navigation (the horizontal pivot inside an Azure resource) ─ */
+/* The sub-nav and the save bar stick together as one block below the topbar (48px), so the
+   current sub-page and the save button stay visible when scrolled deep into a page. Keeping
+   them in a single sticky block also prevents scrolling content from showing through between
+   the two. */
+.config-sticky {
+  position: sticky;
+  top: 48px;
+  z-index: 20;
+  background: var(--bg);
+  margin: -4px 0 14px;
+  padding: 4px 0 12px;
+}
+.subnav {
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+  flex-wrap: wrap;
+  border-bottom: 1px solid var(--line);
+}
+.subnav-item {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 14px;
+  border: none;
+  background: none;
+  color: var(--text-dim);
+  font-family: var(--sans);
+  font-size: 13.5px;
+  cursor: pointer;
+  white-space: nowrap;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  /* Also anchors now -- see .nav-item */
+  text-decoration: none;
+}
+.subnav-item:hover { color: var(--text); background: var(--bg-subtle); }
+.subnav-item.active {
+  color: var(--accent-pressed);
+  font-weight: 600;
+  border-bottom-color: var(--accent);
+}
+:root[data-theme='dark'] .subnav-item.active { color: var(--accent); }
+.subnav-item:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+/* Unsaved marker: a small dot, so the state is carried by shape and not by colour alone */
+.dirty-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+  flex: none;
+  display: inline-block;
+}
+
+/* ── Top save bar (the whole bar turns accent-coloured when there are edits) ── */
+.savebar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  margin: 14px 0 0;
+  font-size: 13px;
+  background: var(--bg-panel);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--line-hi);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-2);
+}
+.savebar .state { display: inline-flex; align-items: center; gap: 8px; }
+.savebar .spacer { margin-left: auto; }
+.savebar.dirty {
+  background: var(--accent-wash);
+  border-color: var(--accent-wash-hi);
+  border-left-color: var(--accent);
+  color: var(--text);
+  font-weight: 600;
+}
+.savebar.dirty .dim { color: var(--text-dim); font-weight: 400; }
+
+/* ── Sub-page heading ─────────────────────────────────────────────────── */
+.section-intro {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 0 0 12px;
+}
+.section-intro h2 { font-size: 16px; font-weight: 600; margin: 0; }
+.section-intro .dim { font-size: 12.5px; }
+
+/* ── Radio card group (mutually exclusive options such as the strategy) ── */
+.choice-list { display: flex; flex-direction: column; gap: 10px; }
+.choice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--line-hi);
+  border-radius: var(--radius-lg);
+  background: var(--bg-raise);
+  cursor: pointer;
+}
+.choice:hover { border-color: var(--line-strong); background: var(--bg-subtle); }
+.choice input[type='radio'] { margin-top: 2px; flex: none; }
+.choice.selected {
+  border-color: var(--accent);
+  background: var(--accent-wash);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+.choice.selected:hover { background: var(--accent-wash-hi); }
+.choice-title { display: block; font-size: 13.5px; font-weight: 600; color: var(--text); }
+.choice-desc {
+  display: block;
+  font-size: 12.5px;
+  color: var(--text-dim);
+  margin-top: 3px;
+  line-height: 1.55;
+}
+
+/* ── Panels ───────────────────────────────────────────────────────────── */
+.panel {
+  background: var(--bg-panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-2);
+  margin-bottom: 16px;
+}
+.panel-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--line);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  flex-wrap: wrap;
+}
+.panel-head .spacer { margin-left: auto; }
+.panel-body { padding: 16px; }
+.panel-note { color: var(--text-dim); font-size: 12.5px; margin: 0 0 12px; }
+
+/* ── Tables ───────────────────────────────────────────────────────────── */
+table { width: 100%; border-collapse: collapse; font-size: 13px; table-layout: fixed; }
+th {
+  text-align: left;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-dim);
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+  overflow: hidden;
+  background: var(--bg-subtle);
+}
+td {
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+  overflow: hidden;
+}
+td.truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+tbody tr { cursor: pointer; }
+tbody tr:hover { background: var(--bg-subtle); }
+tbody tr.selected {
+  background: var(--accent-wash);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+.mono { font-family: var(--mono); font-size: 12px; }
+.dim { color: var(--text-dim); }
+.faint { color: var(--text-faint); }
+.nowrap { white-space: nowrap; }
+.num { font-variant-numeric: tabular-nums; }
+
+/* ── Badges ───────────────────────────────────────────────────────────── */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11.5px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--line-hi);
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+.badge.ok { color: var(--green); background: var(--green-dim); border-color: transparent; }
+.badge.error { color: var(--red); background: var(--red-dim); border-color: transparent; }
+.badge.pending, .badge.warn { color: var(--amber); background: var(--amber-dim); border-color: transparent; }
+.badge.model {
+  color: var(--accent-pressed);
+  background: var(--accent-wash);
+  border-color: var(--accent-wash-hi);
+  font-weight: 600;
+}
+:root[data-theme='dark'] .badge.model { color: var(--accent); }
+.badge.admin { color: var(--accent-pressed); background: var(--accent-wash); border-color: var(--accent-wash-hi); }
+:root[data-theme='dark'] .badge.admin { color: var(--accent); }
+
+/* ── Forms ────────────────────────────────────────────────────────────── */
+label.field { display: block; margin-bottom: 14px; }
+.field-name {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text);
+  display: block;
+  margin-bottom: 5px;
+}
+.field-hint { font-size: 11.5px; color: var(--text-dim); font-weight: 400; margin-left: 4px; }
+/* type='date' is in the list so the traces filter bar matches its neighbours: left out, the
+   browser's native control keeps its own height and baseline, which visibly drops the label
+   beside it out of line with the other fields. */
+input[type='text'], input[type='number'], input[type='password'], input[type='date'],
+textarea, select {
+  width: 100%;
+  background: var(--bg-raise);
+  border: 1px solid var(--line-hi);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 13.5px;
+  padding: 7px 9px;
+  outline: none;
+}
+input[type='text'].mono, input[type='password'].mono, textarea.mono { font-family: var(--mono); font-size: 12.5px; }
+/* The native date picker's indicator is black-on-black in dark mode; invert it rather than
+   hide it, since it is the only affordance that opens the calendar. */
+:root[data-theme='dark'] input[type='date']::-webkit-calendar-picker-indicator { filter: invert(1); }
+input:hover, textarea:hover, select:hover { border-color: var(--line-strong); }
+input:focus, textarea:focus, select:focus {
+  border-color: var(--accent);
+  box-shadow: inset 0 -1px 0 0 var(--accent);
+}
+textarea { resize: vertical; min-height: 62px; font-family: var(--sans); }
+.row { display: flex; gap: 14px; flex-wrap: wrap; }
+.row > * { flex: 1; min-width: 160px; }
+.check {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  cursor: pointer;
+  color: var(--text);
+}
+input[type='checkbox'], input[type='radio'] {
+  accent-color: var(--accent);
+  width: 15px;
+  height: 15px;
+  margin: 0;
+}
+
+/* ── Buttons (Fluent primary / default) ───────────────────────────────── */
+button.btn {
+  font-family: var(--sans);
+  font-size: 13.5px;
+  font-weight: 600;
+  padding: 7px 18px;
+  min-height: 32px;
+  background: var(--accent);
+  color: var(--text-on-accent);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+button.btn:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+button.btn:active { background: var(--accent-pressed); }
+button.btn:disabled { opacity: 0.5; cursor: default; }
+button.btn.ghost {
+  background: var(--bg-raise);
+  color: var(--text);
+  border-color: var(--line-hi);
+  font-weight: 400;
+}
+button.btn.ghost:hover { background: var(--bg-subtle); border-color: var(--line-strong); }
+button.btn.subtle {
+  background: none;
+  border-color: transparent;
+  color: var(--accent-pressed);
+  font-weight: 600;
+}
+:root[data-theme='dark'] button.btn.subtle { color: var(--accent); }
+button.btn.subtle:hover { background: var(--accent-wash); }
+button.btn.danger {
+  background: var(--bg-raise);
+  color: var(--red);
+  border-color: var(--line-hi);
+  font-weight: 400;
+}
+button.btn.danger:hover { background: var(--red-dim); border-color: var(--red); }
+button.btn.sm { padding: 3px 10px; font-size: 12.5px; min-height: 26px; }
+button.btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* ── Notification bar (Fluent MessageBar) ─────────────────────────────── */
+.toast {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 13px;
+  padding: 10px 14px;
+  margin: 0 0 14px;
+  border-radius: var(--radius);
+  border-left: 3px solid;
+  background: var(--bg-subtle);
+  color: var(--text);
+}
+.toast.ok { background: var(--green-dim); border-left-color: var(--green); }
+.toast.error { background: var(--red-dim); border-left-color: var(--red); }
+.toast.warn { background: var(--amber-dim); border-left-color: var(--amber-icon); }
+.toast.info { background: var(--accent-wash); border-left-color: var(--accent); }
+
+/* ── Code blocks ──────────────────────────────────────────────────────── */
+pre.code {
+  background: var(--bg-subtle);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  line-height: 1.6;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--text);
+  margin: 0;
+}
+
+/* ── AI decision prompt editor and preview ────────────────────────────── */
+textarea.prompt-editor {
+  min-height: 220px;
+  line-height: 1.65;
+  /* The prompt is read line by line; disabling soft wrap would make it harder to read, so wrap
+     stays on and a monospace face keeps the indentation aligned instead */
+  tab-size: 2;
+}
+.prompt-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: -4px 0 12px;
+}
+.prompt-actions .spacer { margin-left: auto; }
+.preview-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 16px 0 8px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+.preview-head .spacer { margin-left: auto; }
+.preview-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 12.5px;
+  margin-bottom: 8px;
+}
+.preview-meta .spacer { margin-left: auto; }
+.prompt-preview { margin-bottom: 10px; }
+.prompt-preview .msg-role {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 4px;
+}
+/* A prompt can be very long: let the preview scroll on its own rather than pushing the save
+   bar off screen */
+.prompt-preview pre.code { max-height: 340px; overflow-y: auto; }
+
+/* ── Key/value list ───────────────────────────────────────────────────── */
+.kv { display: grid; grid-template-columns: 170px 1fr; gap: 6px 16px; font-size: 13px; }
+.kv dt { font-size: 12.5px; color: var(--text-dim); padding-top: 1px; }
+.kv dd { margin: 0; font-family: var(--mono); font-size: 12px; word-break: break-word; }
+
+.step {
+  display: flex;
+  gap: 10px;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 12.5px;
+  align-items: baseline;
+  /* Wrapping is required, not cosmetic: these rows live in the traces detail pane, which is
+     30% of the window by default, and a nowrap badge at the end of the row pushed the whole
+     document into a horizontal scrollbar. */
+  flex-wrap: wrap;
+}
+.step:last-child { border-bottom: none; }
+.step .mark { width: 18px; text-align: center; flex: none; }
+.step .rule-name { min-width: 150px; flex: 1 1 auto; }
+.step .badge { flex: none; }
+.step .mark.hit { color: var(--green); }
+.step .mark.miss { color: var(--text-faint); }
+
+/* ── The interaction chain: one row per upstream call ─────────────────── */
+/* Rows stack with a single shared rule between them rather than a box each: a tool loop can be
+   a dozen turns, and a dozen bordered cards reads as a dozen separate things when the point of
+   the panel is that they are one. */
+.turn { border-bottom: 1px solid var(--line); }
+.turn:last-child { border-bottom: none; }
+/* A <button> because it toggles rather than navigates, so it needs the default chrome removed
+   and the text alignment put back. Wraps for the same reason .step does -- this lives in a pane
+   that is 30% of the window by default. */
+.turn-head {
+  display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap;
+  width: 100%; padding: 8px 4px; text-align: left;
+  background: none; border: none; cursor: pointer;
+  font-family: var(--sans); font-size: 12.5px; color: var(--text);
+}
+.turn-head:hover { background: var(--bg-subtle); }
+.turn-head:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.turn-head .badge, .turn-head .json-toggle { flex: none; }
+.turn-index { flex: none; font-weight: 600; }
+/* Takes the leftover width so the finish_reason at the end of the row stays put as the tool
+   list grows, and ellipsises instead of pushing the row wider. */
+.turn-calls { display: flex; gap: 4px; min-width: 0; flex-wrap: wrap; }
+.turn-head .spacer { margin-left: auto; }
+.turn.open .turn-head { background: var(--bg-subtle); }
+/* Indented to the toggle's text, so the body reads as belonging to the row above it. */
+.turn-body { padding: 4px 4px 12px 22px; }
+
+.empty {
+  color: var(--text-dim);
+  font-size: 13px;
+  padding: 40px 20px;
+  text-align: center;
+}
+
+/* ── Model / rule / provider cards ────────────────────────────────────── */
+.model-card, .rule-card, .provider-card {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--bg-raise);
+  padding: 14px;
+  margin-bottom: 12px;
+}
+.model-card .head, .rule-card .head, .provider-card .head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+.model-card .head .name, .provider-card .head .name {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text);
+}
+.model-card .head .spacer, .provider-card .head .spacer { margin-left: auto; }
+
+.reply-box {
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  background: var(--bg-subtle);
+  white-space: pre-wrap;
+  font-size: 13.5px;
+  line-height: 1.6;
+}
+
+/* ── Sign-in / first-run setup pages ──────────────────────────────────── */
+.auth-wrap {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 40px 20px;
+  background: var(--bg);
+}
+.auth-card {
+  width: 100%;
+  max-width: 440px;
+  background: var(--bg-panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-8);
+  padding: 32px;
+}
+.auth-card.wide { max-width: 560px; }
+.auth-card .logo { font-size: 26px; color: var(--accent); margin-bottom: 6px; }
+.auth-card h1 { font-size: 21px; font-weight: 600; margin: 0 0 6px; }
+.auth-card p.lead { color: var(--text-dim); font-size: 13px; margin: 0 0 22px; }
+.btn-github {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 11px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: var(--sans);
+  background: #24292f;
+  color: #fff;
+  border: 1px solid #24292f;
+  border-radius: var(--radius);
+  cursor: pointer;
+  text-decoration: none;
+}
+.btn-github:hover { background: #32383f; }
+/* The alternative sign-in door: same footprint as .btn-github so the two read as a pair of
+   equal-weight choices, but neutral rather than GitHub-black -- the black is GitHub's brand,
+   not a "primary action" signal, and reusing it here would claim a second brand. */
+.btn-alt {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 11px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: var(--sans);
+  background: var(--bg-raise);
+  color: var(--text);
+  border: 1px solid var(--line-hi);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+.btn-alt:hover { background: var(--bg-subtle); border-color: var(--line-strong); }
+.btn-alt:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+/* A text-weight button: no chrome, reads as a link but stays a <button> because it performs an
+   action rather than navigating. Shared by the JSON toolbar, the trace-row delete and the auth
+   cards -- all of which were relying on the browser's default button chrome until this rule
+   existed. Deliberately inline-level and auto-width: .json-tools is a flex row, and a full-width
+   rule here would stretch each of its three buttons across the toolbar. */
+.btn-link {
+  display: inline;
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: var(--sans);
+  font-size: inherit;
+  color: var(--accent-pressed);
+  cursor: pointer;
+}
+:root[data-theme='dark'] .btn-link { color: var(--accent); }
+.btn-link:hover { text-decoration: underline; }
+.btn-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+/* The trace-row delete. Red, because accent blue on a destructive control reads as "open" or
+   "edit" -- the same reason button.btn.danger exists. */
+.btn-link.danger { color: var(--red); }
+/* On the auth cards it is a row of its own under a full-width primary action, so it centres and
+   takes the width rather than sitting inline in a sentence. */
+.auth-card .btn-link { display: block; width: 100%; padding: 2px 0; font-size: 12.5px; }
+/* A centred label with a rule running through it. The pseudo-elements take the leftover width,
+   so the two rules stay symmetric whatever the translated word's length. */
+.auth-or {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 16px 0;
+  color: var(--text-dim);
+  font-size: 11.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.auth-or::before, .auth-or::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+/* Inputs are already width: 100% from the global input rule, so this only needs the spacing. */
+.auth-form { margin-top: 16px; }
+/* Full width, matching .btn-github and .btn-alt above it: this is the card's one action. */
+.auth-form button.btn { width: 100%; margin-top: 16px; padding: 11px 16px; font-size: 14px; }
+
+/* ── Stat tiles (dataviz: value + label, proportional figures) ────────── */
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.tile {
+  background: var(--bg-panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-2);
+  padding: 14px 16px;
+}
+.tile .label { font-size: 12.5px; color: var(--text-dim); margin-bottom: 4px; }
+.tile .value { font-size: 26px; font-weight: 600; line-height: 1.2; color: var(--text); }
+.tile .foot { font-size: 11.5px; color: var(--text-faint); margin-top: 2px; }
+
+/* ── Bar chart (single series -> no legend; values labelled directly) ──── */
+.bars { display: flex; flex-direction: column; gap: 10px; }
+.bar-row { display: grid; grid-template-columns: 130px 1fr auto; gap: 12px; align-items: center; }
+.bar-row .cat {
+  font-size: 12.5px;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.bar-track {
+  height: 14px;
+  background: var(--bg-subtle);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.bar-fill {
+  height: 100%;
+  background: var(--chart-bar);
+  /* 4px radius on the data end, square at the baseline end */
+  border-radius: 0 4px 4px 0;
+  min-width: 2px;
+}
+.bar-row .val {
+  font-size: 12.5px;
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+  min-width: 46px;
+  text-align: right;
+}
+
+/* Mini column chart (per day) */
+.col-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  height: 120px;
+  padding-top: 8px;
+  border-bottom: 1px solid var(--chart-axis);
+}
+.col-wrap { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; height: 100%; gap: 4px; }
+.col-bar {
+  background: var(--chart-bar);
+  border-radius: 4px 4px 0 0;
+  min-height: 2px;
+  max-width: 24px;
+  width: 100%;
+  margin: 0 auto;
+}
+.col-cap { font-size: 11px; color: var(--text-dim); text-align: center; font-variant-numeric: tabular-nums; }
+.col-axis { display: flex; gap: 4px; margin-top: 6px; }
+.col-axis .tick {
+  flex: 1;
+  font-size: 10.5px;
+  color: var(--text-faint);
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── One-time reveal of an API key's plaintext ─────────────────────────── */
+.secret-reveal {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  background: var(--bg-subtle);
+  border: 1px solid var(--line-hi);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  margin: 10px 0;
+}
+.secret-reveal code {
+  flex: 1;
+  font-family: var(--mono);
+  font-size: 12.5px;
+  word-break: break-all;
+  color: var(--text);
+}
+/* When an input shares a row with buttons, let the input take the remaining width: otherwise
+   its width:100% pushes the buttons onto a second line (which used to split "Verify" in two). */
+.secret-reveal > input { flex: 1; min-width: 0; }
+.secret-reveal > .btn { flex: none; white-space: nowrap; }
+
+/* The Key column of the API-key table: a masked/plain value plus Show and Copy. The code
+   element gets min-width:0 so its truncation, not the buttons, absorbs a narrow column. */
+.key-cell { display: flex; align-items: center; gap: 6px; }
+.key-cell > code { flex: 1; min-width: 0; font-size: 12px; }
+.key-cell > .btn { flex: none; }
+
+@media (max-width: 900px) {
+  .layout-split { grid-template-columns: 1fr; }
+  /* !important because .split-drag's columns come from an inline style, which this rule would
+     otherwise lose to -- a dragged 70/30 must still collapse where there is no room for it. */
+  .split-drag { grid-template-columns: 1fr !important; }
+  .splitter { display: none; }
+  .split-pane { padding-left: 0; padding-top: 12px; }
+  .sidenav { width: 48px; }
+  .sidenav .nav-item .label, .sidenav .nav-group { display: none; }
+}

@@ -1,0 +1,675 @@
+{
+  "app": {
+    "connecting": "連線服務中…",
+    "notFound": {
+      "title": "頁面不存在",
+      "lead": "該位址不對應任何頁面。請從左側導覽中選擇。"
+    },
+    "forbidden": {
+      "lead": "此頁面僅限管理員存取。如需使用，請讓管理員在「存取控制」中新增你的帳號。"
+    }
+  },
+  "common": {
+    "actions": "操作",
+    "close": "關閉",
+    "confirmDiscard": "放棄所有未儲存的修改，從 config.yaml 重新載入？",
+    "copied": "已複製",
+    "copy": "複製",
+    "delete": "刪除",
+    "dirtySections_other": "（{{count}} 個設定區段）",
+    "discardChanges": "放棄修改",
+    "emptyContent": "（空內容）",
+    "error": "錯誤",
+    "hasUnsavedChanges": "有未儲存的修改",
+    "hide": "隱藏",
+    "inSyncWithFile": "已與 config.yaml 一致",
+    "listSeparator": "、",
+    "loading": "載入中…",
+    "no": "否",
+    "noData": "尚無資料",
+    "refresh": "重新整理",
+    "reload": "重新載入",
+    "reloadedFromFile": "已從 config.yaml 重新載入",
+    "retry": "重試",
+    "saveAndApply": "儲存並熱更新",
+    "saving": "儲存中…",
+    "show": "顯示",
+    "status": "狀態",
+    "yes": "是"
+  },
+  "nav": {
+    "group": {
+      "overview": "總覽",
+      "monitor": "監控",
+      "manage": "管理"
+    },
+    "usage": {
+      "label": "使用詳情",
+      "title": "使用詳情",
+      "subtitle": "請求數、token 消耗與延遲分布"
+    },
+    "keys": {
+      "label": "API 金鑰",
+      "title": "API 金鑰",
+      "subtitle": "建立金鑰後即可透過 Copilot BYOK 呼叫本服務"
+    },
+    "traces": {
+      "label": "呼叫鏈路",
+      "title": "呼叫鏈路",
+      "subtitle": "每次請求的路由決策、後端參數與回應全記錄"
+    },
+    "playground": {
+      "label": "測試台",
+      "title": "測試台",
+      "subtitle": "用自己的 API 金鑰直接發起一次路由請求"
+    },
+    "config": {
+      "label": "路由設定",
+      "title": "路由設定",
+      "subtitle": "後端連線、模型目錄、路由策略與規則路由"
+    },
+    "access": {
+      "label": "存取控制",
+      "title": "存取控制",
+      "subtitle": "管理員與登入範圍、GitHub OAuth 應用程式，以及依 Enterprise / Team / Organization 控制誰能建立 API 金鑰"
+    }
+  },
+  "shell": {
+    "collapseNav": "收合導覽",
+    "expandNav": "展開導覽",
+    "language": "語言",
+    "roleAdmin": "管理員",
+    "roleUser": "一般使用者",
+    "running": "執行中",
+    "signOut": "登出",
+    "toggleTheme": "切換主題",
+    "unreachable": "服務無法連線"
+  },
+  "login": {
+    "title": "Foundry Model Router 主控台",
+    "lead": "使用 GitHub 帳號登入。登入後可建立 API 金鑰、檢視自己的呼叫與用量；管理員還可以管理路由策略與後端連線。",
+    "failed": "GitHub 登入失敗：{{error}}",
+    "signInWithGitHub": "使用 GitHub 登入",
+    "local": {
+      "or": "或",
+      "reveal": "使用使用者名稱和密碼登入",
+      "hide": "返回 GitHub 登入",
+      "username": "使用者名稱",
+      "password": "密碼",
+      "submit": "登入",
+      "hint": "本機管理員帳號用於 github.com 無法連線的情況，它設定在 config.yaml 中，不是 GitHub 帳號。",
+      "failed": "使用者名稱或密碼不正確。"
+    }
+  },
+  "setup": {
+    "blocked": {
+      "title": "需要先設定 GitHub OAuth",
+      "lead": "本服務一律驗證身分，但 GitHub OAuth 尚未設定，且初始化嚮導只允許從執行本機（127.0.0.1）存取。請在伺服器上直接編輯 <code>config.yaml</code> 的 <code>auth.github</code> 區段，填入 client_id / client_secret 與 <code>admin_logins</code>，然後重新啟動服務。",
+      "callbackComment": "留空自動推導"
+    },
+    "title": "初始化：GitHub OAuth",
+    "lead": "先到 GitHub → Settings → Developer settings → OAuth Apps 新建應用程式，回呼網址填下面這個，然後把 Client ID / Secret 填入表單。此嚮導僅在未設定且從本機存取時可用。",
+    "secretPlaceholder": "寫入 config.yaml（該檔案已被 .gitignore 忽略）",
+    "adminLogins": "管理員 GitHub login",
+    "adminLoginsHint": "多個以逗號或空白分隔",
+    "saving": "寫入中…",
+    "save": "儲存設定並前往登入",
+    "localHint": "無法連線 github.com？在 <code>config.yaml</code> 中設定 <code>auth.local_admin.enabled: true</code>，然後用本機管理員帳號（<code>admin</code> / <code>admin1234</code>）登入。首次登入後必須先改掉這個密碼，主控台的其他頁面才可存取。"
+  },
+  "password": {
+    "title": "修改管理員密碼",
+    "lead": "此帳號仍在使用內建的預設密碼，因此主控台的其他頁面暫不可用。請先設定一組新密碼。",
+    "username": "使用者名稱",
+    "current": "目前密碼",
+    "next": "新密碼",
+    "confirm": "確認新密碼",
+    "tooShort": "新密碼至少 8 個字元。",
+    "mismatch": "兩次輸入的新密碼不一致。",
+    "submit": "修改密碼並繼續",
+    "recovery": "被鎖在門外？把 config.yaml 中 auth.local_admin 下的 password_hash 與 password_salt 清空，內建的預設密碼就會重新生效。"
+  },
+  "usage": {
+    "allUsers": "全部使用者",
+    "byUser": "依使用者",
+    "drillDown": "下探",
+    "loading": "統計中…",
+    "noRecords": "該區間沒有呼叫記錄",
+    "scope": "檢視範圍",
+    "range": {
+      "today": "今天",
+      "lastDays_other": "近 {{count}} 天"
+    },
+    "tile": {
+      "requests": "請求數",
+      "totalTokens": "總 token",
+      "tokenSplit": "輸入 {{prompt}} · 輸出 {{completion}}",
+      "errorRate": "錯誤率",
+      "failures_other": "{{count}} 次失敗",
+      "avgLatency": "平均耗時"
+    },
+    "chart": {
+      "byModel": "依模型的請求數",
+      "byDay": "依日期的請求數"
+    },
+    "table": {
+      "title": "明細資料（表格檢視）",
+      "date": "日期",
+      "requests": "請求數",
+      "totalTokens": "總 token",
+      "failures": "失敗",
+      "user": "使用者"
+    },
+    "tooltip": {
+      "model_other": "{{model}}：{{count}} 次請求",
+      "day_other": "{{date}}：{{count}} 次請求 · {{tokens}} token · {{errors}} 次失敗"
+    }
+  },
+  "keys": {
+    "created": {
+      "title": "金鑰已建立",
+      "readyBadge": "可立即使用",
+      "note": "現在就複製到你的用戶端設定中；之後也可以隨時在下方的金鑰清單中檢視——這個金鑰對你始終可見。",
+      "byokTitle": "在 GitHub Copilot 中透過 BYOK 使用",
+      "modelHint": "任意在「路由設定」中登記的模型名稱",
+      "curlComment": "命令列驗證",
+      "attribution": "所有用這個金鑰發出的請求都會歸屬到 <code>{{login}}</code>，trace 中的 <code>user_id</code> 即該 GitHub 帳號。"
+    },
+    "create": {
+      "title": "新建金鑰",
+      "notAllowedBadge": "目前不可建立",
+      "name": "名稱",
+      "nameHint": "便於區分用途，如 copilot-laptop",
+      "creating": "建立中…",
+      "submit": "建立金鑰",
+      "blockedNote": "你所在的帳號未獲授權，無法建立金鑰，因此也<strong>無法使用 BYOK</strong>。原因見上方「金鑰建立權限」。"
+    },
+    "list": {
+      "title": "我的金鑰",
+      "showAll": "顯示所有使用者的金鑰",
+      "emptyBlocked": "還沒有金鑰，且目前帳號未獲授權建立金鑰。",
+      "empty": "還沒有金鑰。建立一個後即可透過 BYOK 呼叫本服務。"
+    },
+    "table": {
+      "name": "名稱",
+      "key": "金鑰",
+      "keyUnavailable": "無法檢視",
+      "keyUnavailableHint": "此金鑰建立於「可檢視」能力之前，伺服器端只保留了雜湊值。它仍然可用；如需檢視明文，請新建一個金鑰。",
+      "keyOwnerOnly": "僅本人可見",
+      "keyOwnerOnlyHint": "密鑰只對其所屬帳號顯示。作為管理員，你可以停用或刪除任何密鑰，但不能查看他人的憑據。",
+      "owner": "歸屬使用者",
+      "created": "建立時間",
+      "lastUsed": "最近使用",
+      "calls": "呼叫數",
+      "disabled": "已停用",
+      "enable": "啟用",
+      "disable": "停用",
+      "confirmDelete": "刪除金鑰「{{name}}」？使用它的用戶端會立即失效。"
+    },
+    "copyFailed": "無法寫入剪貼簿。瀏覽器只在 HTTPS（或 localhost）下允許此操作——請點選「顯示」後手動複製。",
+    "access": {
+      "title": "金鑰建立權限",
+      "unknown": "無法確認",
+      "checking": "正在向 GitHub 核實你的企業與組織歸屬…",
+      "allowed": "允許建立",
+      "denied": "禁止建立",
+      "policyOn": "企業存取控制已啟用",
+      "hideEvidence": "隱藏依據",
+      "showEvidence": "檢視依據",
+      "recheck": "重新核實",
+      "account": "目前帳號",
+      "grantedVia": "透過方式",
+      "enterpriseParenOpen": "（企業 ",
+      "enterpriseParenClose": "）",
+      "deniedExplanation": "<strong>這意味著</strong>：你可以登入並檢視本頁，但不能建立 API 金鑰；沒有金鑰就無法透過 GitHub Copilot BYOK 呼叫本服務的 <code>/v1/chat/completions</code>。如需開通，請把下面的依據發給管理員，讓其在「存取控制 → 金鑰策略」中放開你所在的組織或企業團隊。",
+      "table": {
+        "enterprise": "企業",
+        "scope": "範圍",
+        "name": "名稱",
+        "isMember": "你是否成員",
+        "source": "判定來源"
+      },
+      "source": {
+        "cache": "本機快取",
+        "cacheHint": "由 data/github 中的本機成員名單判定，未呼叫 GitHub",
+        "probe": "探測快取",
+        "probeHint": "由先前即時探測的結果判定",
+        "live": "即時",
+        "liveHint": "本次請求即時呼叫了 GitHub —— 這一列仍然是每次判定一趟往返"
+      },
+      "scanned": "（探測 {{count}} 個）",
+      "scannedTruncated": "（探測 {{count}} 個，已截斷）",
+      "undecidable": "無法判定",
+      "undecidableHint": "GitHub 未能給出答案，以未通過處理"
+    }
+  },
+  "access": {
+    "loading": "載入存取控制設定中…",
+    "saved": "已儲存並熱更新：config.yaml 的 auth 區段已寫回（註解保留）",
+    "section": {
+      "admins": {
+        "label": "管理員與登入",
+        "hint": "管理員名單與允許登入的範圍"
+      },
+      "oauth": {
+        "label": "GitHub OAuth",
+        "hint": "登入用的 OAuth 應用程式憑證"
+      },
+      "local": {
+        "label": "本機管理員",
+        "hint": "github.com 無法連線時使用的內建帳號"
+      },
+      "policy": {
+        "label": "金鑰策略",
+        "hint": "依 Enterprise / Team / Organization 控制誰能建立金鑰"
+      }
+    },
+    "kind": {
+      "organization": "組織",
+      "team": "企業團隊",
+      "enterprise": "企業直屬成員",
+      "org-scan": "組織批次探測",
+      "admin": "服務管理員"
+    },
+    "admins": {
+      "title": "管理員",
+      "count_other": "{{count}} 人",
+      "logins": "管理員 GitHub login",
+      "loginsHint": "逗號分隔；儲存後立即生效",
+      "note": "管理員能看到本頁與「路由設定」、跨使用者的使用統計與全部呼叫鏈路，並且<strong>不受企業金鑰策略限制</strong>（否則改錯策略會把自己也鎖在門外）。<strong>清空這個清單會讓所有人都失去管理員權限</strong>，屆時只能改 <code>config.yaml</code> 復原。"
+    },
+    "signIn": {
+      "title": "登入範圍",
+      "allowAny": "允許任意 GitHub 帳號登入",
+      "note": "這是<strong>登入</strong>的開關，不是<strong>授權</strong>的開關。開啟時任何 GitHub 帳號都能登入並看到自己的（空）資料，但能否建立 API 金鑰由「金鑰策略」決定；關閉後只有上面的管理員可以登入。無論開關如何，呼叫 <code>/v1/chat/completions</code> 都必須持有有效的 API 金鑰。"
+    },
+    "oauth": {
+      "title": "GitHub OAuth 應用程式",
+      "configured": "已設定",
+      "notConfigured": "未設定",
+      "warning": "<strong>改錯這裡會讓所有人（包括你自己）無法登入</strong>，只能改伺服器端 <code>config.yaml</code> 復原。修改前請確認憑證來自 GitHub → Settings → Developer settings → OAuth Apps。目前工作階段不會因儲存而失效，但下次登入會用新憑證。",
+      "clientIdHint": "OAuth App 頁面上的 Client ID",
+      "clientSecretHint": "只在 GitHub 上產生時可見一次；這裡儲存後同樣不再回顯",
+      "secretKeepPlaceholder": "已設定（保持不變）",
+      "secretPastePlaceholder": "貼上 Client Secret",
+      "callbackUrl": "回呼網址",
+      "callbackUrlHint": "留空最穩妥——依存取來源自動推導，反向代理情境遵循 X-Forwarded-Proto / Host",
+      "registerTitle": "需要在 GitHub 上登記的網址",
+      "registerNote": "OAuth App 裡的這兩項必須與本服務的實際存取網址一致，否則 GitHub 會拒絕回呼："
+    },
+    "local": {
+      "title": "本機管理員",
+      "on": "已啟用",
+      "off": "已停用",
+      "lead": "一個用使用者名稱與密碼登入、不經過 GitHub 的超級管理員，用於 github.com 無法連線時仍能進入主控台。它始終是管理員：可以檢視所有使用者的呼叫鏈路並進行刪除。",
+      "toggle": "允許使用本機管理員帳號登入",
+      "note": "憑證儲存在 <code>config.yaml</code> 的 <code>auth.local_admin</code> 段（該檔案已被 .gitignore 忽略），且只儲存加鹽雜湊，不儲存密碼本身。<strong>在 GitHub OAuth 未設定時關閉本開關，將沒有任何登入方式</strong>，屆時只能改 config.yaml 復原。",
+      "enabledSaved": "已啟用本機管理員登入",
+      "disabledSaved": "已停用本機管理員登入",
+      "passwordSaved": "已儲存：新憑證立即生效，該帳號的其他工作階段已被登出",
+      "credentialTitle": "使用者名稱與密碼",
+      "changedAt": "上次修改 {{at}}",
+      "neverChanged": "仍在使用內建的預設密碼",
+      "username": "使用者名稱",
+      "usernameHint": "修改後該帳號的其他工作階段會被登出",
+      "current": "目前密碼",
+      "currentHint": "尚未設定過時即為內建預設密碼",
+      "next": "新密碼",
+      "nextHint": "至少 8 個字元，且不能是內建預設密碼",
+      "confirm": "確認新密碼",
+      "submit": "修改憑證",
+      "recovery": "<strong>被鎖在門外？</strong>把 <code>config.yaml</code> 中 <code>auth.local_admin</code> 下的 <code>password_hash</code> 與 <code>password_salt</code> 清空：內建的預設密碼會重新生效，下次登入時主控台會再次要求你修改它。"
+    },
+    "cache": {
+      "title": "本機 GitHub 快取",
+      "stale": "已過期",
+      "fresh": "新鮮",
+      "tokenChanged": "token 已變更",
+      "refreshNow": "立即重新整理",
+      "refreshing": "重新整理中…",
+      "refreshed": "已從 GitHub 取回並寫入 data/github",
+      "lead": "企業 / 組織 / 團隊的結構與其成員名單儲存在 <code>data/github</code> 並定時重新整理，因此判斷歸屬只是一次本機集合查找，而不是一趟 GitHub 往返。<strong>成員名單被截斷或取回出錯的範圍一律不作為判定依據</strong>——這些判定會回落到即時探測，因為「不在我能讀到的那部分名單裡」並不等於「不是成員」。",
+      "interval": "重新整理間隔（秒）",
+      "intervalHint": "不小於 60；儲存本頁後生效",
+      "unavailable": "還沒有任何快取。請先儲存 Enterprise token 並重新整理。",
+      "structureFetched": "結構取回時間",
+      "membersFetched": "成員名單取回時間",
+      "never": "從未",
+      "scopeCount": "已快取範圍",
+      "scopes_other": "{{count}} 個範圍",
+      "incomplete_other": "{{count}} 個不完整",
+      "probeCount": "已記住的即時探測",
+      "probes_other": "{{count}} 筆結果",
+      "table": {
+        "scope": "類型",
+        "name": "名稱",
+        "members": "成員數",
+        "state": "狀態",
+        "errored": "取回出錯",
+        "truncated": "已截斷",
+        "complete": "完整"
+      }
+    },
+    "policy": {
+      "title": "金鑰建立策略",
+      "enabled": "已啟用",
+      "disabled": "未啟用",
+      "toggle": "僅允許指定企業 / 組織中的使用者建立 API 金鑰",
+      "enabledNote": "已啟用：一般使用者建立金鑰時會即時向 GitHub 核實其企業與組織歸屬，不屬於任何被允許範圍的使用者會被拒絕（403），因此無法使用 BYOK。管理員不受此限制。",
+      "disabledNote": "未啟用：<strong>任何能登入的 GitHub 帳號都能建立 API 金鑰並使用 BYOK</strong>。如果上面的「允許任意 GitHub 帳號登入」也是開啟的，等於對整個 GitHub 開放。",
+      "missingTokenBadge": "缺少 token",
+      "missingTokenNote": "已啟用策略但未設定 Enterprise token，服務無法核實歸屬，<strong>目前會拒絕所有非管理員的建立金鑰請求</strong>。請在下方填入 token。",
+      "tokenTitle": "GitHub Enterprise 管理員 token",
+      "tokenOk": "有效",
+      "tokenBad": "異常",
+      "tokenHint": "需 admin:enterprise 權限",
+      "tokenSavedPlaceholder": "已設定 {{hint}}（保持不變）",
+      "verifying": "驗證中…",
+      "verify": "驗證",
+      "tokenValid": "token 有效，歸屬 {{login}}",
+      "tokenValidWithScopes": "token 有效，歸屬 {{login}}（scope: {{scopes}}）",
+      "tokenOwner": "token 歸屬",
+      "fineGrainedToken": "（fine-grained token）",
+      "canListEnterprises": "可列企業",
+      "missingEnterpriseScope": "缺少 admin:enterprise",
+      "githubError": "GitHub 傳回錯誤",
+      "tokenUnsaved": "token 已修改但<strong>尚未儲存</strong>。儲存後才能用它自動取得企業清單。",
+      "structureTitle": "企業、企業團隊與組織",
+      "enterpriseCount_other": "{{count}} 個企業",
+      "fetching": "取得中…",
+      "refetch": "重新取得",
+      "needTokenFirst": "先填入並儲存 Enterprise token，這裡會自動列出該 token 下的企業。",
+      "fetchFailed": "取得失敗",
+      "fetchingFromGitHub": "正在向 GitHub 取得企業清單…",
+      "noEnterprises": "token 下沒有可見的企業。",
+      "noEnterprisesVisible": "token 下沒有可見的企業。請確認它具有 admin:enterprise 權限。",
+      "structureLead": "下列結構直接來自 GitHub API。為每個企業開啟總開關後，再選擇允許哪些<strong>組織</strong>或<strong>企業團隊</strong>的成員建立 API 金鑰。",
+      "nobodyAllowed": "已啟用策略但沒有放開任何企業——目前除管理員外<strong>沒有人</strong>能建立 API 金鑰。",
+      "entOn": "已放開",
+      "entOff": "未放開",
+      "entOffNote": "總開關關閉——該企業下的組織與團隊設定<strong>全部不生效</strong>。",
+      "allowAllOrgs": "允許該企業下<strong>任一組織</strong>的成員建立金鑰",
+      "allOrgsNote": "開啟後不必逐個勾選組織。判定順序為：先查企業直屬成員，查不到再逐個探測已列出的組織（最多 30 個）。",
+      "allOrgsTruncated": "<strong>該企業組織數為 {{total}}，僅列出前 {{listed}} 個</strong>，未列出的組織不會被探測——如需精確控制請關閉本項並逐個勾選。",
+      "allOrgsOffNote": "關閉時只有下面勾選的組織與企業團隊生效。",
+      "allowedOrgs": "允許的組織",
+      "allowedOrgsHint": "成員判定走 /orgs/{org}/members/{user}，即時生效",
+      "orgListUnavailable": "組織清單不可用",
+      "noOrgs": "該企業下沒有組織。",
+      "orgsListedPartially": "共 {{total}} 個組織，此處僅列出前 {{listed}} 個。",
+      "allowedTeams": "允許的企業團隊",
+      "allowedTeamsHint": "依團隊的數字 id 判定成員（GitHub 只接受 id），介面與使用者端均顯示團隊名稱",
+      "teamListUnavailable": "團隊清單不可用",
+      "teamListUnavailableNote": "——該企業只能依組織授權。",
+      "noTeams": "該企業下沒有企業團隊。"
+    }
+  },
+  "playground": {
+    "sendRequest": "傳送請求",
+    "apiKey": "API 金鑰",
+    "apiKeyHint": "在「API 金鑰」頁建立；請求會歸屬到該金鑰的擁有者",
+    "remember": "記在本瀏覽器（localStorage）",
+    "sessionId": "工作階段 ID（選填，觸發工作階段固定）",
+    "sessionIdPlaceholder": "留空則每次獨立路由",
+    "stream": "串流（SSE）",
+    "sending": "請求中…",
+    "send": "傳送",
+    "samplePrompt": "幫我重構這個模組的架構，給出設計建議",
+    "routingResult": "路由結果",
+    "decisionMs": "決策 {{ms}}ms",
+    "waiting": "等待模型回應…",
+    "emptyContent": "（空內容）",
+    "viewTrace": "檢視完整呼叫鏈路",
+    "idle": "傳送請求後在此檢視路由與回應"
+  },
+  "traces": {
+    "list": {
+      "title": "呼叫鏈路",
+      "autoRefresh": "自動重新整理",
+      "empty": "尚無呼叫記錄 — 到「測試台」發一條請求試試",
+      "emptyFiltered": "沒有符合目前篩選條件的鏈路 — 放寬條件或清空篩選"
+    },
+    "filter": {
+      "date": "日期",
+      "traceId": "鏈路 ID",
+      "traceIdHint": "ID 的任意片段",
+      "user": "使用者",
+      "userHint": "GitHub login",
+      "clear": "清除篩選"
+    },
+    "paging": {
+      "count": "{{shown}} / {{total}} 筆",
+      "truncated": "（僅掃描了最近若干天的目錄）",
+      "loadMore_other": "再載入 {{count}} 筆"
+    },
+    "delete": {
+      "one": "刪除這筆鏈路",
+      "filtered": "刪除篩選出的鏈路",
+      "confirmOne": "刪除鏈路 {{id}}？此操作無法復原。",
+      "confirmMany": "刪除全部 {{count}} 筆符合 {{criteria}} 的鏈路？此操作無法復原。",
+      "criteriaDate": "日期 {{date}}",
+      "criteriaUser": "使用者 {{user}}",
+      "done_other": "已刪除 {{count}} 筆鏈路"
+    },
+    "json": {
+      "expandAll": "全部展開",
+      "collapseAll": "全部收合",
+      "copy": "複製 JSON",
+      "copied": "已複製"
+    },
+    "table": {
+      "time": "時間",
+      "user": "使用者",
+      "model": "模型",
+      "decision": "決策",
+      "latency": "耗時",
+      "turns": "呼叫",
+      "turnsHint": "本次互動中的上游呼叫次數：大於 1 表示存在代理工具呼叫循環"
+    },
+    "turns": {
+      "nth": "第 {{index}}/{{total}} 次呼叫",
+      "tokens_other": "{{count}} tokens",
+      "noTools": "無工具呼叫",
+      "messageCount": "傳送的訊息數",
+      "requestId": "請求 ID",
+      "rewritten": "messages（本次呼叫重寫了對話）",
+      "superseded": "messages（本次呼叫時的狀態）"
+    },
+    "detail": {
+      "overview": "總覽",
+      "time": "時間",
+      "user": "使用者",
+      "apiKey": "API 金鑰",
+      "apiKeyValue": "{{name}}（{{id}}）",
+      "session": "工作階段",
+      "stickySuffix": "（sticky）",
+      "totalLatency": "總耗時",
+      "latencyBreakdown": "{{total}} ms（決策 {{decision}} ms + 後端 {{backend}} ms）",
+      "routingDecision": "路由決策",
+      "requestParams": "請求參數",
+      "backendCall": "後端呼叫",
+      "modelResponse": "模型回應",
+      "noResponse": "尚無回應",
+      "notFound": "該鏈路記錄已不存在，或屬於其他使用者。",
+      "interaction": "互動",
+      "noInteraction": "用戶端未回報",
+      "turns": "上游呼叫",
+      "turnCount_other": "{{count}} 次呼叫",
+      "oneDecision": "僅一次路由決策",
+      "chain": "呼叫鏈路",
+      "chainNote": "用戶端用多次上游呼叫回答了一個使用者問題，每次都在對話後附加工具結果並重播。它們共用同一次路由決策與同一個模型，在此記錄為一條呼叫鏈路。",
+      "turnsTruncated_other": "較早的 {{count}} 次呼叫未被儲存（已達單筆記錄上限）",
+      "messagesFinal": "最後一次呼叫時的完整鏈路",
+      "finalTurn": "最後一次呼叫",
+      "usageSummed_other": "{{count}} 次呼叫合計"
+    },
+    "analysis": {
+      "matchedKeyword": "命中 \"{{keyword}}\"",
+      "decisionModel": "決策模型",
+      "rationale": "決策理由",
+      "decisionLatency": "決策耗時",
+      "decisionTokens": "決策 tokens",
+      "candidates": "候選模型",
+      "systemPrompt": "提示詞（system）",
+      "charsExpand_other": "{{count}} 字元，點選展開",
+      "decisionInput": "決策輸入",
+      "truncated": "…(已截斷)",
+      "rawOutput": "原始輸出",
+      "fallback": "回退",
+      "fellBackToDefault": "已回退到預設模型",
+      "interactionReuse": "本次互動只選型一次；此次呼叫直接重用，因此未呼叫決策模型，也沒有產生決策延遲。"
+    }
+  },
+  "config": {
+    "loading": "載入設定中…",
+    "saved": "已儲存並熱更新：config.yaml 已寫回（註解保留），連線憑證即時生效",
+    "section": {
+      "providers": {
+        "label": "後端連線",
+        "hint": "網址與金鑰，可依環境拆分"
+      },
+      "models": {
+        "label": "模型目錄",
+        "hint": "對外公開的模型及其綁定的連線"
+      },
+      "strategy": {
+        "label": "路由策略",
+        "hint": "AI / 規則、工作階段固定、決策器參數"
+      },
+      "rules": {
+        "label": "規則路由",
+        "hint": "關鍵字與長度規則，依順序比對"
+      }
+    },
+    "providers": {
+      "title": "後端連線（Providers）",
+      "count_other": "{{count}} 個",
+      "add": "+ 新增連線",
+      "lead": "每個連線是一組「網址 + 金鑰」。模型預設繼承標記為「預設」的連線，也可以各自綁定不同連線——既可以是不同環境的 Azure AI Foundry，也可以是任何 OpenAI 相容服務。金鑰保存在伺服器端 <code>config.yaml</code>（該檔案已被 <code>.gitignore</code> 忽略）。",
+      "empty": "還沒有連線。新增一個後才能綁定模型。",
+      "promptName": "新連線的名稱（models 透過該名稱引用，例如 openrouter）：",
+      "promptRename": "重新命名連線：",
+      "alreadyExists": "連線「{{name}}」已存在",
+      "stillReferenced": "連線「{{name}}」仍被模型 {{models}} 引用，請先在「模型目錄」裡改綁",
+      "isDefaultConnection": "連線「{{name}}」是預設連線，請先把預設切到其他連線",
+      "defaultBadge": "預設",
+      "typeOpenAI": "OpenAI 相容",
+      "typeAzure": "Azure",
+      "boundModels_other": "{{count}} 個模型",
+      "setDefault": "設為預設",
+      "rename": "重新命名",
+      "baseUrl": "網址（base_url）",
+      "baseUrlHint": "Azure 填 https://xxx.openai.azure.com/；OpenAI 相容填到 /v1",
+      "apiKey": "金鑰（api_key）",
+      "apiKeyHint": "儲存後寫入 config.yaml",
+      "apiKeyPlaceholder": "留空則回落到 .env 的 AZURE_OPENAI_API_KEY",
+      "apiType": "介面類型（api_type）",
+      "apiTypeAzureOption": "azure — Azure OpenAI / AI Foundry",
+      "apiTypeOpenAIOption": "openai — OpenAI 相容服務",
+      "apiVersionHint": "僅 azure 需要"
+    },
+    "models": {
+      "title": "模型目錄",
+      "count_other": "{{count}} 個",
+      "add": "+ 新增模型",
+      "lead": "這裡的名稱就是用戶端在請求裡可以填的模型名稱。描述會作為候選目錄傳給 AI 決策器，寫清「適合什麼任務」能顯著提升路由準確度。連線在<providersLink>後端連線</providersLink>裡維護。",
+      "empty": "還沒有模型。至少新增一個並設為預設模型。",
+      "promptName": "新模型在本路由器中公開的名稱：",
+      "alreadyExists": "模型「{{name}}」已存在",
+      "removedWithRules_other": "已刪除模型「{{name}}」，同時移除了引用它的 {{count}} 條規則",
+      "defaultBadge": "預設",
+      "reasoningBadge": "推理系",
+      "connectionMissing": "— 連線不存在",
+      "description": "描述",
+      "descriptionHint": "供 AI 決策器參考",
+      "descriptionPlaceholder": "例如：旗艦高階模型。適合最複雜的推理、大型系統設計、疑難 bug 分析。",
+      "provider": "所用連線（provider）",
+      "followDefault": "跟隨預設（{{name}}）",
+      "modelNameOverride": "上游名稱覆寫（model_name）",
+      "modelNameOverrideHint": "留空則用上面的模型名稱",
+      "isDefault": "預設模型（無規則命中 / 決策失敗時使用）",
+      "isReasoning": "推理系（max_completion_tokens，剝離取樣參數）"
+    },
+    "strategy": {
+      "title": "路由策略",
+      "ai": {
+        "title": "AI 智慧路由",
+        "desc": "用輕量決策模型讀懂請求意圖後挑選模型。準確度高，每次請求多一次約 1 秒的決策呼叫。"
+      },
+      "rule": {
+        "title": "規則路由",
+        "desc": "依關鍵字與 prompt 長度順序比對。零 LLM 呼叫、耗時 <1ms，規則在<rulesLink>規則路由</rulesLink>裡維護。"
+      }
+    },
+    "session": {
+      "title": "工作階段固定",
+      "sticky": "同一工作階段固定模型（提升一致性與 cache 命中率）",
+      "stickyNote": "開啟後，一次使用者互動選定的模型會在該互動的後續請求中重用：代理的工具呼叫循環將保持同一個模型，且只產生一次路由決策。請求按 GitHub Copilot 等用戶端已傳送的 <code>x-interaction-id</code> 標頭分組，若提供了 <code>x-session-id</code> 也會一併使用。",
+      "ttl": "TTL（秒）",
+      "ttlHint": "工作階段閒置多久後解綁",
+      "maxSessions": "最大工作階段數",
+      "maxSessionsHint": "超出後依 LRU 淘汰"
+    },
+    "aiRouter": {
+      "title": "AI 決策器",
+      "inactive": "目前策略為規則路由，以下設定暫不生效",
+      "decisionModel": "決策模型",
+      "decisionModelHint": "選輕量高速的，例如 gpt-4.1",
+      "decisionProvider": "決策模型所用連線",
+      "timeout": "決策逾時（秒）",
+      "timeoutHint": "逾時則回退預設模型",
+      "maxPromptChars": "Prompt 截斷長度",
+      "maxPromptCharsHint": "超出則首尾各留一半"
+    },
+    "rules": {
+      "title": "規則路由",
+      "count_other": "{{count}} 條",
+      "inactive": "目前策略為 AI 智慧路由，規則暫不生效",
+      "add": "+ 新增規則",
+      "lead": "<strong>自上而下</strong>逐條評估，第一條命中的規則決定模型，後續不再評估——用 ↑↓ 調整優先順序。全部未命中則走預設模型 <model>{{model}}</model>。一條規則裡同時填了關鍵字和長度時，只檢查長度。策略開關在<strategyLink>路由策略</strategyLink>裡。",
+      "noDefaultModel": "（尚未設定）",
+      "empty": "還沒有規則。規則路由策略下，所有請求都會走預設模型。",
+      "keywords": "關鍵字",
+      "keywordsHint": "逗號分隔，忽略大小寫，命中任意一個即路由",
+      "keywordsPlaceholder": "重構, 架構, refactor",
+      "minPromptChars": "最小 Prompt 長度",
+      "minPromptCharsHint": "留空則不啟用",
+      "disabled": "不啟用",
+      "moveUp": "上移",
+      "moveDown": "下移"
+    },
+    "prompt": {
+      "title": "AI 決策提示詞",
+      "usingDefault": "使用內建預設提示詞",
+      "lead": "這是傳給決策模型的 <code>system</code> 內容。<code>{{placeholder}}</code> 會被替換為「模型目錄」頁裡每個模型的名稱與 <code>description</code>。留空則使用內建預設提示詞。要求決策模型只輸出 <code>{{shape}}</code> 的約束請保留——傳回值解析不了會靜默回退到預設模型。",
+      "template": "提示詞範本",
+      "templateHint": "留空 = 內建預設；大括號無需轉義",
+      "templatePlaceholder": "在此撰寫提示詞…",
+      "loadDefault": "載入預設提示詞",
+      "clear": "清空（改回預設）",
+      "insertPlaceholder": "插入 {{placeholder}}",
+      "templateChars": "範本 {{count}} 字元",
+      "defaultTemplateChars": "預設範本 {{count}} 字元",
+      "noPlaceholderWarning": "範本裡沒有 <code>{{placeholder}}</code>：模型目錄會被自動附加到結尾（見下方預覽），但位置不受你控制。建議明確插入佔位符。",
+      "missingDescription_other": "{{count}} 個模型沒有 description：<code>{{models}}</code>——它們在目錄裡只有一個名稱，決策模型幾乎無法判斷該不該選。",
+      "goFixModels": "去模型目錄補充",
+      "previewTitle": "實際提示詞預覽",
+      "previewHint": "後端依目前草稿轉譯，與真實請求同一段程式碼",
+      "rendering": "轉譯中…",
+      "previewFailed": "預覽失敗：{{error}}",
+      "metaProvider": "連線 {{name}}",
+      "metaCandidates_other": "{{count}} 個候選模型",
+      "metaFallback": "回退到 {{name}}",
+      "metaRenderedChars": "轉譯後 {{count}} 字元",
+      "sample": "範例請求（選填）",
+      "sampleHint": "填一句使用者提問，預覽 user 訊息在截斷後的樣子",
+      "samplePlaceholder": "例如：幫我重構這個模組的架構",
+      "sampleTruncated": "已依 {{count}} 字元首尾截斷",
+      "defaultLoaded": "已載入內建預設提示詞到編輯框，可繼續修改；儲存後生效",
+      "preset": {
+        "refactor": "幫我把這個模組的架構重構一下，拆出獨立的領域層",
+        "translate": "把這段話翻譯成英文",
+        "proof": "證明：任意連續函數在閉區間上一致連續"
+      }
+    }
+  }
+}

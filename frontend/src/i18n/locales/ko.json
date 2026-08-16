@@ -1,0 +1,675 @@
+{
+  "app": {
+    "connecting": "서비스에 연결 중…",
+    "notFound": {
+      "title": "페이지를 찾을 수 없습니다",
+      "lead": "이 주소는 어느 페이지와도 일치하지 않습니다. 왼쪽 내비게이션에서 선택하세요."
+    },
+    "forbidden": {
+      "lead": "이 페이지는 관리자 전용입니다. 필요하다면 관리자에게 「액세스 제어」에서 계정을 추가해 달라고 요청하세요."
+    }
+  },
+  "common": {
+    "actions": "작업",
+    "close": "닫기",
+    "confirmDiscard": "저장하지 않은 변경을 모두 버리고 config.yaml에서 다시 불러올까요?",
+    "copied": "복사했습니다",
+    "copy": "복사",
+    "delete": "삭제",
+    "dirtySections_other": "({{count}}개 구역)",
+    "discardChanges": "변경 버리기",
+    "emptyContent": "(내용 없음)",
+    "error": "오류",
+    "hasUnsavedChanges": "저장하지 않은 변경이 있습니다",
+    "hide": "숨기기",
+    "inSyncWithFile": "config.yaml과 일치합니다",
+    "listSeparator": ", ",
+    "loading": "불러오는 중…",
+    "no": "아니요",
+    "noData": "데이터가 없습니다",
+    "refresh": "새로 고침",
+    "reload": "다시 불러오기",
+    "reloadedFromFile": "config.yaml에서 다시 불러왔습니다",
+    "retry": "다시 시도",
+    "saveAndApply": "저장하고 즉시 적용",
+    "saving": "저장 중…",
+    "show": "표시",
+    "status": "상태",
+    "yes": "예"
+  },
+  "nav": {
+    "group": {
+      "overview": "개요",
+      "monitor": "모니터링",
+      "manage": "관리"
+    },
+    "usage": {
+      "label": "사용 현황",
+      "title": "사용 현황",
+      "subtitle": "요청 수, 토큰 소비량, 지연 시간 분포"
+    },
+    "keys": {
+      "label": "API 키",
+      "title": "API 키",
+      "subtitle": "키를 만들면 Copilot BYOK로 이 서비스를 호출할 수 있습니다"
+    },
+    "traces": {
+      "label": "호출 추적",
+      "title": "호출 추적",
+      "subtitle": "요청마다 라우팅 결정, 백엔드 파라미터, 응답을 모두 기록합니다"
+    },
+    "playground": {
+      "label": "플레이그라운드",
+      "title": "플레이그라운드",
+      "subtitle": "본인의 API 키로 라우팅 요청을 한 번 보내 봅니다"
+    },
+    "config": {
+      "label": "라우팅 설정",
+      "title": "라우팅 설정",
+      "subtitle": "백엔드 연결, 모델 카탈로그, 라우팅 전략, 규칙 라우팅"
+    },
+    "access": {
+      "label": "액세스 제어",
+      "title": "액세스 제어",
+      "subtitle": "관리자와 로그인 범위, GitHub OAuth 앱, 그리고 Enterprise / Team / Organization 단위로 누가 API 키를 만들 수 있는지 제어"
+    }
+  },
+  "shell": {
+    "collapseNav": "내비게이션 접기",
+    "expandNav": "내비게이션 펼치기",
+    "language": "언어",
+    "roleAdmin": "관리자",
+    "roleUser": "일반 사용자",
+    "running": "실행 중",
+    "signOut": "로그아웃",
+    "toggleTheme": "테마 전환",
+    "unreachable": "서비스에 연결할 수 없습니다"
+  },
+  "login": {
+    "title": "Foundry Model Router 콘솔",
+    "lead": "GitHub 계정으로 로그인하세요. 로그인하면 API 키를 만들고 자신의 호출과 사용량을 확인할 수 있으며, 관리자는 라우팅 전략과 백엔드 연결도 관리할 수 있습니다.",
+    "failed": "GitHub 로그인에 실패했습니다: {{error}}",
+    "signInWithGitHub": "GitHub으로 로그인",
+    "local": {
+      "or": "또는",
+      "reveal": "사용자 이름과 비밀번호로 로그인",
+      "hide": "GitHub 로그인으로 돌아가기",
+      "username": "사용자 이름",
+      "password": "비밀번호",
+      "submit": "로그인",
+      "hint": "로컬 관리자 계정은 github.com에 연결할 수 없는 경우를 위한 것입니다. config.yaml에 설정되며 GitHub 계정이 아닙니다.",
+      "failed": "사용자 이름 또는 비밀번호가 올바르지 않습니다."
+    }
+  },
+  "setup": {
+    "blocked": {
+      "title": "먼저 GitHub OAuth를 설정해야 합니다",
+      "lead": "이 서비스는 항상 신원을 확인하지만 GitHub OAuth가 아직 설정되지 않았고, 초기화 마법사는 서비스를 실행하는 컴퓨터(127.0.0.1)에서만 접근할 수 있습니다. 서버에서 <code>config.yaml</code>의 <code>auth.github</code> 구역을 직접 편집해 client_id / client_secret과 <code>admin_logins</code>를 입력한 뒤 서비스를 재시작하세요.",
+      "callbackComment": "비워 두면 자동으로 유추합니다"
+    },
+    "title": "초기 설정: GitHub OAuth",
+    "lead": "먼저 GitHub → Settings → Developer settings → OAuth Apps에서 앱을 만들고 콜백 URL에는 아래 주소를 넣은 뒤, Client ID / Secret을 이 양식에 붙여 넣으세요. 이 마법사는 설정되지 않은 상태에서 로컬 컴퓨터로 접근할 때만 사용할 수 있습니다.",
+    "secretPlaceholder": "config.yaml에 기록됩니다(이 파일은 .gitignore로 제외되어 있습니다)",
+    "adminLogins": "관리자 GitHub login",
+    "adminLoginsHint": "여러 개는 쉼표나 공백으로 구분합니다",
+    "saving": "기록 중…",
+    "save": "설정을 저장하고 로그인으로",
+    "localHint": "github.com에 연결할 수 없나요? <code>config.yaml</code>에서 <code>auth.local_admin.enabled: true</code>로 설정하고 로컬 관리자 계정(<code>admin</code> / <code>admin1234</code>)으로 로그인하세요. 이 비밀번호를 바꾸기 전에는 콘솔의 다른 화면에 들어갈 수 없습니다."
+  },
+  "password": {
+    "title": "관리자 비밀번호 변경",
+    "lead": "이 계정은 아직 기본 비밀번호를 쓰고 있어 콘솔의 다른 화면에 들어갈 수 없습니다. 새 비밀번호를 정해 주세요.",
+    "username": "사용자 이름",
+    "current": "현재 비밀번호",
+    "next": "새 비밀번호",
+    "confirm": "새 비밀번호 확인",
+    "tooShort": "새 비밀번호는 8자 이상이어야 합니다.",
+    "mismatch": "새 비밀번호가 서로 일치하지 않습니다.",
+    "submit": "비밀번호를 바꾸고 계속",
+    "recovery": "로그인할 수 없게 되었다면 config.yaml의 auth.local_admin에서 password_hash와 password_salt를 비우면 기본 비밀번호가 다시 적용됩니다."
+  },
+  "usage": {
+    "allUsers": "전체 사용자",
+    "byUser": "사용자별",
+    "drillDown": "상세 분석",
+    "loading": "집계 중…",
+    "noRecords": "이 기간에는 호출 기록이 없습니다",
+    "scope": "표시 범위",
+    "range": {
+      "today": "오늘",
+      "lastDays_other": "최근 {{count}}일"
+    },
+    "tile": {
+      "requests": "요청 수",
+      "totalTokens": "총 토큰",
+      "tokenSplit": "입력 {{prompt}} · 출력 {{completion}}",
+      "errorRate": "오류율",
+      "failures_other": "{{count}}건 실패",
+      "avgLatency": "평균 지연 시간"
+    },
+    "chart": {
+      "byModel": "모델별 요청 수",
+      "byDay": "날짜별 요청 수"
+    },
+    "table": {
+      "title": "상세 데이터(표 보기)",
+      "date": "날짜",
+      "requests": "요청 수",
+      "totalTokens": "총 토큰",
+      "failures": "실패",
+      "user": "사용자"
+    },
+    "tooltip": {
+      "model_other": "{{model}}: 요청 {{count}}건",
+      "day_other": "{{date}}: 요청 {{count}}건 · 토큰 {{tokens}} · 실패 {{errors}}건"
+    }
+  },
+  "keys": {
+    "created": {
+      "title": "키를 만들었습니다",
+      "readyBadge": "바로 사용할 수 있습니다",
+      "note": "지금 클라이언트 설정에 복사하세요. 아래 키 목록에서 언제든지 다시 확인할 수 있습니다 — 이 키는 본인에게 항상 표시됩니다.",
+      "byokTitle": "GitHub Copilot에서 BYOK로 사용하기",
+      "modelHint": "「라우팅 설정」에 등록된 아무 모델 이름",
+      "curlComment": "명령줄에서 확인",
+      "attribution": "이 키로 보낸 모든 요청은 <code>{{login}}</code>에 귀속되며, 추적의 <code>user_id</code>가 바로 그 GitHub 계정입니다."
+    },
+    "create": {
+      "title": "새 키",
+      "notAllowedBadge": "현재 만들 수 없습니다",
+      "name": "이름",
+      "nameHint": "용도를 구분하기 쉬운 이름, 예: copilot-laptop",
+      "creating": "만드는 중…",
+      "submit": "키 만들기",
+      "blockedNote": "계정이 승인되지 않아 키를 만들 수 없고, 따라서 <strong>BYOK도 사용할 수 없습니다</strong>. 이유는 위의 「키 생성 권한」에 있습니다."
+    },
+    "list": {
+      "title": "내 키",
+      "showAll": "모든 사용자의 키 표시",
+      "emptyBlocked": "아직 키가 없고, 이 계정은 키 생성을 승인받지 못했습니다.",
+      "empty": "아직 키가 없습니다. 하나 만들면 BYOK로 이 서비스를 호출할 수 있습니다."
+    },
+    "table": {
+      "name": "이름",
+      "key": "키",
+      "keyUnavailable": "보이지 않음",
+      "keyUnavailableHint": "이 키는 조회 기능이 추가되기 전에 만들어져 해시만 저장되어 있습니다. 계속 사용할 수 있으며, 값을 확인해야 한다면 새 키를 만드세요.",
+      "keyOwnerOnly": "본인만 확인 가능",
+      "keyOwnerOnlyHint": "키는 소유한 계정에만 표시됩니다. 관리자는 모든 키를 비활성화하거나 삭제할 수 있지만 다른 사람의 자격 증명은 볼 수 없습니다.",
+      "owner": "소유 사용자",
+      "created": "생성 시각",
+      "lastUsed": "최근 사용",
+      "calls": "호출 수",
+      "disabled": "사용 중지됨",
+      "enable": "사용",
+      "disable": "사용 중지",
+      "confirmDelete": "키 「{{name}}」을 삭제할까요? 이 키를 쓰는 클라이언트는 즉시 동작하지 않습니다."
+    },
+    "copyFailed": "클립보드에 복사할 수 없습니다. 브라우저는 HTTPS(또는 localhost)에서만 이 동작을 허용합니다 — 「표시」를 누른 뒤 직접 복사하세요.",
+    "access": {
+      "title": "키 생성 권한",
+      "unknown": "확인할 수 없음",
+      "checking": "GitHub에 여러분의 엔터프라이즈와 조직 소속을 확인하고 있습니다…",
+      "allowed": "생성 허용",
+      "denied": "생성 거부",
+      "policyOn": "엔터프라이즈 액세스 제어가 켜져 있습니다",
+      "hideEvidence": "근거 숨기기",
+      "showEvidence": "근거 보기",
+      "recheck": "다시 확인",
+      "account": "현재 계정",
+      "grantedVia": "허용 경로",
+      "enterpriseParenOpen": " (엔터프라이즈 ",
+      "enterpriseParenClose": ")",
+      "deniedExplanation": "<strong>이것이 뜻하는 바</strong>: 로그인해서 이 페이지를 볼 수는 있지만 API 키는 만들 수 없습니다. 키가 없으면 GitHub Copilot BYOK로 이 서비스의 <code>/v1/chat/completions</code>를 호출할 수 없습니다. 사용하려면 아래 근거를 관리자에게 보내 「액세스 제어 → 키 정책」에서 여러분의 조직이나 엔터프라이즈 팀을 허용해 달라고 요청하세요.",
+      "table": {
+        "enterprise": "엔터프라이즈",
+        "scope": "범위",
+        "name": "이름",
+        "isMember": "멤버 여부",
+        "source": "판정 출처"
+      },
+      "source": {
+        "cache": "캐시",
+        "cacheHint": "data/github의 로컬 멤버 목록으로 판정했으며 GitHub를 호출하지 않았습니다",
+        "probe": "프로브",
+        "probeHint": "이전 실시간 프로브 결과로 판정했습니다",
+        "live": "실시간",
+        "liveHint": "이 요청에서 GitHub를 호출해 판정했습니다 — 이 행은 판정마다 왕복이 발생합니다"
+      },
+      "scanned": "({{count}}개 탐색)",
+      "scannedTruncated": "({{count}}개 탐색, 이후 생략)",
+      "undecidable": "판정할 수 없음",
+      "undecidableHint": "GitHub이 답을 주지 않아 미승인으로 처리합니다"
+    }
+  },
+  "access": {
+    "loading": "액세스 제어 설정을 불러오는 중…",
+    "saved": "저장하고 즉시 적용했습니다: config.yaml의 auth 구역을 다시 기록했습니다(주석 유지)",
+    "section": {
+      "admins": {
+        "label": "관리자와 로그인",
+        "hint": "관리자 명단과 로그인을 허용할 범위"
+      },
+      "oauth": {
+        "label": "GitHub OAuth",
+        "hint": "로그인에 사용하는 OAuth 앱 자격 증명"
+      },
+      "local": {
+        "label": "로컬 관리자",
+        "hint": "github.com에 연결할 수 없을 때 쓰는 내장 계정"
+      },
+      "policy": {
+        "label": "키 정책",
+        "hint": "Enterprise / Team / Organization 단위로 누가 키를 만들 수 있는지 제어"
+      }
+    },
+    "kind": {
+      "organization": "조직",
+      "team": "엔터프라이즈 팀",
+      "enterprise": "엔터프라이즈 직속 멤버",
+      "org-scan": "조직 일괄 탐색",
+      "admin": "서비스 관리자"
+    },
+    "admins": {
+      "title": "관리자",
+      "count_other": "{{count}}명",
+      "logins": "관리자 GitHub login",
+      "loginsHint": "쉼표로 구분하며, 저장하면 바로 적용됩니다",
+      "note": "관리자는 이 페이지와 「라우팅 설정」, 사용자 전체의 사용 통계와 모든 호출 추적을 볼 수 있고 <strong>엔터프라이즈 키 정책의 적용을 받지 않습니다</strong>(그렇지 않으면 정책을 잘못 바꿨을 때 자신도 잠깁니다). <strong>이 목록을 비우면 모두가 관리자 권한을 잃고</strong>, 그때는 <code>config.yaml</code>을 고쳐야만 복구할 수 있습니다."
+    },
+    "signIn": {
+      "title": "로그인 범위",
+      "allowAny": "아무 GitHub 계정이나 로그인 허용",
+      "note": "이것은 <strong>로그인</strong>의 스위치이고 <strong>권한 부여</strong>의 스위치가 아닙니다. 켜져 있으면 아무 GitHub 계정이나 로그인해서 자신의 (빈) 데이터를 볼 수 있지만, API 키를 만들 수 있는지는 「키 정책」이 결정합니다. 끄면 위의 관리자만 로그인할 수 있습니다. 어느 쪽이든 <code>/v1/chat/completions</code> 호출에는 유효한 API 키가 반드시 필요합니다."
+    },
+    "oauth": {
+      "title": "GitHub OAuth 앱",
+      "configured": "설정됨",
+      "notConfigured": "설정되지 않음",
+      "warning": "<strong>여기를 잘못 바꾸면 자신을 포함한 모두가 로그인할 수 없게 되고</strong>, 서버의 <code>config.yaml</code>을 고쳐야만 복구할 수 있습니다. 바꾸기 전에 자격 증명이 GitHub → Settings → Developer settings → OAuth Apps에서 온 것인지 확인하세요. 저장해도 현재 세션은 무효화되지 않지만, 다음 로그인에는 새 자격 증명이 사용됩니다.",
+      "clientIdHint": "OAuth App 페이지에 표시되는 Client ID",
+      "clientSecretHint": "GitHub에서 생성할 때 한 번만 보이며, 여기 저장한 뒤에도 다시 표시되지 않습니다",
+      "secretKeepPlaceholder": "설정됨(변경하지 않음)",
+      "secretPastePlaceholder": "Client Secret 붙여 넣기",
+      "callbackUrl": "콜백 URL",
+      "callbackUrlHint": "비워 두는 것이 가장 안전합니다 — 접속 출처에서 자동으로 유추하며, 리버스 프록시 환경에서는 X-Forwarded-Proto / Host를 따릅니다",
+      "registerTitle": "GitHub에 등록해야 하는 URL",
+      "registerNote": "OAuth App의 이 두 항목은 이 서비스의 실제 접속 URL과 일치해야 하며, 그렇지 않으면 GitHub이 콜백을 거부합니다:"
+    },
+    "local": {
+      "title": "로컬 관리자",
+      "on": "사용",
+      "off": "사용 안 함",
+      "lead": "GitHub를 거치지 않고 사용자 이름과 비밀번호로 로그인하는 최고 관리자입니다. github.com에 연결할 수 없을 때도 콘솔에 들어갈 수 있습니다. 항상 관리자이므로 모든 사용자의 호출 추적을 보고 삭제할 수 있습니다.",
+      "toggle": "로컬 관리자 계정으로 로그인 허용",
+      "note": "자격 증명은 <code>config.yaml</code>의 <code>auth.local_admin</code> 섹션에 저장되며(이 파일은 .gitignore로 무시됩니다), 솔트를 더한 해시만 저장하고 비밀번호 자체는 저장하지 않습니다. <strong>GitHub OAuth가 설정되지 않은 상태에서 이 스위치를 끄면 로그인할 방법이 전혀 없어지고</strong>, 그때는 config.yaml을 고쳐야만 복구할 수 있습니다.",
+      "enabledSaved": "로컬 관리자 로그인을 사용하도록 설정했습니다",
+      "disabledSaved": "로컬 관리자 로그인을 사용하지 않도록 설정했습니다",
+      "passwordSaved": "저장했습니다: 새 자격 증명이 즉시 적용되고 이 계정의 다른 세션은 로그아웃되었습니다",
+      "credentialTitle": "사용자 이름과 비밀번호",
+      "changedAt": "마지막 변경 {{at}}",
+      "neverChanged": "아직 기본 비밀번호를 쓰고 있습니다",
+      "username": "사용자 이름",
+      "usernameHint": "변경하면 이 계정의 다른 세션은 로그아웃됩니다",
+      "current": "현재 비밀번호",
+      "currentHint": "한 번도 설정하지 않았다면 기본 비밀번호입니다",
+      "next": "새 비밀번호",
+      "nextHint": "8자 이상이며 기본 비밀번호는 쓸 수 없습니다",
+      "confirm": "새 비밀번호 확인",
+      "submit": "자격 증명 변경",
+      "recovery": "<strong>로그인할 수 없나요?</strong> <code>config.yaml</code>의 <code>auth.local_admin</code>에서 <code>password_hash</code>와 <code>password_salt</code>를 비우면 기본 비밀번호가 다시 적용되고, 다음 로그인에서 콘솔이 변경을 다시 요구합니다."
+    },
+    "cache": {
+      "title": "로컬 GitHub 캐시",
+      "stale": "오래됨",
+      "fresh": "최신",
+      "tokenChanged": "token이 바뀌었습니다",
+      "refreshNow": "지금 새로 고침",
+      "refreshing": "새로 고치는 중…",
+      "refreshed": "GitHub에서 가져와 data/github에 기록했습니다",
+      "lead": "엔터프라이즈 / 조직 / 팀 구조와 그 멤버 목록은 <code>data/github</code>에 저장되고 타이머로 갱신됩니다. 그래서 멤버 판정이 GitHub 왕복이 아니라 로컬 집합 조회로 끝납니다. <strong>멤버 목록이 잘렸거나 가져오기에 실패한 범위는 판정 근거로 삼지 않습니다</strong> — 그런 판정은 실시간 프로브로 넘어갑니다. \"내가 읽을 수 있었던 목록에 없다\"는 것이 \"멤버가 아니다\"는 뜻은 아니기 때문입니다.",
+      "interval": "갱신 간격(초)",
+      "intervalHint": "60 이상이며 이 페이지를 저장하면 적용됩니다",
+      "unavailable": "아직 캐시된 것이 없습니다. Enterprise token을 저장하고 새로 고치세요.",
+      "structureFetched": "구조를 가져온 시각",
+      "membersFetched": "멤버 목록을 가져온 시각",
+      "never": "없음",
+      "scopeCount": "캐시된 범위",
+      "scopes_other": "{{count}}개 범위",
+      "incomplete_other": "{{count}}개 불완전",
+      "probeCount": "기억하고 있는 실시간 프로브",
+      "probes_other": "결과 {{count}}건",
+      "table": {
+        "scope": "종류",
+        "name": "이름",
+        "members": "멤버 수",
+        "state": "상태",
+        "errored": "가져오기 오류",
+        "truncated": "잘림",
+        "complete": "완전"
+      }
+    },
+    "policy": {
+      "title": "키 생성 정책",
+      "enabled": "켜짐",
+      "disabled": "꺼짐",
+      "toggle": "지정한 엔터프라이즈 / 조직의 사용자만 API 키를 만들 수 있도록 허용",
+      "enabledNote": "켜짐: 일반 사용자가 키를 만들 때 엔터프라이즈와 조직 소속을 GitHub에 실시간으로 확인하며, 허용된 범위에 속하지 않는 사용자는 거부됩니다(403). 따라서 BYOK도 사용할 수 없습니다. 관리자는 이 제한을 받지 않습니다.",
+      "disabledNote": "꺼짐: <strong>로그인할 수 있는 GitHub 계정이라면 누구나 API 키를 만들고 BYOK를 사용할 수 있습니다</strong>. 위의 「아무 GitHub 계정이나 로그인 허용」도 켜져 있다면 GitHub 전체에 열어 두는 것과 같습니다.",
+      "missingTokenBadge": "token 없음",
+      "missingTokenNote": "정책은 켜져 있지만 Enterprise token이 설정되지 않아 소속을 확인할 수 없으므로, <strong>현재 관리자가 아닌 모든 키 생성 요청을 거부합니다</strong>. 아래에 token을 입력하세요.",
+      "tokenTitle": "GitHub Enterprise 관리자 token",
+      "tokenOk": "유효",
+      "tokenBad": "이상",
+      "tokenHint": "admin:enterprise 권한이 필요합니다",
+      "tokenSavedPlaceholder": "설정됨 {{hint}}(변경하지 않음)",
+      "verifying": "검증 중…",
+      "verify": "검증",
+      "tokenValid": "token이 유효합니다. 소유자는 {{login}}",
+      "tokenValidWithScopes": "token이 유효합니다. 소유자는 {{login}}(scope: {{scopes}})",
+      "tokenOwner": "token 소유자",
+      "fineGrainedToken": "(fine-grained token)",
+      "canListEnterprises": "엔터프라이즈 목록 조회 가능",
+      "missingEnterpriseScope": "admin:enterprise 없음",
+      "githubError": "GitHub이 오류를 반환했습니다",
+      "tokenUnsaved": "token이 변경되었지만 <strong>아직 저장되지 않았습니다</strong>. 저장한 뒤에야 엔터프라이즈 목록을 자동으로 가져오는 데 사용할 수 있습니다.",
+      "structureTitle": "엔터프라이즈, 엔터프라이즈 팀, 조직",
+      "enterpriseCount_other": "엔터프라이즈 {{count}}개",
+      "fetching": "가져오는 중…",
+      "refetch": "다시 가져오기",
+      "needTokenFirst": "먼저 Enterprise token을 입력하고 저장하면, 그 token으로 볼 수 있는 엔터프라이즈가 여기에 표시됩니다.",
+      "fetchFailed": "가져오지 못했습니다",
+      "fetchingFromGitHub": "GitHub에서 엔터프라이즈 목록을 가져오는 중…",
+      "noEnterprises": "이 token으로 볼 수 있는 엔터프라이즈가 없습니다.",
+      "noEnterprisesVisible": "이 token으로 볼 수 있는 엔터프라이즈가 없습니다. admin:enterprise 권한이 있는지 확인하세요.",
+      "structureLead": "아래 구조는 GitHub API에서 그대로 가져온 것입니다. 엔터프라이즈마다 주 스위치를 켠 다음, 어떤 <strong>조직</strong> 또는 <strong>엔터프라이즈 팀</strong>의 멤버에게 API 키 생성을 허용할지 선택하세요.",
+      "nobodyAllowed": "정책은 켜져 있지만 허용된 엔터프라이즈가 없습니다 — 현재 관리자를 제외하면 <strong>아무도</strong> API 키를 만들 수 없습니다.",
+      "entOn": "허용됨",
+      "entOff": "허용되지 않음",
+      "entOffNote": "주 스위치가 꺼져 있습니다 — 이 엔터프라이즈의 조직과 팀 설정은 <strong>모두 적용되지 않습니다</strong>.",
+      "allowAllOrgs": "이 엔터프라이즈의 <strong>어느 조직이든</strong> 멤버에게 키 생성을 허용",
+      "allOrgsNote": "켜면 조직을 하나씩 선택할 필요가 없습니다. 판정 순서는 먼저 엔터프라이즈 직속 멤버를 확인하고, 찾지 못하면 나열된 조직을 차례로 탐색합니다(최대 30개).",
+      "allOrgsTruncated": "<strong>이 엔터프라이즈의 조직 수는 {{total}}개이고 앞의 {{listed}}개만 표시했습니다</strong>. 표시되지 않은 조직은 탐색되지 않으니 — 정확히 제어하려면 이 항목을 끄고 하나씩 선택하세요.",
+      "allOrgsOffNote": "꺼져 있으면 아래에서 선택한 조직과 엔터프라이즈 팀만 적용됩니다.",
+      "allowedOrgs": "허용할 조직",
+      "allowedOrgsHint": "멤버 판정은 /orgs/{org}/members/{user}로 하며 실시간으로 반영됩니다",
+      "orgListUnavailable": "조직 목록을 사용할 수 없습니다",
+      "noOrgs": "이 엔터프라이즈에는 조직이 없습니다.",
+      "orgsListedPartially": "전체 {{total}}개 조직 중 여기에는 앞의 {{listed}}개만 표시했습니다.",
+      "allowedTeams": "허용할 엔터프라이즈 팀",
+      "allowedTeamsHint": "멤버 판정은 팀의 숫자 id로 합니다(GitHub은 id만 받습니다). 화면과 사용자 쪽에는 팀 이름을 표시합니다",
+      "teamListUnavailable": "팀 목록을 사용할 수 없습니다",
+      "teamListUnavailableNote": "— 이 엔터프라이즈는 조직 단위로만 허용할 수 있습니다.",
+      "noTeams": "이 엔터프라이즈에는 엔터프라이즈 팀이 없습니다."
+    }
+  },
+  "playground": {
+    "sendRequest": "요청 보내기",
+    "apiKey": "API 키",
+    "apiKeyHint": "「API 키」 페이지에서 만듭니다. 요청은 그 키의 소유자에게 귀속됩니다",
+    "remember": "이 브라우저에 기억(localStorage)",
+    "sessionId": "세션 ID(선택, 세션 고정을 활성화합니다)",
+    "sessionIdPlaceholder": "비워 두면 요청마다 독립적으로 라우팅합니다",
+    "stream": "스트리밍(SSE)",
+    "sending": "보내는 중…",
+    "send": "보내기",
+    "samplePrompt": "이 모듈의 아키텍처를 리팩터링하고 설계안을 제시해 주세요",
+    "routingResult": "라우팅 결과",
+    "decisionMs": "결정 {{ms}}ms",
+    "waiting": "모델 응답을 기다리는 중…",
+    "emptyContent": "(내용 없음)",
+    "viewTrace": "전체 호출 추적 보기",
+    "idle": "요청을 보내면 여기에서 라우팅과 응답을 확인할 수 있습니다"
+  },
+  "traces": {
+    "list": {
+      "title": "호출 추적",
+      "autoRefresh": "자동 새로 고침",
+      "empty": "아직 호출 기록이 없습니다 — 「플레이그라운드」에서 요청을 하나 보내 보세요",
+      "emptyFiltered": "현재 필터 조건에 맞는 추적이 없습니다 — 조건을 넓히거나 필터를 비우세요"
+    },
+    "filter": {
+      "date": "날짜",
+      "traceId": "추적 ID",
+      "traceIdHint": "ID의 일부만도 됩니다",
+      "user": "사용자",
+      "userHint": "GitHub login",
+      "clear": "필터 지우기"
+    },
+    "paging": {
+      "count": "{{total}}건 중 {{shown}}건",
+      "truncated": "(최근 날짜 디렉터리만 훑었습니다)",
+      "loadMore_other": "{{count}}건 더 불러오기"
+    },
+    "delete": {
+      "one": "이 추적 기록 삭제",
+      "filtered": "필터된 추적 기록 삭제",
+      "confirmOne": "추적 기록 {{id}}을 삭제할까요? 되돌릴 수 없습니다.",
+      "confirmMany": "{{criteria}}에 해당하는 추적 기록 {{count}}건을 모두 삭제할까요? 되돌릴 수 없습니다.",
+      "criteriaDate": "날짜 {{date}}",
+      "criteriaUser": "사용자 {{user}}",
+      "done_other": "추적 기록 {{count}}건을 삭제했습니다"
+    },
+    "json": {
+      "expandAll": "모두 펼치기",
+      "collapseAll": "모두 접기",
+      "copy": "JSON 복사",
+      "copied": "복사했습니다"
+    },
+    "table": {
+      "time": "시각",
+      "user": "사용자",
+      "model": "모델",
+      "decision": "결정",
+      "latency": "지연 시간",
+      "turns": "호출",
+      "turnsHint": "이 상호작용의 업스트림 호출 수. 1보다 크면 에이전트 도구 루프입니다"
+    },
+    "turns": {
+      "nth": "{{index}}/{{total}}번째 호출",
+      "tokens_other": "{{count}} 토큰",
+      "noTools": "도구 호출 없음",
+      "messageCount": "보낸 메시지 수",
+      "requestId": "요청 ID",
+      "rewritten": "messages(이 호출에서 대화가 다시 작성됨)",
+      "superseded": "messages(이 호출 시점)"
+    },
+    "detail": {
+      "overview": "개요",
+      "time": "시각",
+      "user": "사용자",
+      "apiKey": "API 키",
+      "apiKeyValue": "{{name}}({{id}})",
+      "session": "세션",
+      "stickySuffix": "(sticky)",
+      "totalLatency": "총 지연 시간",
+      "latencyBreakdown": "{{total}} ms(결정 {{decision}} ms + 백엔드 {{backend}} ms)",
+      "routingDecision": "라우팅 결정",
+      "requestParams": "요청 파라미터",
+      "backendCall": "백엔드 호출",
+      "modelResponse": "모델 응답",
+      "noResponse": "아직 응답이 없습니다",
+      "notFound": "이 추적 기록은 없어졌거나 다른 사용자의 것입니다.",
+      "interaction": "상호작용",
+      "noInteraction": "클라이언트가 보고하지 않음",
+      "turns": "업스트림 호출",
+      "turnCount_other": "{{count}}회 호출",
+      "oneDecision": "라우팅 결정 1회",
+      "chain": "호출 체인",
+      "chainNote": "클라이언트는 하나의 사용자 질문에 여러 번의 업스트림 호출로 응답했으며, 매번 도구 결과를 대화에 추가해 다시 보냈습니다. 이들은 동일한 라우팅 결정과 동일한 모델을 공유하며 여기서는 하나의 추적으로 기록됩니다.",
+      "turnsTruncated_other": "이전 {{count}}회 호출은 저장되지 않았습니다(추적당 한도 도달)",
+      "messagesFinal": "마지막 호출 시점의 전체 체인",
+      "finalTurn": "마지막 호출",
+      "usageSummed_other": "{{count}}회 호출 합계"
+    },
+    "analysis": {
+      "matchedKeyword": "\"{{keyword}}\" 일치",
+      "decisionModel": "결정 모델",
+      "rationale": "결정 이유",
+      "decisionLatency": "결정 지연 시간",
+      "decisionTokens": "결정 토큰 수",
+      "candidates": "후보 모델",
+      "systemPrompt": "프롬프트(system)",
+      "charsExpand_other": "{{count}}자, 클릭하면 펼쳐집니다",
+      "decisionInput": "결정 입력",
+      "truncated": "…(생략됨)",
+      "rawOutput": "원본 출력",
+      "fallback": "폴백",
+      "fellBackToDefault": "기본 모델로 폴백했습니다",
+      "interactionReuse": "이 상호작용에서는 모델을 한 번만 선택했고 이 호출은 그것을 재사용했습니다. 따라서 결정 모델을 호출하지 않았고 결정 지연도 없습니다."
+    }
+  },
+  "config": {
+    "loading": "설정을 불러오는 중…",
+    "saved": "저장하고 즉시 적용했습니다: config.yaml을 다시 기록했고(주석 유지) 연결 자격 증명이 바로 적용되었습니다",
+    "section": {
+      "providers": {
+        "label": "백엔드 연결",
+        "hint": "주소와 키. 환경별로 나눌 수 있습니다"
+      },
+      "models": {
+        "label": "모델 카탈로그",
+        "hint": "외부에 노출하는 모델과 각 모델이 연결된 대상"
+      },
+      "strategy": {
+        "label": "라우팅 전략",
+        "hint": "AI / 규칙, 세션 고정, 결정 모델 파라미터"
+      },
+      "rules": {
+        "label": "규칙 라우팅",
+        "hint": "키워드와 길이 규칙. 순서대로 평가합니다"
+      }
+    },
+    "providers": {
+      "title": "백엔드 연결(Providers)",
+      "count_other": "{{count}}개",
+      "add": "+ 연결 추가",
+      "lead": "연결은 「주소 + 키」 한 쌍입니다. 모델은 기본적으로 「기본」으로 표시된 연결을 물려받지만, 각각 다른 연결에 묶을 수도 있습니다 — 다른 환경의 Azure AI Foundry여도 되고, 아무 OpenAI 호환 서비스여도 됩니다. 키는 서버의 <code>config.yaml</code>에 저장됩니다(이 파일은 <code>.gitignore</code>로 제외되어 있습니다).",
+      "empty": "아직 연결이 없습니다. 하나 추가한 뒤에 모델을 묶을 수 있습니다.",
+      "promptName": "새 연결의 이름(models가 이 이름으로 참조합니다. 예: openrouter):",
+      "promptRename": "연결 이름 바꾸기:",
+      "alreadyExists": "연결 「{{name}}」이 이미 있습니다",
+      "stillReferenced": "연결 「{{name}}」은 아직 모델 {{models}}에서 참조하고 있습니다. 먼저 「모델 카탈로그」에서 연결을 바꾸세요",
+      "isDefaultConnection": "연결 「{{name}}」은 기본 연결입니다. 먼저 기본을 다른 연결로 바꾸세요",
+      "defaultBadge": "기본",
+      "typeOpenAI": "OpenAI 호환",
+      "typeAzure": "Azure",
+      "boundModels_other": "모델 {{count}}개",
+      "setDefault": "기본으로 설정",
+      "rename": "이름 바꾸기",
+      "baseUrl": "주소(base_url)",
+      "baseUrlHint": "Azure는 https://xxx.openai.azure.com/, OpenAI 호환은 /v1까지 적습니다",
+      "apiKey": "키(api_key)",
+      "apiKeyHint": "저장하면 config.yaml에 기록됩니다",
+      "apiKeyPlaceholder": "비워 두면 .env의 AZURE_OPENAI_API_KEY로 대체합니다",
+      "apiType": "인터페이스 종류(api_type)",
+      "apiTypeAzureOption": "azure — Azure OpenAI / AI Foundry",
+      "apiTypeOpenAIOption": "openai — OpenAI 호환 서비스",
+      "apiVersionHint": "azure에만 필요합니다"
+    },
+    "models": {
+      "title": "모델 카탈로그",
+      "count_other": "{{count}}개",
+      "add": "+ 모델 추가",
+      "lead": "여기의 이름이 클라이언트가 요청에 적을 수 있는 모델 이름입니다. 설명은 후보 카탈로그로 AI 결정 모델에 전달되므로, 「어떤 작업에 적합한지」를 분명히 쓰면 라우팅 정확도가 크게 올라갑니다. 연결은 <providersLink>백엔드 연결</providersLink>에서 관리합니다.",
+      "empty": "아직 모델이 없습니다. 최소 하나를 추가하고 기본 모델로 설정하세요.",
+      "promptName": "이 새 모델을 라우터에서 노출할 이름:",
+      "alreadyExists": "모델 「{{name}}」이 이미 있습니다",
+      "removedWithRules_other": "모델 「{{name}}」을 삭제하고, 이를 참조하던 규칙 {{count}}개도 함께 제거했습니다",
+      "defaultBadge": "기본",
+      "reasoningBadge": "추론형",
+      "connectionMissing": "— 연결이 없습니다",
+      "description": "설명",
+      "descriptionHint": "AI 결정 모델이 참고합니다",
+      "descriptionPlaceholder": "예: 최상급 고급 모델. 가장 복잡한 추론, 대규모 시스템 설계, 까다로운 버그 분석에 적합합니다.",
+      "provider": "사용할 연결(provider)",
+      "followDefault": "기본을 따름({{name}})",
+      "modelNameOverride": "업스트림 이름 재정의(model_name)",
+      "modelNameOverrideHint": "비워 두면 위의 모델 이름을 사용합니다",
+      "isDefault": "기본 모델(규칙에 걸리지 않거나 결정이 실패할 때 사용)",
+      "isReasoning": "추론형(max_completion_tokens, 샘플링 파라미터 제거)"
+    },
+    "strategy": {
+      "title": "라우팅 전략",
+      "ai": {
+        "title": "AI 라우팅",
+        "desc": "가벼운 결정 모델이 요청의 의도를 파악해 모델을 고릅니다. 정확도가 높은 대신 요청마다 약 1초의 결정 호출이 한 번 늘어납니다."
+      },
+      "rule": {
+        "title": "규칙 라우팅",
+        "desc": "키워드와 프롬프트 길이로 순서대로 평가합니다. LLM 호출이 없고 1ms 미만이며, 규칙은 <rulesLink>규칙 라우팅</rulesLink>에서 관리합니다."
+      }
+    },
+    "session": {
+      "title": "세션 고정",
+      "sticky": "같은 세션에서 모델을 고정(일관성과 캐시 적중률 향상)",
+      "stickyNote": "켜면 한 번의 사용자 상호작용에서 선택한 모델이 그 상호작용의 나머지 요청에서도 재사용됩니다. 에이전트의 도구 호출 루프는 같은 모델을 유지하고 라우팅 결정은 한 번만 발생합니다. 요청은 GitHub Copilot 등의 클라이언트가 이미 보내는 <code>x-interaction-id</code> 헤더로 그룹화되며, <code>x-session-id</code>가 제공되면 그것도 함께 사용됩니다.",
+      "ttl": "TTL(초)",
+      "ttlHint": "세션이 얼마나 유휴 상태이면 연결을 해제할지",
+      "maxSessions": "최대 세션 수",
+      "maxSessionsHint": "초과하면 LRU 순으로 제거합니다"
+    },
+    "aiRouter": {
+      "title": "AI 결정 모델",
+      "inactive": "현재 전략이 규칙 라우팅이므로 아래 설정은 적용되지 않습니다",
+      "decisionModel": "결정 모델",
+      "decisionModelHint": "가볍고 빠른 것을 고릅니다. 예: gpt-4.1",
+      "decisionProvider": "결정 모델이 사용할 연결",
+      "timeout": "결정 제한 시간(초)",
+      "timeoutHint": "제한 시간을 넘기면 기본 모델로 폴백합니다",
+      "maxPromptChars": "프롬프트 자르기 길이",
+      "maxPromptCharsHint": "초과하면 앞뒤로 절반씩 남깁니다"
+    },
+    "rules": {
+      "title": "규칙 라우팅",
+      "count_other": "{{count}}개",
+      "inactive": "현재 전략이 AI 라우팅이므로 규칙은 적용되지 않습니다",
+      "add": "+ 규칙 추가",
+      "lead": "<strong>위에서 아래로</strong> 차례로 평가하며, 처음 걸린 규칙이 모델을 결정하고 이후는 평가하지 않습니다 — 우선순위는 ↑↓로 조정합니다. 하나도 걸리지 않으면 기본 모델 <model>{{model}}</model>을 사용합니다. 한 규칙에 키워드와 길이를 함께 적으면 길이만 확인합니다. 전략 스위치는 <strategyLink>라우팅 전략</strategyLink>에 있습니다.",
+      "noDefaultModel": "(아직 설정되지 않음)",
+      "empty": "아직 규칙이 없습니다. 규칙 라우팅 전략에서는 모든 요청이 기본 모델로 갑니다.",
+      "keywords": "키워드",
+      "keywordsHint": "쉼표로 구분하고 대소문자를 구분하지 않으며, 하나만 걸려도 라우팅합니다",
+      "keywordsPlaceholder": "리팩터링, 아키텍처, refactor",
+      "minPromptChars": "최소 프롬프트 길이",
+      "minPromptCharsHint": "비워 두면 사용하지 않습니다",
+      "disabled": "사용하지 않음",
+      "moveUp": "위로 이동",
+      "moveDown": "아래로 이동"
+    },
+    "prompt": {
+      "title": "AI 결정 프롬프트",
+      "usingDefault": "내장 기본 프롬프트 사용 중",
+      "lead": "결정 모델에 보내는 <code>system</code> 내용입니다. <code>{{placeholder}}</code>는 「모델 카탈로그」 페이지의 각 모델 이름과 <code>description</code>으로 바뀝니다. 비워 두면 내장 기본 프롬프트를 사용합니다. 결정 모델이 <code>{{shape}}</code>만 출력하도록 하는 제약은 남겨 두세요 — 반환값을 파싱할 수 없으면 조용히 기본 모델로 폴백합니다.",
+      "template": "프롬프트 템플릿",
+      "templateHint": "비워 두면 = 내장 기본. 중괄호는 이스케이프할 필요가 없습니다",
+      "templatePlaceholder": "여기에 프롬프트를 작성하세요…",
+      "loadDefault": "기본 프롬프트 불러오기",
+      "clear": "지우기(기본으로 되돌리기)",
+      "insertPlaceholder": "{{placeholder}} 삽입",
+      "templateChars": "템플릿 {{count}}자",
+      "defaultTemplateChars": "기본 템플릿 {{count}}자",
+      "noPlaceholderWarning": "템플릿에 <code>{{placeholder}}</code>가 없습니다: 모델 카탈로그가 끝에 자동으로 덧붙지만(아래 미리보기 참고) 위치는 제어할 수 없습니다. 자리표시자를 명시적으로 넣는 것을 권장합니다.",
+      "missingDescription_other": "모델 {{count}}개에 description이 없습니다: <code>{{models}}</code> — 카탈로그에 이름만 있어서 결정 모델이 골라야 할지 거의 판단할 수 없습니다.",
+      "goFixModels": "모델 카탈로그에서 채우기",
+      "previewTitle": "실제 프롬프트 미리보기",
+      "previewHint": "백엔드가 현재 초안으로 렌더링하며, 실제 요청과 같은 코드입니다",
+      "rendering": "렌더링 중…",
+      "previewFailed": "미리보기에 실패했습니다: {{error}}",
+      "metaProvider": "연결 {{name}}",
+      "metaCandidates_other": "후보 모델 {{count}}개",
+      "metaFallback": "{{name}}으로 폴백",
+      "metaRenderedChars": "렌더링 후 {{count}}자",
+      "sample": "예시 요청(선택)",
+      "sampleHint": "사용자 질문을 한 문장 넣으면 자른 뒤의 user 메시지를 미리 볼 수 있습니다",
+      "samplePlaceholder": "예: 이 모듈의 아키텍처를 리팩터링해 주세요",
+      "sampleTruncated": "{{count}}자 기준으로 앞뒤를 남기고 잘랐습니다",
+      "defaultLoaded": "내장 기본 프롬프트를 편집란에 불러왔습니다. 계속 수정할 수 있고, 저장하면 적용됩니다",
+      "preset": {
+        "refactor": "이 모듈의 아키텍처를 리팩터링해서 독립적인 도메인 계층을 분리해 주세요",
+        "translate": "이 문장을 영어로 번역해 주세요",
+        "proof": "증명하시오: 닫힌 구간에서 임의의 연속 함수는 균등 연속이다"
+      }
+    }
+  }
+}

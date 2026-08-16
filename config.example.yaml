@@ -1,0 +1,126 @@
+# Foundry Model Router configuration (template)
+#
+# Copy this to config.yaml and fill in your real credentials. config.yaml holds api_key /
+# client_secret / key_policy.github_token; it is listed in .gitignore and is never committed.
+# Everything here can also be edited from the console's "Routing configuration" and
+# "Access control" pages -- saving writes config.yaml back and preserves its comments.
+
+# Routing strategy: rule (keyword/length rules) | ai (an AI decision model)
+strategy: ai
+
+# Session stickiness: whether a session keeps using the model picked on its first request
+session:
+  sticky: true
+  ttl_seconds: 1800
+  max_sessions: 10000
+
+# Sign-in and authorization
+auth:
+  github:
+    client_id: ''          # Client ID of the GitHub OAuth App
+    client_secret: ''      # Client Secret of the GitHub OAuth App
+    callback_url: ''       # Leave empty to derive <request origin>/v1/auth/github/callback
+  admin_logins:            # These GitHub logins get the administrator view after signing in
+  - your-github-login
+  allow_any_github_user: true    # false = only the accounts in admin_logins may sign in
+  session_ttl_seconds: 604800    # Sign-in session lifetime (7 days)
+
+  # A username/password super administrator, so the console stays reachable where GitHub is
+  # not (an air-gapped network, a blocked github.com, an OAuth app that is not set up yet).
+  # It sees every user's traces and may delete them.
+  # While password_hash is empty the built-in default password (admin/admin1234) is in force,
+  # and a session opened with it can reach *nothing* except the change-password form -- a
+  # super-admin account on a documented credential must not be usable as-is.
+  # Blanking these two fields is also the recovery path for a forgotten password: it puts the
+  # default back. Set them from the console's "Access control -> Local administrator" page.
+  local_admin:
+    enabled: true
+    username: admin
+    password_hash: ''      # scrypt, hex. Empty = the default password is still in force
+    password_salt: ''      # per-record random salt, hex
+    updated_at: null
+
+  # Who may create API keys (without a key, BYOK cannot be used).
+  # The gate is on "create a key", not on "sign in" -- once OAuth is configured any GitHub
+  # account can sign in, so authorization has to happen here, against GitHub's live membership
+  # data. Administrators are exempt.
+  # Configuring this from the console's "Access control -> Key policy" page is recommended: it
+  # pulls the enterprise, enterprise-team and organization lists from GitHub so you tick boxes
+  # instead of hand-writing slugs and team ids.
+  key_policy:
+    enabled: false             # false = any account that can sign in may create a key
+    github_token: ''           # Enterprise-admin PAT with admin:enterprise; stored only in this file
+    # How often the enterprise/org/team structure and the member lists of the scopes named
+    # below are refreshed into data/github/. Membership is then answered from that local copy
+    # instead of calling GitHub per request; anything the copy cannot answer completely still
+    # falls back to a live check. Minimum 60.
+    cache_refresh_seconds: 3600
+    enterprises:               # Keyed by enterprise slug
+      your-enterprise-slug:
+        enabled: false         # Master switch; when off, neither rule below has any effect
+        allow_all_orgs: false  # true = membership of any organization in the enterprise suffices
+        organizations: []      # Allowed organization logins, e.g. [your-org]
+        teams: []              # Allowed enterprise-team **numeric ids**, e.g. ['14501973']
+
+# Backend connections: any OpenAI-compatible address and key can be configured here
+# api_type: azure (Azure OpenAI / Foundry, deployment-path URLs) | openai (plain OpenAI-compatible)
+providers:
+  foundry:
+    base_url: https://your-resource.openai.azure.com/
+    api_key: ''
+    api_type: azure
+    api_version: 2024-12-01-preview
+  # Example: attach any OpenAI-compatible service
+  # openrouter:
+  #   base_url: https://openrouter.ai/api/v1
+  #   api_key: sk-or-...
+  #   api_type: openai
+
+# The connection used by models that do not name a provider of their own
+default_provider: foundry
+
+models:
+  gpt-4o:
+    provider: foundry
+    description: Fast, low-cost general-purpose model. Good for chat, simple Q&A, translation, summarisation, format conversion, short code completions and other light tasks.
+    default: true
+  gpt-5.4:
+    provider: foundry
+    reasoning: true
+    description: Balanced next-generation model. Good for everyday programming, moderately complex coding and debugging, writing documentation and general analysis.
+  # Example: a model served by a different provider, whose real upstream name differs from the
+  # name exposed here
+  # claude-opus-5:
+  #   provider: openrouter
+  #   model_name: anthropic/claude-opus-5
+  #   reasoning: true
+  #   description: Flagship high-end model.
+
+ai_router:
+  decision_model: gpt-4.1
+  decision_provider: foundry   # Optional; omit to use default_provider
+  timeout_seconds: 5
+  max_prompt_chars: 4000
+  # The system prompt for the decision model. Omitted or empty = use the built-in default.
+  # {catalog} is replaced by the "name + description" listing of the models above; braces need
+  # no escaping (rendering is a literal replacement, not str.format).
+  # Editable on the console's "Routing configuration -> Routing strategy" page, where the
+  # rendered result can be previewed against the real model catalog.
+  # decision_prompt: |
+  #   You are a model router. Given a user prompt, pick the single best backend model.
+  #
+  #   Available models:
+  #   {catalog}
+  #
+  #   Respond with ONLY a JSON object: {"model": "<model-name>", "rationale": "<why>"}.
+  #   The model name must be exactly one of the listed names.
+
+# Keyword matching is a plain substring test, so list every language your users write in --
+# the examples below cover both English and Chinese.
+rules:
+- name: deep-reasoning
+  keywords: [prove, theorem, algorithm, math, 证明, 算法题, 数学]
+  model: gpt-5.4
+- name: long-prompt
+  min_prompt_chars: 6000
+  model: gpt-5.4

@@ -1,0 +1,675 @@
+{
+  "app": {
+    "connecting": "连接服务中…",
+    "notFound": {
+      "title": "页面不存在",
+      "lead": "该地址不对应任何页面。请从左侧导航中选择。"
+    },
+    "forbidden": {
+      "lead": "此页面仅限管理员访问。如需使用，请让管理员在「访问控制」中添加你的账号。"
+    }
+  },
+  "common": {
+    "actions": "操作",
+    "close": "关闭",
+    "confirmDiscard": "放弃所有未保存的修改，从 config.yaml 重新加载？",
+    "copied": "已复制",
+    "copy": "复制",
+    "delete": "删除",
+    "dirtySections_other": "（{{count}} 个配置段）",
+    "discardChanges": "放弃修改",
+    "emptyContent": "（空内容）",
+    "error": "错误",
+    "hasUnsavedChanges": "有未保存的修改",
+    "hide": "隐藏",
+    "inSyncWithFile": "已与 config.yaml 一致",
+    "listSeparator": "、",
+    "loading": "加载中…",
+    "no": "否",
+    "noData": "暂无数据",
+    "refresh": "刷新",
+    "reload": "重新加载",
+    "reloadedFromFile": "已从 config.yaml 重新加载",
+    "retry": "重试",
+    "saveAndApply": "保存并热更新",
+    "saving": "保存中…",
+    "show": "显示",
+    "status": "状态",
+    "yes": "是"
+  },
+  "nav": {
+    "group": {
+      "overview": "概览",
+      "monitor": "监控",
+      "manage": "管理"
+    },
+    "usage": {
+      "label": "使用详情",
+      "title": "使用详情",
+      "subtitle": "请求数、token 消耗与延迟分布"
+    },
+    "keys": {
+      "label": "API 密钥",
+      "title": "API 密钥",
+      "subtitle": "创建密钥后即可通过 Copilot BYOK 调用本服务"
+    },
+    "traces": {
+      "label": "调用链路",
+      "title": "调用链路",
+      "subtitle": "每次请求的路由决策、后端参数与响应全记录"
+    },
+    "playground": {
+      "label": "测试台",
+      "title": "测试台",
+      "subtitle": "用自己的 API 密钥直接发起一次路由请求"
+    },
+    "config": {
+      "label": "路由配置",
+      "title": "路由配置",
+      "subtitle": "后端连接、模型目录、路由策略与规则路由"
+    },
+    "access": {
+      "label": "访问控制",
+      "title": "访问控制",
+      "subtitle": "管理员与登录范围、GitHub OAuth 应用，以及按 Enterprise / Team / Organization 控制谁能创建 API 密钥"
+    }
+  },
+  "shell": {
+    "collapseNav": "折叠导航",
+    "expandNav": "展开导航",
+    "language": "语言",
+    "roleAdmin": "管理员",
+    "roleUser": "普通用户",
+    "running": "运行中",
+    "signOut": "退出登录",
+    "toggleTheme": "切换主题",
+    "unreachable": "服务不可达"
+  },
+  "login": {
+    "title": "Foundry Model Router 控制台",
+    "lead": "使用 GitHub 账号登录。登录后可创建 API 密钥、查看自己的调用与用量；管理员还可以管理路由策略与后端连接。",
+    "failed": "GitHub 登录失败：{{error}}",
+    "signInWithGitHub": "使用 GitHub 登录",
+    "local": {
+      "or": "或",
+      "reveal": "使用用户名和密码登录",
+      "hide": "返回 GitHub 登录",
+      "username": "用户名",
+      "password": "密码",
+      "submit": "登录",
+      "hint": "本地管理员账号用于 github.com 无法访问的场景，它配置在 config.yaml 中，不是 GitHub 账号。",
+      "failed": "用户名或密码不正确。"
+    }
+  },
+  "setup": {
+    "blocked": {
+      "title": "需要先配置 GitHub OAuth",
+      "lead": "本服务强制校验身份，但 GitHub OAuth 尚未配置，且初始化向导只允许从运行本机（127.0.0.1）访问。请在服务器上直接编辑 <code>config.yaml</code> 的 <code>auth.github</code> 段，填入 client_id / client_secret 与 <code>admin_logins</code>，然后重启服务。",
+      "callbackComment": "留空自动推导"
+    },
+    "title": "初始化：GitHub OAuth",
+    "lead": "先到 GitHub → Settings → Developer settings → OAuth Apps 新建应用，回调地址填下面这个，然后把 Client ID / Secret 填入表单。此向导仅在未配置且从本机访问时可用。",
+    "secretPlaceholder": "写入 config.yaml（该文件已被 .gitignore 忽略）",
+    "adminLogins": "管理员 GitHub login",
+    "adminLoginsHint": "多个用逗号或空格分隔",
+    "saving": "写入中…",
+    "save": "保存配置并前往登录",
+    "localHint": "无法访问 github.com？在 <code>config.yaml</code> 中设置 <code>auth.local_admin.enabled: true</code>，然后用本地管理员账号（<code>admin</code> / <code>admin1234</code>）登录。首次登录后必须先改掉这个密码，控制台的其他页面才可访问。"
+  },
+  "password": {
+    "title": "修改管理员密码",
+    "lead": "该账号仍在使用内置的默认密码，因此控制台的其他页面暂不可用。请先设置一个新密码。",
+    "username": "用户名",
+    "current": "当前密码",
+    "next": "新密码",
+    "confirm": "确认新密码",
+    "tooShort": "新密码至少 8 位。",
+    "mismatch": "两次输入的新密码不一致。",
+    "submit": "修改密码并继续",
+    "recovery": "被锁在门外？把 config.yaml 中 auth.local_admin 下的 password_hash 与 password_salt 清空，内置的默认密码会重新生效。"
+  },
+  "usage": {
+    "allUsers": "全部用户",
+    "byUser": "按用户",
+    "drillDown": "下钻",
+    "loading": "统计中…",
+    "noRecords": "该区间没有调用记录",
+    "scope": "视图范围",
+    "range": {
+      "today": "今天",
+      "lastDays_other": "近 {{count}} 天"
+    },
+    "tile": {
+      "requests": "请求数",
+      "totalTokens": "总 token",
+      "tokenSplit": "输入 {{prompt}} · 输出 {{completion}}",
+      "errorRate": "错误率",
+      "failures_other": "{{count}} 次失败",
+      "avgLatency": "平均耗时"
+    },
+    "chart": {
+      "byModel": "按模型的请求数",
+      "byDay": "按日期的请求数"
+    },
+    "table": {
+      "title": "明细数据（表格视图）",
+      "date": "日期",
+      "requests": "请求数",
+      "totalTokens": "总 token",
+      "failures": "失败",
+      "user": "用户"
+    },
+    "tooltip": {
+      "model_other": "{{model}}：{{count}} 次请求",
+      "day_other": "{{date}}：{{count}} 次请求 · {{tokens}} token · {{errors}} 次失败"
+    }
+  },
+  "keys": {
+    "created": {
+      "title": "密钥已创建",
+      "readyBadge": "可立即使用",
+      "note": "现在就复制到你的客户端配置中；之后也可以随时在下方的密钥列表中查看——这个密钥对你始终可见。",
+      "byokTitle": "在 GitHub Copilot 中通过 BYOK 使用",
+      "modelHint": "任意在「路由配置」中登记的模型名",
+      "curlComment": "命令行验证",
+      "attribution": "所有用这个密钥发出的请求都会归属到 <code>{{login}}</code>，trace 中的 <code>user_id</code> 即该 GitHub 账号。"
+    },
+    "create": {
+      "title": "新建密钥",
+      "notAllowedBadge": "当前不可创建",
+      "name": "名称",
+      "nameHint": "便于区分用途，如 copilot-laptop",
+      "creating": "创建中…",
+      "submit": "创建密钥",
+      "blockedNote": "你所在的账号未获授权，无法创建密钥，因此也<strong>无法使用 BYOK</strong>。原因见上方「密钥创建权限」。"
+    },
+    "list": {
+      "title": "我的密钥",
+      "showAll": "显示所有用户的密钥",
+      "emptyBlocked": "还没有密钥，且当前账号未获授权创建密钥。",
+      "empty": "还没有密钥。创建一个后即可通过 BYOK 调用本服务。"
+    },
+    "table": {
+      "name": "名称",
+      "key": "密钥",
+      "keyUnavailable": "无法查看",
+      "keyUnavailableHint": "该密钥创建于「可查看」能力之前，服务端只保留了哈希值。它仍然可用；如需查看明文，请新建一个密钥。",
+      "keyOwnerOnly": "仅本人可见",
+      "keyOwnerOnlyHint": "密钥只对其所属账号显示。作为管理员，你可以停用或删除任何密钥，但不能查看他人的凭据。",
+      "owner": "归属用户",
+      "created": "创建时间",
+      "lastUsed": "最近使用",
+      "calls": "调用数",
+      "disabled": "已停用",
+      "enable": "启用",
+      "disable": "停用",
+      "confirmDelete": "删除密钥「{{name}}」？使用它的客户端会立即失效。"
+    },
+    "copyFailed": "无法写入剪贴板。浏览器只在 HTTPS（或 localhost）下允许此操作——请点击「显示」后手动复制。",
+    "access": {
+      "title": "密钥创建权限",
+      "unknown": "无法确认",
+      "checking": "正在向 GitHub 核实你的企业与组织归属…",
+      "allowed": "允许创建",
+      "denied": "禁止创建",
+      "policyOn": "企业访问控制已启用",
+      "hideEvidence": "隐藏依据",
+      "showEvidence": "查看依据",
+      "recheck": "重新核实",
+      "account": "当前账号",
+      "grantedVia": "通过方式",
+      "enterpriseParenOpen": "（企业 ",
+      "enterpriseParenClose": "）",
+      "deniedExplanation": "<strong>这意味着</strong>：你可以登录并查看本页，但不能创建 API 密钥；没有密钥就无法通过 GitHub Copilot BYOK 调用本服务的 <code>/v1/chat/completions</code>。如需开通，请把下面的依据发给管理员，让其在「访问控制 → 密钥策略」中放开你所在的组织或企业团队。",
+      "table": {
+        "enterprise": "企业",
+        "scope": "范围",
+        "name": "名称",
+        "isMember": "你是否成员",
+        "source": "判定来源"
+      },
+      "source": {
+        "cache": "本地缓存",
+        "cacheHint": "由 data/github 中的本地成员名单判定，未调用 GitHub",
+        "probe": "探测缓存",
+        "probeHint": "由此前实时探测的结果判定",
+        "live": "实时",
+        "liveHint": "本次请求实时调用了 GitHub —— 这一行仍然是每次判定一趟往返"
+      },
+      "scanned": "（探测 {{count}} 个）",
+      "scannedTruncated": "（探测 {{count}} 个，已截断）",
+      "undecidable": "无法判定",
+      "undecidableHint": "GitHub 未能给出答案，按未通过处理"
+    }
+  },
+  "access": {
+    "loading": "加载访问控制配置中…",
+    "saved": "已保存并热更新：config.yaml 的 auth 段已写回（注释保留）",
+    "section": {
+      "admins": {
+        "label": "管理员与登录",
+        "hint": "管理员名单与允许登录的范围"
+      },
+      "oauth": {
+        "label": "GitHub OAuth",
+        "hint": "登录用的 OAuth 应用凭据"
+      },
+      "local": {
+        "label": "本地管理员",
+        "hint": "github.com 无法访问时使用的内置账号"
+      },
+      "policy": {
+        "label": "密钥策略",
+        "hint": "按 Enterprise / Team / Organization 控制谁能建密钥"
+      }
+    },
+    "kind": {
+      "organization": "组织",
+      "team": "企业团队",
+      "enterprise": "企业直属成员",
+      "org-scan": "组织批量探测",
+      "admin": "服务管理员"
+    },
+    "admins": {
+      "title": "管理员",
+      "count_other": "{{count}} 人",
+      "logins": "管理员 GitHub login",
+      "loginsHint": "逗号分隔；保存后立即生效",
+      "note": "管理员能看到本页与「路由配置」、跨用户的使用统计与全部调用链路，并且<strong>不受企业密钥策略限制</strong>（否则改错策略会把自己也锁在门外）。<strong>清空这个列表会让所有人都失去管理员权限</strong>，届时只能改 <code>config.yaml</code> 恢复。"
+    },
+    "signIn": {
+      "title": "登录范围",
+      "allowAny": "允许任意 GitHub 账号登录",
+      "note": "这是<strong>登录</strong>的开关，不是<strong>授权</strong>的开关。开启时任何 GitHub 账号都能登录并看到自己的（空）数据，但能否创建 API 密钥由「密钥策略」决定；关闭后只有上面的管理员可以登录。无论开关如何，调用 <code>/v1/chat/completions</code> 都必须持有有效的 API 密钥。"
+    },
+    "oauth": {
+      "title": "GitHub OAuth 应用",
+      "configured": "已配置",
+      "notConfigured": "未配置",
+      "warning": "<strong>改错这里会让所有人（包括你自己）无法登录</strong>，只能改服务端 <code>config.yaml</code> 恢复。修改前请确认凭据来自 GitHub → Settings → Developer settings → OAuth Apps。当前会话不会因保存而失效，但下次登录会用新凭据。",
+      "clientIdHint": "OAuth App 页面上的 Client ID",
+      "clientSecretHint": "只在 GitHub 上生成时可见一次；这里保存后同样不再回显",
+      "secretKeepPlaceholder": "已配置（保持不变）",
+      "secretPastePlaceholder": "粘贴 Client Secret",
+      "callbackUrl": "回调地址",
+      "callbackUrlHint": "留空最稳妥——按访问来源自动推导，反代场景遵循 X-Forwarded-Proto / Host",
+      "registerTitle": "需要在 GitHub 上登记的地址",
+      "registerNote": "OAuth App 里的这两项必须与本服务的实际访问地址一致，否则 GitHub 会拒绝回调："
+    },
+    "local": {
+      "title": "本地管理员",
+      "on": "已启用",
+      "off": "已停用",
+      "lead": "一个用用户名密码登录、不经过 GitHub 的超级管理员，用于 github.com 不可访问时仍能进入控制台。它始终是管理员：可以查看所有用户的调用链路并进行删除。",
+      "toggle": "允许使用本地管理员账号登录",
+      "note": "凭据保存在 <code>config.yaml</code> 的 <code>auth.local_admin</code> 段（该文件已被 .gitignore 忽略），且只保存加盐哈希，不保存密码本身。<strong>在 GitHub OAuth 未配置时关闭本开关，将没有任何登录方式</strong>，届时只能改 config.yaml 复原。",
+      "enabledSaved": "已启用本地管理员登录",
+      "disabledSaved": "已停用本地管理员登录",
+      "passwordSaved": "已保存：新凭据立即生效，该账号的其他会话已被登出",
+      "credentialTitle": "用户名与密码",
+      "changedAt": "上次修改 {{at}}",
+      "neverChanged": "仍在使用内置的默认密码",
+      "username": "用户名",
+      "usernameHint": "修改后该账号的其他会话会被登出",
+      "current": "当前密码",
+      "currentHint": "尚未设置过时即为内置默认密码",
+      "next": "新密码",
+      "nextHint": "至少 8 位，且不能是内置默认密码",
+      "confirm": "确认新密码",
+      "submit": "修改凭据",
+      "recovery": "<strong>被锁在门外？</strong>把 <code>config.yaml</code> 中 <code>auth.local_admin</code> 下的 <code>password_hash</code> 与 <code>password_salt</code> 清空：内置的默认密码会重新生效，下次登录时控制台会再次要求你修改它。"
+    },
+    "cache": {
+      "title": "本地 GitHub 缓存",
+      "stale": "已过期",
+      "fresh": "新鲜",
+      "tokenChanged": "token 已变更",
+      "refreshNow": "立即刷新",
+      "refreshing": "刷新中…",
+      "refreshed": "已从 GitHub 刷新并写入 data/github",
+      "lead": "企业 / 组织 / 团队的结构与其成员名单保存在 <code>data/github</code> 并按定时刷新，因此判断归属只是一次本地集合查找，而不是一趟 GitHub 往返。<strong>成员名单被截断或取回出错的范围一律不作为判定依据</strong>——这些判定会回落到实时探测，因为「不在我能读到的那部分名单里」并不等于「不是成员」。",
+      "interval": "刷新间隔（秒）",
+      "intervalHint": "不小于 60；保存本页后生效",
+      "unavailable": "还没有任何缓存。请先保存 Enterprise token 并刷新。",
+      "structureFetched": "结构取回时间",
+      "membersFetched": "成员名单取回时间",
+      "never": "从未",
+      "scopeCount": "已缓存范围",
+      "scopes_other": "{{count}} 个范围",
+      "incomplete_other": "{{count}} 个不完整",
+      "probeCount": "已记住的实时探测",
+      "probes_other": "{{count}} 条结果",
+      "table": {
+        "scope": "类型",
+        "name": "名称",
+        "members": "成员数",
+        "state": "状态",
+        "errored": "取回出错",
+        "truncated": "已截断",
+        "complete": "完整"
+      }
+    },
+    "policy": {
+      "title": "密钥创建策略",
+      "enabled": "已启用",
+      "disabled": "未启用",
+      "toggle": "仅允许指定企业 / 组织中的用户创建 API 密钥",
+      "enabledNote": "已启用：普通用户建 key 时会实时向 GitHub 核实其企业与组织归属，不属于任何被允许范围的用户会被拒绝（403），因此无法使用 BYOK。管理员不受此限制。",
+      "disabledNote": "未启用：<strong>任何能登录的 GitHub 账号都能创建 API 密钥并使用 BYOK</strong>。如果上面的「允许任意 GitHub 账号登录」也是开启的，等于对整个 GitHub 开放。",
+      "missingTokenBadge": "缺少 token",
+      "missingTokenNote": "已启用策略但未配置 Enterprise token，服务无法核实归属，<strong>当前会拒绝所有非管理员的建 key 请求</strong>。请在下方填入 token。",
+      "tokenTitle": "GitHub Enterprise 管理员 token",
+      "tokenOk": "有效",
+      "tokenBad": "异常",
+      "tokenHint": "需 admin:enterprise 权限",
+      "tokenSavedPlaceholder": "已配置 {{hint}}（保持不变）",
+      "verifying": "校验中…",
+      "verify": "校验",
+      "tokenValid": "token 有效，归属 {{login}}",
+      "tokenValidWithScopes": "token 有效，归属 {{login}}（scope: {{scopes}}）",
+      "tokenOwner": "token 归属",
+      "fineGrainedToken": "（fine-grained token）",
+      "canListEnterprises": "可列企业",
+      "missingEnterpriseScope": "缺少 admin:enterprise",
+      "githubError": "GitHub 返回错误",
+      "tokenUnsaved": "token 已修改但<strong>尚未保存</strong>。保存后才能用它自动获取企业列表。",
+      "structureTitle": "企业、企业团队与组织",
+      "enterpriseCount_other": "{{count}} 个企业",
+      "fetching": "获取中…",
+      "refetch": "重新获取",
+      "needTokenFirst": "先填入并保存 Enterprise token，这里会自动列出该 token 下的企业。",
+      "fetchFailed": "获取失败",
+      "fetchingFromGitHub": "正在向 GitHub 获取企业列表…",
+      "noEnterprises": "token 下没有可见的企业。",
+      "noEnterprisesVisible": "token 下没有可见的企业。请确认它具有 admin:enterprise 权限。",
+      "structureLead": "下列结构直接来自 GitHub API。为每个企业打开总开关后，再选择允许哪些<strong>组织</strong>或<strong>企业团队</strong>的成员创建 API 密钥。",
+      "nobodyAllowed": "已启用策略但没有放开任何企业——当前除管理员外<strong>没有人</strong>能创建 API 密钥。",
+      "entOn": "已放开",
+      "entOff": "未放开",
+      "entOffNote": "总开关关闭——该企业下的组织与团队设置<strong>全部不生效</strong>。",
+      "allowAllOrgs": "允许该企业下<strong>任一组织</strong>的成员创建密钥",
+      "allOrgsNote": "开启后不必逐个勾选组织。判定顺序为：先查企业直属成员，查不到再逐个探测已列出的组织（最多 30 个）。",
+      "allOrgsTruncated": "<strong>该企业组织数为 {{total}}，仅列出前 {{listed}} 个</strong>，未列出的组织不会被探测——如需精确控制请关闭本项并逐个勾选。",
+      "allOrgsOffNote": "关闭时只有下面勾选的组织与企业团队生效。",
+      "allowedOrgs": "允许的组织",
+      "allowedOrgsHint": "成员判定走 /orgs/{org}/members/{user}，实时生效",
+      "orgListUnavailable": "组织列表不可用",
+      "noOrgs": "该企业下没有组织。",
+      "orgsListedPartially": "共 {{total}} 个组织，此处仅列出前 {{listed}} 个。",
+      "allowedTeams": "允许的企业团队",
+      "allowedTeamsHint": "按团队的数字 id 判定成员（GitHub 只接受 id），界面与用户侧均显示团队名",
+      "teamListUnavailable": "团队列表不可用",
+      "teamListUnavailableNote": "——该企业只能按组织授权。",
+      "noTeams": "该企业下没有企业团队。"
+    }
+  },
+  "playground": {
+    "sendRequest": "发送请求",
+    "apiKey": "API 密钥",
+    "apiKeyHint": "在「API 密钥」页创建；请求会归属到该密钥的所有者",
+    "remember": "记在本浏览器（localStorage）",
+    "sessionId": "会话 ID（可选，触发会话保持）",
+    "sessionIdPlaceholder": "留空则每次独立路由",
+    "stream": "流式（SSE）",
+    "sending": "请求中…",
+    "send": "发送",
+    "samplePrompt": "帮我重构这个模块的架构，给出设计建议",
+    "routingResult": "路由结果",
+    "decisionMs": "决策 {{ms}}ms",
+    "waiting": "等待模型响应…",
+    "emptyContent": "（空内容）",
+    "viewTrace": "查看完整调用链路",
+    "idle": "发送请求后在此查看路由与响应"
+  },
+  "traces": {
+    "list": {
+      "title": "调用链路",
+      "autoRefresh": "自动刷新",
+      "empty": "暂无调用记录 — 到「测试台」发一条请求试试",
+      "emptyFiltered": "没有符合当前筛选条件的链路 — 放宽条件或清空筛选"
+    },
+    "filter": {
+      "date": "日期",
+      "traceId": "链路 ID",
+      "traceIdHint": "ID 的任意片段",
+      "user": "用户",
+      "userHint": "GitHub login",
+      "clear": "清空筛选"
+    },
+    "paging": {
+      "count": "{{shown}} / {{total}} 条",
+      "truncated": "（仅扫描了最近若干天的目录）",
+      "loadMore_other": "再加载 {{count}} 条"
+    },
+    "delete": {
+      "one": "删除这条链路",
+      "filtered": "删除筛选出的链路",
+      "confirmOne": "删除链路 {{id}}？此操作不可撤销。",
+      "confirmMany": "删除全部 {{count}} 条符合 {{criteria}} 的链路？此操作不可撤销。",
+      "criteriaDate": "日期 {{date}}",
+      "criteriaUser": "用户 {{user}}",
+      "done_other": "已删除 {{count}} 条链路"
+    },
+    "json": {
+      "expandAll": "全部展开",
+      "collapseAll": "全部折叠",
+      "copy": "复制 JSON",
+      "copied": "已复制"
+    },
+    "table": {
+      "time": "时间",
+      "user": "用户",
+      "model": "模型",
+      "decision": "决策",
+      "latency": "耗时",
+      "turns": "调用",
+      "turnsHint": "本次交互中的上游调用次数：大于 1 表示存在智能体工具调用循环"
+    },
+    "turns": {
+      "nth": "第 {{index}}/{{total}} 次调用",
+      "tokens_other": "{{count}} tokens",
+      "noTools": "无工具调用",
+      "messageCount": "发送的消息数",
+      "requestId": "请求 ID",
+      "rewritten": "messages（本次调用重写了对话）",
+      "superseded": "messages（本次调用时的状态）"
+    },
+    "detail": {
+      "overview": "概览",
+      "time": "时间",
+      "user": "用户",
+      "apiKey": "API 密钥",
+      "apiKeyValue": "{{name}}（{{id}}）",
+      "session": "会话",
+      "stickySuffix": "（sticky）",
+      "totalLatency": "总耗时",
+      "latencyBreakdown": "{{total}} ms（决策 {{decision}} ms + 后端 {{backend}} ms）",
+      "routingDecision": "路由决策",
+      "requestParams": "请求参数",
+      "backendCall": "后端调用",
+      "modelResponse": "模型响应",
+      "noResponse": "尚无响应",
+      "notFound": "该链路记录已不存在，或属于其他用户。",
+      "interaction": "交互",
+      "noInteraction": "客户端未上报",
+      "turns": "上游调用",
+      "turnCount_other": "{{count}} 次调用",
+      "oneDecision": "仅一次路由决策",
+      "chain": "调用链路",
+      "chainNote": "客户端用多次上游调用回答了一个用户问题，每次都在对话后追加工具结果并重放。它们共享同一次路由决策和同一个模型，在此记录为一条调用链路。",
+      "turnsTruncated_other": "较早的 {{count}} 次调用未被保存（已达单条记录上限）",
+      "messagesFinal": "最后一次调用时的完整链路",
+      "finalTurn": "最后一次调用",
+      "usageSummed_other": "{{count}} 次调用合计"
+    },
+    "analysis": {
+      "matchedKeyword": "命中 \"{{keyword}}\"",
+      "decisionModel": "决策模型",
+      "rationale": "决策理由",
+      "decisionLatency": "决策耗时",
+      "decisionTokens": "决策 tokens",
+      "candidates": "候选模型",
+      "systemPrompt": "提示词（system）",
+      "charsExpand_other": "{{count}} 字符，点击展开",
+      "decisionInput": "决策输入",
+      "truncated": "…(已截断)",
+      "rawOutput": "原始输出",
+      "fallback": "回退",
+      "fellBackToDefault": "已回退到默认模型",
+      "interactionReuse": "本次交互只选型一次；此次调用直接复用，因此未调用决策模型，也没有产生决策延迟。"
+    }
+  },
+  "config": {
+    "loading": "加载配置中…",
+    "saved": "已保存并热更新：config.yaml 已写回（注释保留），连接凭据即时生效",
+    "section": {
+      "providers": {
+        "label": "后端连接",
+        "hint": "地址与密钥，可按环境拆分"
+      },
+      "models": {
+        "label": "模型目录",
+        "hint": "对外暴露的模型及其绑定的连接"
+      },
+      "strategy": {
+        "label": "路由策略",
+        "hint": "AI / 规则、会话保持、决策器参数"
+      },
+      "rules": {
+        "label": "规则路由",
+        "hint": "关键词与长度规则，按顺序匹配"
+      }
+    },
+    "providers": {
+      "title": "后端连接（Providers）",
+      "count_other": "{{count}} 个",
+      "add": "+ 添加连接",
+      "lead": "每个连接是一组「地址 + 密钥」。模型默认继承标记为「默认」的连接，也可以各自绑定不同连接——既可以是不同环境的 Azure AI Foundry，也可以是任何 OpenAI 兼容服务。密钥保存在服务端 <code>config.yaml</code>（该文件已被 <code>.gitignore</code> 忽略）。",
+      "empty": "还没有连接。添加一个后才能绑定模型。",
+      "promptName": "新连接的名称（models 通过该名字引用，例如 openrouter）：",
+      "promptRename": "重命名连接：",
+      "alreadyExists": "连接「{{name}}」已存在",
+      "stillReferenced": "连接「{{name}}」仍被模型 {{models}} 引用，请先在「模型目录」里改绑",
+      "isDefaultConnection": "连接「{{name}}」是默认连接，请先把默认切到其他连接",
+      "defaultBadge": "默认",
+      "typeOpenAI": "OpenAI 兼容",
+      "typeAzure": "Azure",
+      "boundModels_other": "{{count}} 个模型",
+      "setDefault": "设为默认",
+      "rename": "重命名",
+      "baseUrl": "地址（base_url）",
+      "baseUrlHint": "Azure 填 https://xxx.openai.azure.com/；OpenAI 兼容填到 /v1",
+      "apiKey": "密钥（api_key）",
+      "apiKeyHint": "保存后写入 config.yaml",
+      "apiKeyPlaceholder": "留空则回落到 .env 的 AZURE_OPENAI_API_KEY",
+      "apiType": "接口类型（api_type）",
+      "apiTypeAzureOption": "azure — Azure OpenAI / AI Foundry",
+      "apiTypeOpenAIOption": "openai — OpenAI 兼容服务",
+      "apiVersionHint": "仅 azure 需要"
+    },
+    "models": {
+      "title": "模型目录",
+      "count_other": "{{count}} 个",
+      "add": "+ 添加模型",
+      "lead": "这里的名字就是客户端在请求里可以填的模型名。描述会作为候选目录发给 AI 决策器，写清「适合什么任务」能显著提升路由准确度。连接在<providersLink>后端连接</providersLink>里维护。",
+      "empty": "还没有模型。至少添加一个并设为默认模型。",
+      "promptName": "新模型在本路由器中暴露的名称：",
+      "alreadyExists": "模型「{{name}}」已存在",
+      "removedWithRules_other": "已删除模型「{{name}}」，同时移除了引用它的 {{count}} 条规则",
+      "defaultBadge": "默认",
+      "reasoningBadge": "推理系",
+      "connectionMissing": "— 连接不存在",
+      "description": "描述",
+      "descriptionHint": "供 AI 决策器参考",
+      "descriptionPlaceholder": "例如：旗舰高阶模型。适合最复杂的推理、大型系统设计、疑难 bug 分析。",
+      "provider": "所用连接（provider）",
+      "followDefault": "跟随默认（{{name}}）",
+      "modelNameOverride": "上游名称覆盖（model_name）",
+      "modelNameOverrideHint": "留空则用上面的模型名",
+      "isDefault": "默认模型（无规则命中 / 决策失败时使用）",
+      "isReasoning": "推理系（max_completion_tokens，剥离采样参数）"
+    },
+    "strategy": {
+      "title": "路由策略",
+      "ai": {
+        "title": "AI 智能路由",
+        "desc": "用轻量决策模型读懂请求意图后挑选模型。准确度高，每次请求多一次约 1 秒的决策调用。"
+      },
+      "rule": {
+        "title": "规则路由",
+        "desc": "按关键词与 prompt 长度顺序匹配。零 LLM 调用、耗时 <1ms，规则在<rulesLink>规则路由</rulesLink>里维护。"
+      }
+    },
+    "session": {
+      "title": "会话保持",
+      "sticky": "同一会话固定模型（提升一致性与 cache 命中率）",
+      "stickyNote": "开启后，一次用户交互选定的模型会在该交互的后续请求中复用：智能体的工具调用循环将保持同一个模型，且只产生一次路由决策。请求按 GitHub Copilot 等客户端已发送的 <code>x-interaction-id</code> 头分组，若提供了 <code>x-session-id</code> 也会一并使用。",
+      "ttl": "TTL（秒）",
+      "ttlHint": "会话闲置多久后解绑",
+      "maxSessions": "最大会话数",
+      "maxSessionsHint": "超出后按 LRU 淘汰"
+    },
+    "aiRouter": {
+      "title": "AI 决策器",
+      "inactive": "当前策略为规则路由，以下设置暂不生效",
+      "decisionModel": "决策模型",
+      "decisionModelHint": "选轻量高速的，例如 gpt-4.1",
+      "decisionProvider": "决策模型所用连接",
+      "timeout": "决策超时（秒）",
+      "timeoutHint": "超时则回退默认模型",
+      "maxPromptChars": "Prompt 截断长度",
+      "maxPromptCharsHint": "超出则首尾各留一半"
+    },
+    "rules": {
+      "title": "规则路由",
+      "count_other": "{{count}} 条",
+      "inactive": "当前策略为 AI 智能路由，规则暂不生效",
+      "add": "+ 添加规则",
+      "lead": "<strong>自上而下</strong>逐条评估，第一条命中的规则决定模型，后续不再评估——用 ↑↓ 调整优先级。全部未命中则走默认模型 <model>{{model}}</model>。一条规则里同时填了关键词和长度时，只检查长度。策略开关在<strategyLink>路由策略</strategyLink>里。",
+      "noDefaultModel": "（尚未设置）",
+      "empty": "还没有规则。规则路由策略下，所有请求都会走默认模型。",
+      "keywords": "关键词",
+      "keywordsHint": "逗号分隔，忽略大小写，命中任意一个即路由",
+      "keywordsPlaceholder": "重构, 架构, refactor",
+      "minPromptChars": "最小 Prompt 长度",
+      "minPromptCharsHint": "留空则不启用",
+      "disabled": "不启用",
+      "moveUp": "上移",
+      "moveDown": "下移"
+    },
+    "prompt": {
+      "title": "AI 决策提示词",
+      "usingDefault": "使用内置默认提示词",
+      "lead": "这是发给决策模型的 <code>system</code> 内容。<code>{{placeholder}}</code> 会被替换为「模型目录」页里每个模型的名字与 <code>description</code>。留空则使用内置默认提示词。要求决策模型只输出 <code>{{shape}}</code> 的约束请保留——返回值解析不了会静默回退到默认模型。",
+      "template": "提示词模板",
+      "templateHint": "留空 = 内置默认；花括号无需转义",
+      "templatePlaceholder": "在此编写提示词…",
+      "loadDefault": "载入默认提示词",
+      "clear": "清空（改回默认）",
+      "insertPlaceholder": "插入 {{placeholder}}",
+      "templateChars": "模板 {{count}} 字符",
+      "defaultTemplateChars": "默认模板 {{count}} 字符",
+      "noPlaceholderWarning": "模板里没有 <code>{{placeholder}}</code>：模型目录会被自动追加到末尾（见下方预览），但位置不受你控制。建议显式插入占位符。",
+      "missingDescription_other": "{{count}} 个模型没有 description：<code>{{models}}</code>——它们在目录里只有一个名字，决策模型几乎无法判断该不该选。",
+      "goFixModels": "去模型目录补充",
+      "previewTitle": "实际提示词预览",
+      "previewHint": "后端按当前草稿渲染，与真实请求同一段代码",
+      "rendering": "渲染中…",
+      "previewFailed": "预览失败：{{error}}",
+      "metaProvider": "连接 {{name}}",
+      "metaCandidates_other": "{{count}} 个候选模型",
+      "metaFallback": "回退到 {{name}}",
+      "metaRenderedChars": "渲染后 {{count}} 字符",
+      "sample": "示例请求（可选）",
+      "sampleHint": "填一句用户提问，预览 user 消息在截断后的样子",
+      "samplePlaceholder": "例如：帮我重构这个模块的架构",
+      "sampleTruncated": "已按 {{count}} 字符首尾截断",
+      "defaultLoaded": "已载入内置默认提示词到编辑框，可继续修改；保存后生效",
+      "preset": {
+        "refactor": "帮我把这个模块的架构重构一下，拆出独立的领域层",
+        "translate": "把这段话翻译成英文",
+        "proof": "证明：任意连续函数在闭区间上一致连续"
+      }
+    }
+  }
+}

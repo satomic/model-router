@@ -1,0 +1,699 @@
+{
+  "app": {
+    "connecting": "Connecting to the service…",
+    "notFound": {
+      "title": "Page not found",
+      "lead": "This address does not match any page. Pick one from the navigation on the left."
+    },
+    "forbidden": {
+      "lead": "This page is for administrators only. Ask an administrator to add your account under Access control if you need it."
+    }
+  },
+  "common": {
+    "actions": "Actions",
+    "close": "Close",
+    "confirmDiscard": "Discard all unsaved changes and reload from config.yaml?",
+    "copied": "Copied",
+    "copy": "Copy",
+    "delete": "Delete",
+    "dirtySections_one": "({{count}} section)",
+    "dirtySections_other": "({{count}} sections)",
+    "discardChanges": "Discard changes",
+    "emptyContent": "(empty content)",
+    "error": "Error",
+    "hasUnsavedChanges": "Unsaved changes",
+    "hide": "Hide",
+    "inSyncWithFile": "In sync with config.yaml",
+    "listSeparator": ", ",
+    "loading": "Loading…",
+    "no": "No",
+    "noData": "No data",
+    "refresh": "Refresh",
+    "reload": "Reload",
+    "reloadedFromFile": "Reloaded from config.yaml",
+    "retry": "Retry",
+    "saveAndApply": "Save and apply",
+    "saving": "Saving…",
+    "show": "Show",
+    "status": "Status",
+    "yes": "Yes"
+  },
+  "nav": {
+    "group": {
+      "overview": "Overview",
+      "monitor": "Monitoring",
+      "manage": "Management"
+    },
+    "usage": {
+      "label": "Usage",
+      "title": "Usage",
+      "subtitle": "Request counts, token consumption and latency distribution"
+    },
+    "keys": {
+      "label": "API keys",
+      "title": "API keys",
+      "subtitle": "Once you have a key you can call this service through Copilot BYOK"
+    },
+    "traces": {
+      "label": "Traces",
+      "title": "Traces",
+      "subtitle": "A full record of the routing decision, backend parameters and response of every request"
+    },
+    "playground": {
+      "label": "Playground",
+      "title": "Playground",
+      "subtitle": "Fire a single routed request with your own API key"
+    },
+    "config": {
+      "label": "Routing configuration",
+      "title": "Routing configuration",
+      "subtitle": "Backend connections, model catalog, routing strategy and rule routing"
+    },
+    "access": {
+      "label": "Access control",
+      "title": "Access control",
+      "subtitle": "Administrators and sign-in scope, the GitHub OAuth app, and who may create API keys — by Enterprise / Team / Organization"
+    }
+  },
+  "shell": {
+    "collapseNav": "Collapse navigation",
+    "expandNav": "Expand navigation",
+    "language": "Language",
+    "roleAdmin": "Administrator",
+    "roleUser": "Standard user",
+    "running": "Running",
+    "signOut": "Sign out",
+    "toggleTheme": "Toggle theme",
+    "unreachable": "Service unreachable"
+  },
+  "login": {
+    "title": "Foundry Model Router console",
+    "lead": "Sign in with your GitHub account. Once signed in you can create API keys and review your own calls and usage; administrators can also manage the routing strategy and the backend connections.",
+    "failed": "GitHub sign-in failed: {{error}}",
+    "signInWithGitHub": "Sign in with GitHub",
+    "local": {
+      "or": "or",
+      "reveal": "Sign in with a user name and password",
+      "hide": "Back to GitHub sign-in",
+      "username": "User name",
+      "password": "Password",
+      "submit": "Sign in",
+      "hint": "The local administrator account is for the case where github.com cannot be reached. It is configured in config.yaml and is not a GitHub account.",
+      "failed": "That user name and password combination was not accepted."
+    }
+  },
+  "setup": {
+    "blocked": {
+      "title": "GitHub OAuth must be configured first",
+      "lead": "This service always verifies identity, but GitHub OAuth is not configured yet and the setup wizard only accepts requests from the machine running the service (127.0.0.1). Edit the <code>auth.github</code> section of <code>config.yaml</code> on the server, fill in client_id / client_secret and <code>admin_logins</code>, then restart the service.",
+      "callbackComment": "leave empty to derive automatically"
+    },
+    "title": "Setup: GitHub OAuth",
+    "lead": "First create an app under GitHub → Settings → Developer settings → OAuth Apps, use the callback URL below, then paste the Client ID / Secret into this form. This wizard is only available while OAuth is unconfigured and you are on the local machine.",
+    "secretPlaceholder": "written to config.yaml (which is ignored by .gitignore)",
+    "adminLogins": "Administrator GitHub logins",
+    "adminLoginsHint": "separate several with commas or spaces",
+    "saving": "Writing…",
+    "save": "Save configuration and go to sign-in",
+    "localHint": "Cannot reach github.com? Set <code>auth.local_admin.enabled: true</code> in <code>config.yaml</code> and sign in with the local administrator account (<code>admin</code> / <code>admin1234</code>). You will be required to change that password before anything else in the console becomes reachable."
+  },
+  "password": {
+    "title": "Change the administrator password",
+    "lead": "This account is still using the built-in default password, so nothing else in the console is reachable yet. Pick a new password to continue.",
+    "username": "User name",
+    "current": "Current password",
+    "next": "New password",
+    "confirm": "Confirm the new password",
+    "tooShort": "The new password must be at least 8 characters.",
+    "mismatch": "The two new passwords do not match.",
+    "submit": "Change the password and continue",
+    "recovery": "Locked out? Clear password_hash and password_salt under auth.local_admin in config.yaml and the built-in default password applies again."
+  },
+  "usage": {
+    "allUsers": "All users",
+    "byUser": "By user",
+    "drillDown": "Drill down",
+    "loading": "Aggregating…",
+    "noRecords": "No calls in this range",
+    "scope": "View scope",
+    "range": {
+      "today": "Today",
+      "lastDays_one": "Last {{count}} day",
+      "lastDays_other": "Last {{count}} days"
+    },
+    "tile": {
+      "requests": "Requests",
+      "totalTokens": "Total tokens",
+      "tokenSplit": "prompt {{prompt}} · completion {{completion}}",
+      "errorRate": "Error rate",
+      "failures_one": "{{count}} failure",
+      "failures_other": "{{count}} failures",
+      "avgLatency": "Average latency"
+    },
+    "chart": {
+      "byModel": "Requests by model",
+      "byDay": "Requests by day"
+    },
+    "table": {
+      "title": "Detail (table view)",
+      "date": "Date",
+      "requests": "Requests",
+      "totalTokens": "Total tokens",
+      "failures": "Failures",
+      "user": "User"
+    },
+    "tooltip": {
+      "model_one": "{{model}}: {{count}} request",
+      "model_other": "{{model}}: {{count}} requests",
+      "day_one": "{{date}}: {{count}} request · {{tokens}} tokens · {{errors}} failures",
+      "day_other": "{{date}}: {{count}} requests · {{tokens}} tokens · {{errors}} failures"
+    }
+  },
+  "keys": {
+    "created": {
+      "title": "Key created",
+      "readyBadge": "ready to use",
+      "note": "Copy it into your client configuration now, or read it back at any time from the key list below — the key stays visible to you.",
+      "byokTitle": "Use it in GitHub Copilot through BYOK",
+      "modelHint": "any model name registered under Routing configuration",
+      "curlComment": "verify from the command line",
+      "attribution": "Every request made with this key is attributed to <code>{{login}}</code>, and the <code>user_id</code> in the trace is that GitHub account."
+    },
+    "create": {
+      "title": "New key",
+      "notAllowedBadge": "creation not allowed",
+      "name": "Name",
+      "nameHint": "something that tells the keys apart, e.g. copilot-laptop",
+      "creating": "Creating…",
+      "submit": "Create key",
+      "blockedNote": "Your account is not authorized to create keys, which also means you <strong>cannot use BYOK</strong>. The reason is under \"Key creation permission\" above."
+    },
+    "list": {
+      "title": "My keys",
+      "showAll": "Show keys of all users",
+      "emptyBlocked": "No keys yet, and this account is not authorized to create one.",
+      "empty": "No keys yet. Create one to start calling this service through BYOK."
+    },
+    "table": {
+      "name": "Name",
+      "key": "Key",
+      "keyUnavailable": "unavailable",
+      "keyUnavailableHint": "This key was created before keys became viewable, and only its hash was kept. It keeps working; create a new key if you need to read the value.",
+      "keyOwnerOnly": "owner only",
+      "keyOwnerOnlyHint": "A key is only ever shown to the account that owns it. As an administrator you can disable or delete any key, but not read someone else’s credential.",
+      "owner": "Owner",
+      "created": "Created",
+      "lastUsed": "Last used",
+      "calls": "Calls",
+      "disabled": "Disabled",
+      "enable": "Enable",
+      "disable": "Disable",
+      "confirmDelete": "Delete the key \"{{name}}\"? Any client using it stops working immediately."
+    },
+    "copyFailed": "Could not copy to the clipboard. The browser only allows this over HTTPS (or on localhost) — use Show and copy the value by hand.",
+    "access": {
+      "title": "Key creation permission",
+      "unknown": "cannot determine",
+      "checking": "Checking your enterprise and organization membership with GitHub…",
+      "allowed": "creation allowed",
+      "denied": "creation denied",
+      "policyOn": "enterprise access control is enabled",
+      "hideEvidence": "Hide evidence",
+      "showEvidence": "Show evidence",
+      "recheck": "Check again",
+      "account": "Account",
+      "grantedVia": "Granted via",
+      "enterpriseParenOpen": " (enterprise ",
+      "enterpriseParenClose": ")",
+      "deniedExplanation": "<strong>What this means</strong>: you can sign in and read this page, but you cannot create an API key; without a key you cannot reach this service's <code>/v1/chat/completions</code> through GitHub Copilot BYOK. To get access, send the evidence below to an administrator and ask them to allow your organization or enterprise team under \"Access control → Key policy\".",
+      "table": {
+        "enterprise": "Enterprise",
+        "scope": "Scope",
+        "name": "Name",
+        "isMember": "Are you a member",
+        "source": "Answered by"
+      },
+      "source": {
+        "cache": "cache",
+        "cacheHint": "answered from the local member list in data/github — no GitHub call was made",
+        "probe": "probe",
+        "probeHint": "answered from a remembered live probe result",
+        "live": "live",
+        "liveHint": "answered by calling GitHub for this request — this row still costs a round trip per check"
+      },
+      "scanned": "(probed {{count}})",
+      "scannedTruncated": "(probed {{count}}, truncated)",
+      "undecidable": "cannot determine",
+      "undecidableHint": "GitHub gave no answer, treated as not a member"
+    }
+  },
+  "access": {
+    "loading": "Loading the access control configuration…",
+    "saved": "Saved and applied: the auth section of config.yaml was written back (comments preserved)",
+    "section": {
+      "admins": {
+        "label": "Administrators and sign-in",
+        "hint": "the administrator list and who may sign in"
+      },
+      "oauth": {
+        "label": "GitHub OAuth",
+        "hint": "the OAuth application credentials used for sign-in"
+      },
+      "local": {
+        "label": "Local administrator",
+        "hint": "the built-in account for when github.com is unreachable"
+      },
+      "policy": {
+        "label": "Key policy",
+        "hint": "who may create keys, by Enterprise / Team / Organization"
+      }
+    },
+    "kind": {
+      "organization": "organization",
+      "team": "enterprise team",
+      "enterprise": "direct enterprise member",
+      "org-scan": "organization bulk probe",
+      "admin": "service administrator"
+    },
+    "admins": {
+      "title": "Administrators",
+      "count_one": "{{count}} person",
+      "count_other": "{{count}} people",
+      "logins": "Administrator GitHub logins",
+      "loginsHint": "comma separated; effective as soon as you save",
+      "note": "Administrators see this page and Routing configuration, cross-user usage statistics and every trace, and are <strong>not subject to the enterprise key policy</strong> (otherwise a mistake in the policy would lock them out too). <strong>Emptying this list removes administrator rights from everybody</strong>, and the only way back is editing <code>config.yaml</code>."
+    },
+    "signIn": {
+      "title": "Sign-in scope",
+      "allowAny": "Allow any GitHub account to sign in",
+      "note": "This switch governs <strong>signing in</strong>, not <strong>authorization</strong>. While it is on, any GitHub account can sign in and see its own (empty) data, but whether it may create an API key is decided by the key policy; while it is off, only the administrators listed above can sign in. Either way, calling <code>/v1/chat/completions</code> always requires a valid API key."
+    },
+    "oauth": {
+      "title": "GitHub OAuth application",
+      "configured": "configured",
+      "notConfigured": "not configured",
+      "warning": "<strong>Getting this wrong locks everybody out of signing in, including you</strong>, and the only way back is editing <code>config.yaml</code> on the server. Before changing anything, make sure the credentials come from GitHub → Settings → Developer settings → OAuth Apps. Saving does not invalidate the current session, but the next sign-in uses the new credentials.",
+      "clientIdHint": "the Client ID shown on the OAuth App page",
+      "clientSecretHint": "visible only once when generated on GitHub; likewise never echoed back after being saved here",
+      "secretKeepPlaceholder": "configured (leave unchanged)",
+      "secretPastePlaceholder": "paste the Client Secret",
+      "callbackUrl": "Callback URL",
+      "callbackUrlHint": "leaving it empty is safest — it is derived from the request origin, honouring X-Forwarded-Proto / Host behind a reverse proxy",
+      "registerTitle": "The URLs to register on GitHub",
+      "registerNote": "These two fields in the OAuth App must match how this service is actually reached, or GitHub will reject the callback:"
+    },
+    "local": {
+      "title": "Local administrator",
+      "on": "enabled",
+      "off": "disabled",
+      "lead": "A super administrator that signs in with a user name and password instead of GitHub, so the console stays reachable when github.com is not. It is always an administrator: it sees every user's traces and may delete them.",
+      "toggle": "Allow signing in with the local administrator account",
+      "note": "The credential lives in <code>auth.local_admin</code> in <code>config.yaml</code>, which is ignored by .gitignore, and only the salted hash is stored — never the password itself. <strong>Turning this off while GitHub OAuth is unconfigured leaves no way to sign in at all</strong>, and the only way back is editing config.yaml.",
+      "enabledSaved": "Local administrator sign-in is now enabled",
+      "disabledSaved": "Local administrator sign-in is now disabled",
+      "passwordSaved": "Saved: the new credential is in force and every other local-administrator session was signed out",
+      "credentialTitle": "User name and password",
+      "changedAt": "last changed {{at}}",
+      "neverChanged": "still on the built-in default password",
+      "username": "User name",
+      "usernameHint": "changing it signs out the other sessions of this account",
+      "current": "Current password",
+      "currentHint": "the built-in default while none has been set",
+      "next": "New password",
+      "nextHint": "at least 8 characters, and not the built-in default",
+      "confirm": "Confirm the new password",
+      "submit": "Change the credential",
+      "recovery": "<strong>Locked out?</strong> Clear <code>password_hash</code> and <code>password_salt</code> under <code>auth.local_admin</code> in <code>config.yaml</code>: the built-in default password applies again, and the console will require you to change it on the next sign-in."
+    },
+    "cache": {
+      "title": "Local GitHub cache",
+      "stale": "stale",
+      "fresh": "fresh",
+      "tokenChanged": "token changed",
+      "refreshNow": "Refresh now",
+      "refreshing": "Refreshing…",
+      "refreshed": "Refreshed from GitHub and written to data/github",
+      "lead": "The enterprise / organization / team structure and their member lists are kept in <code>data/github</code> and refreshed on a timer, so a membership check is a local set lookup rather than a GitHub round trip. A scope whose member list is <strong>truncated or errored is never treated as authoritative</strong> — those checks fall back to a live probe, because \"not in the part of the list I could read\" is not \"not a member\".",
+      "interval": "Refresh interval (seconds)",
+      "intervalHint": "at least 60; applies after you save this page",
+      "unavailable": "Nothing has been cached yet. Save an Enterprise token and refresh.",
+      "structureFetched": "Structure fetched",
+      "membersFetched": "Member lists fetched",
+      "never": "never",
+      "scopeCount": "Cached scopes",
+      "scopes_one": "{{count}} scope",
+      "scopes_other": "{{count}} scopes",
+      "incomplete_one": "{{count}} incomplete",
+      "incomplete_other": "{{count}} incomplete",
+      "probeCount": "Remembered live probes",
+      "probes_one": "{{count}} result",
+      "probes_other": "{{count}} results",
+      "table": {
+        "scope": "Kind",
+        "name": "Name",
+        "members": "Members",
+        "state": "State",
+        "errored": "errored",
+        "truncated": "truncated",
+        "complete": "complete"
+      }
+    },
+    "policy": {
+      "title": "Key creation policy",
+      "enabled": "enabled",
+      "disabled": "not enabled",
+      "toggle": "Only allow users in the listed enterprises / organizations to create API keys",
+      "enabledNote": "Enabled: when a standard user creates a key, their enterprise and organization membership is checked against GitHub live, and a user who belongs to no allowed scope is rejected (403) and therefore cannot use BYOK. Administrators are exempt.",
+      "disabledNote": "Not enabled: <strong>any GitHub account that can sign in can create an API key and use BYOK</strong>. If \"Allow any GitHub account to sign in\" above is also on, that means the whole of GitHub.",
+      "missingTokenBadge": "token missing",
+      "missingTokenNote": "The policy is enabled but no Enterprise token is configured, so the service cannot verify membership and <strong>currently rejects every key creation request from a non-administrator</strong>. Fill in the token below.",
+      "tokenTitle": "GitHub Enterprise administrator token",
+      "tokenOk": "valid",
+      "tokenBad": "problem",
+      "tokenHint": "requires the admin:enterprise scope",
+      "tokenSavedPlaceholder": "configured {{hint}} (leave unchanged)",
+      "verifying": "Verifying…",
+      "verify": "Verify",
+      "tokenValid": "token is valid, owned by {{login}}",
+      "tokenValidWithScopes": "token is valid, owned by {{login}} (scope: {{scopes}})",
+      "tokenOwner": "Token owner",
+      "fineGrainedToken": "(fine-grained token)",
+      "canListEnterprises": "Can list enterprises",
+      "missingEnterpriseScope": "admin:enterprise missing",
+      "githubError": "GitHub returned an error",
+      "tokenUnsaved": "The token has been changed but is <strong>not saved yet</strong>. Only a saved token can be used to fetch the enterprise list automatically.",
+      "structureTitle": "Enterprises, enterprise teams and organizations",
+      "enterpriseCount_one": "{{count}} enterprise",
+      "enterpriseCount_other": "{{count}} enterprises",
+      "fetching": "Fetching…",
+      "refetch": "Fetch again",
+      "needTokenFirst": "Fill in and save the Enterprise token first, and the enterprises visible to it will be listed here.",
+      "fetchFailed": "fetch failed",
+      "fetchingFromGitHub": "Fetching the enterprise list from GitHub…",
+      "noEnterprises": "No enterprises are visible to this token.",
+      "noEnterprisesVisible": "No enterprises are visible to this token. Make sure it has the admin:enterprise scope.",
+      "structureLead": "The structure below comes straight from the GitHub API. Turn on the master switch for an enterprise, then choose which <strong>organizations</strong> or <strong>enterprise teams</strong> may create API keys.",
+      "nobodyAllowed": "The policy is enabled but no enterprise is allowed — right now <strong>nobody</strong> except administrators can create an API key.",
+      "entOn": "allowed",
+      "entOff": "not allowed",
+      "entOffNote": "The master switch is off — the organization and team settings for this enterprise <strong>have no effect at all</strong>.",
+      "allowAllOrgs": "Let members of <strong>any organization</strong> in this enterprise create keys",
+      "allOrgsNote": "With this on you do not have to tick organizations one by one. The order of evaluation is: direct enterprise membership first, then each listed organization is probed in turn (up to 30).",
+      "allOrgsTruncated": "<strong>This enterprise has {{total}} organizations and only the first {{listed}} are listed</strong>; the ones not listed will not be probed — turn this off and tick them individually if you need exact control.",
+      "allOrgsOffNote": "While it is off, only the organizations and enterprise teams ticked below count.",
+      "allowedOrgs": "Allowed organizations",
+      "allowedOrgsHint": "membership is checked through /orgs/{org}/members/{user}, live",
+      "orgListUnavailable": "organization list unavailable",
+      "noOrgs": "This enterprise has no organizations.",
+      "orgsListedPartially": "{{total}} organizations in total; only the first {{listed}} are listed here.",
+      "allowedTeams": "Allowed enterprise teams",
+      "allowedTeamsHint": "membership is decided by the team's numeric id (GitHub accepts nothing else); the team name is what is shown here and to users",
+      "teamListUnavailable": "team list unavailable",
+      "teamListUnavailableNote": "— this enterprise can only be authorized by organization.",
+      "noTeams": "This enterprise has no enterprise teams."
+    }
+  },
+  "playground": {
+    "sendRequest": "Send a request",
+    "apiKey": "API key",
+    "apiKeyHint": "create one on the API keys page; the request is attributed to the key's owner",
+    "remember": "Remember in this browser (localStorage)",
+    "sessionId": "Session ID (optional, enables session stickiness)",
+    "sessionIdPlaceholder": "leave empty to route each request independently",
+    "stream": "Streaming (SSE)",
+    "sending": "Sending…",
+    "send": "Send",
+    "samplePrompt": "Help me refactor this module's architecture and suggest a design",
+    "routingResult": "Routing result",
+    "decisionMs": "decision {{ms}}ms",
+    "waiting": "Waiting for the model's response…",
+    "emptyContent": "(empty content)",
+    "viewTrace": "View the full trace",
+    "idle": "Send a request to see the routing and the response here"
+  },
+  "traces": {
+    "list": {
+      "title": "Traces",
+      "autoRefresh": "Auto refresh",
+      "empty": "No calls recorded yet — send one from the Playground",
+      "emptyFiltered": "No traces match these filters — widen them or clear the filters"
+    },
+    "filter": {
+      "date": "Date",
+      "traceId": "Trace ID",
+      "traceIdHint": "any part of the ID",
+      "user": "User",
+      "userHint": "GitHub login",
+      "clear": "Clear filters"
+    },
+    "paging": {
+      "count": "{{shown}} of {{total}}",
+      "truncated": "(only the most recent days were scanned)",
+      "loadMore_one": "Load {{count}} more",
+      "loadMore_other": "Load {{count}} more"
+    },
+    "delete": {
+      "one": "Delete this trace",
+      "filtered": "Delete the filtered traces",
+      "confirmOne": "Delete the trace {{id}}? This cannot be undone.",
+      "confirmMany": "Delete all {{count}} traces matching {{criteria}}? This cannot be undone.",
+      "criteriaDate": "date {{date}}",
+      "criteriaUser": "user {{user}}",
+      "done_one": "{{count}} trace deleted",
+      "done_other": "{{count}} traces deleted"
+    },
+    "json": {
+      "expandAll": "Expand all",
+      "collapseAll": "Collapse all",
+      "copy": "Copy JSON",
+      "copied": "Copied"
+    },
+    "table": {
+      "time": "Time",
+      "user": "User",
+      "model": "Model",
+      "decision": "Decision",
+      "latency": "Latency",
+      "turns": "Calls",
+      "turnsHint": "Upstream calls in this interaction: more than one means an agent tool loop"
+    },
+    "turns": {
+      "nth": "Call {{index}}/{{total}}",
+      "tokens_one": "{{count}} token",
+      "tokens_other": "{{count}} tokens",
+      "noTools": "no tool calls",
+      "messageCount": "Messages sent",
+      "requestId": "Request ID",
+      "rewritten": "messages (this call rewrote the conversation)",
+      "superseded": "messages (as of this call)"
+    },
+    "detail": {
+      "overview": "Overview",
+      "time": "Time",
+      "user": "User",
+      "apiKey": "API key",
+      "apiKeyValue": "{{name}} ({{id}})",
+      "session": "Session",
+      "stickySuffix": "(sticky)",
+      "totalLatency": "Total latency",
+      "latencyBreakdown": "{{total}} ms (decision {{decision}} ms + backend {{backend}} ms)",
+      "routingDecision": "Routing decision",
+      "requestParams": "Request parameters",
+      "backendCall": "Backend call",
+      "modelResponse": "Model response",
+      "noResponse": "No response yet",
+      "notFound": "This trace no longer exists, or it belongs to another user.",
+      "interaction": "Interaction",
+      "noInteraction": "not reported by the client",
+      "turns": "Upstream calls",
+      "turnCount_one": "{{count}} call",
+      "turnCount_other": "{{count}} calls",
+      "oneDecision": "one routing decision",
+      "chain": "Call chain",
+      "chainNote": "The client answered one user question with several upstream calls, replaying the conversation with each tool result appended. They share one routing decision and one model, and are recorded here as one trace.",
+      "turnsTruncated_one": "{{count}} earlier call is not stored (per-trace limit reached)",
+      "turnsTruncated_other": "{{count}} earlier calls are not stored (per-trace limit reached)",
+      "messagesFinal": "the full chain, as of the final call",
+      "finalTurn": "final call",
+      "usageSummed_one": "summed over {{count}} call",
+      "usageSummed_other": "summed over {{count}} calls"
+    },
+    "analysis": {
+      "matchedKeyword": "matched \"{{keyword}}\"",
+      "decisionModel": "Decision model",
+      "rationale": "Rationale",
+      "decisionLatency": "Decision latency",
+      "decisionTokens": "Decision tokens",
+      "candidates": "Candidate models",
+      "systemPrompt": "Prompt (system)",
+      "charsExpand_one": "{{count}} character, click to expand",
+      "charsExpand_other": "{{count}} characters, click to expand",
+      "decisionInput": "Decision input",
+      "truncated": "…(truncated)",
+      "rawOutput": "Raw output",
+      "fallback": "Fallback",
+      "fellBackToDefault": "fell back to the default model",
+      "interactionReuse": "The model was chosen once for this interaction; this call reused it, so no decision model was called and no decision latency was paid."
+    }
+  },
+  "config": {
+    "loading": "Loading the configuration…",
+    "saved": "Saved and applied: config.yaml was written back (comments preserved) and the connection credentials took effect immediately",
+    "section": {
+      "providers": {
+        "label": "Backend connections",
+        "hint": "addresses and keys, splittable per environment"
+      },
+      "models": {
+        "label": "Model catalog",
+        "hint": "the models exposed to clients and the connection each is bound to"
+      },
+      "strategy": {
+        "label": "Routing strategy",
+        "hint": "AI / rules, session stickiness, decision model parameters"
+      },
+      "rules": {
+        "label": "Rule routing",
+        "hint": "keyword and length rules, matched in order"
+      }
+    },
+    "providers": {
+      "title": "Backend connections (providers)",
+      "count_one": "{{count}} connection",
+      "count_other": "{{count}} connections",
+      "add": "+ Add connection",
+      "lead": "A connection is one \"address + key\" pair. Models inherit the connection marked \"default\", or bind to one of their own — which can be Azure AI Foundry in a different environment, or any OpenAI-compatible service. Keys are stored in <code>config.yaml</code> on the server (that file is ignored by <code>.gitignore</code>).",
+      "empty": "No connections yet. Add one before binding models to it.",
+      "promptName": "Name of the new connection (models reference it by this name, e.g. openrouter):",
+      "promptRename": "Rename the connection:",
+      "alreadyExists": "The connection \"{{name}}\" already exists",
+      "stillReferenced": "The connection \"{{name}}\" is still referenced by the model(s) {{models}} — rebind them under Model catalog first",
+      "isDefaultConnection": "The connection \"{{name}}\" is the default connection — point the default at another connection first",
+      "defaultBadge": "default",
+      "typeOpenAI": "OpenAI-compatible",
+      "typeAzure": "Azure",
+      "boundModels_one": "{{count}} model",
+      "boundModels_other": "{{count}} models",
+      "setDefault": "Set as default",
+      "rename": "Rename",
+      "baseUrl": "Address (base_url)",
+      "baseUrlHint": "for Azure use https://xxx.openai.azure.com/; for OpenAI-compatible go all the way to /v1",
+      "apiKey": "Key (api_key)",
+      "apiKeyHint": "written to config.yaml on save",
+      "apiKeyPlaceholder": "leave empty to fall back to AZURE_OPENAI_API_KEY from .env",
+      "apiType": "Interface type (api_type)",
+      "apiTypeAzureOption": "azure — Azure OpenAI / AI Foundry",
+      "apiTypeOpenAIOption": "openai — OpenAI-compatible service",
+      "apiVersionHint": "only azure needs this"
+    },
+    "models": {
+      "title": "Model catalog",
+      "count_one": "{{count}} model",
+      "count_other": "{{count}} models",
+      "add": "+ Add model",
+      "lead": "The names here are the model names a client may send in a request. The descriptions are handed to the AI decision model as the candidate catalog, so spelling out \"what kind of task this suits\" improves routing accuracy noticeably. Connections are maintained under <providersLink>Backend connections</providersLink>.",
+      "empty": "No models yet. Add at least one and mark it as the default model.",
+      "promptName": "The name this new model is exposed under in the router:",
+      "alreadyExists": "The model \"{{name}}\" already exists",
+      "removedWithRules_one": "Deleted the model \"{{name}}\" along with {{count}} rule that referenced it",
+      "removedWithRules_other": "Deleted the model \"{{name}}\" along with {{count}} rules that referenced it",
+      "defaultBadge": "default",
+      "reasoningBadge": "reasoning",
+      "connectionMissing": "— connection missing",
+      "description": "Description",
+      "descriptionHint": "read by the AI decision model",
+      "descriptionPlaceholder": "e.g.: flagship high-end model. Suits the hardest reasoning, large system design and gnarly bug analysis.",
+      "provider": "Connection (provider)",
+      "followDefault": "Follow the default ({{name}})",
+      "modelNameOverride": "Upstream name override (model_name)",
+      "modelNameOverrideHint": "leave empty to use the model name above",
+      "isDefault": "Default model (used when no rule matches or the decision fails)",
+      "isReasoning": "Reasoning model (max_completion_tokens, sampling parameters stripped)"
+    },
+    "strategy": {
+      "title": "Routing strategy",
+      "ai": {
+        "title": "AI routing",
+        "desc": "A lightweight decision model reads the request's intent and picks a model. Accurate, at the cost of one extra ~1s decision call per request."
+      },
+      "rule": {
+        "title": "Rule routing",
+        "desc": "Matched in order by keyword and prompt length. Zero LLM calls, under 1ms, and the rules are maintained under <rulesLink>Rule routing</rulesLink>."
+      }
+    },
+    "session": {
+      "title": "Session stickiness",
+      "sticky": "Pin one model per session (better consistency and cache hit rate)",
+      "stickyNote": "With this on, the model chosen for a user interaction is reused for the rest of it: an agentic client's tool-call loop keeps one model and pays for one routing decision. Requests are grouped by the <code>x-interaction-id</code> header that clients such as GitHub Copilot already send, and by <code>x-session-id</code> when one is supplied.",
+      "ttl": "TTL (seconds)",
+      "ttlHint": "how long an idle session keeps its binding",
+      "maxSessions": "Maximum sessions",
+      "maxSessionsHint": "evicted LRU-first beyond this"
+    },
+    "aiRouter": {
+      "title": "AI decision model",
+      "inactive": "the strategy is currently rule routing, so the settings below have no effect",
+      "decisionModel": "Decision model",
+      "decisionModelHint": "pick a light, fast one, e.g. gpt-4.1",
+      "decisionProvider": "Connection used by the decision model",
+      "timeout": "Decision timeout (seconds)",
+      "timeoutHint": "a timeout falls back to the default model",
+      "maxPromptChars": "Prompt truncation length",
+      "maxPromptCharsHint": "beyond this, half is kept from each end"
+    },
+    "rules": {
+      "title": "Rule routing",
+      "count_one": "{{count}} rule",
+      "count_other": "{{count}} rules",
+      "inactive": "the strategy is currently AI routing, so rules have no effect",
+      "add": "+ Add rule",
+      "lead": "Evaluated <strong>top to bottom</strong>; the first rule that matches decides the model and the rest are skipped — use ↑↓ to reorder. If nothing matches, the default model <model>{{model}}</model> is used. When one rule carries both keywords and a length, only the length is checked. The strategy switch lives under <strategyLink>Routing strategy</strategyLink>.",
+      "noDefaultModel": "(not set yet)",
+      "empty": "No rules yet. Under the rule routing strategy, every request goes to the default model.",
+      "keywords": "Keywords",
+      "keywordsHint": "comma separated, case insensitive, any one match routes",
+      "keywordsPlaceholder": "refactor, architecture, redesign",
+      "minPromptChars": "Minimum prompt length",
+      "minPromptCharsHint": "leave empty to disable",
+      "disabled": "disabled",
+      "moveUp": "Move up",
+      "moveDown": "Move down"
+    },
+    "prompt": {
+      "title": "AI decision prompt",
+      "usingDefault": "using the built-in default prompt",
+      "lead": "This is the <code>system</code> content sent to the decision model. <code>{{placeholder}}</code> is replaced with the name and <code>description</code> of every model on the Model catalog page. Leave it empty to use the built-in default. Keep the instruction that the decision model must output only <code>{{shape}}</code> — a response that cannot be parsed silently falls back to the default model.",
+      "template": "Prompt template",
+      "templateHint": "empty = built-in default; braces need no escaping",
+      "templatePlaceholder": "Write the prompt here…",
+      "loadDefault": "Load the default prompt",
+      "clear": "Clear (back to default)",
+      "insertPlaceholder": "Insert {{placeholder}}",
+      "templateChars": "template {{count}} characters",
+      "defaultTemplateChars": "default template {{count}} characters",
+      "noPlaceholderWarning": "The template has no <code>{{placeholder}}</code>: the model catalog is appended at the end automatically (see the preview below), but you do not control where. Inserting the placeholder explicitly is recommended.",
+      "missingDescription_one": "{{count}} model has no description: <code>{{models}}</code> — it is just a name in the catalog, so the decision model can hardly tell whether to pick it.",
+      "missingDescription_other": "{{count}} models have no description: <code>{{models}}</code> — they are just names in the catalog, so the decision model can hardly tell whether to pick them.",
+      "goFixModels": "Go and fill them in",
+      "previewTitle": "Actual prompt preview",
+      "previewHint": "rendered by the backend from the current draft, by the same code a real request uses",
+      "rendering": "Rendering…",
+      "previewFailed": "Preview failed: {{error}}",
+      "metaProvider": "connection {{name}}",
+      "metaCandidates_one": "{{count}} candidate model",
+      "metaCandidates_other": "{{count}} candidate models",
+      "metaFallback": "falls back to {{name}}",
+      "metaRenderedChars": "{{count}} characters rendered",
+      "sample": "Sample request (optional)",
+      "sampleHint": "type a user question to preview what the user message looks like after truncation",
+      "samplePlaceholder": "e.g.: help me refactor this module's architecture",
+      "sampleTruncated": "truncated to {{count}} characters, half from each end",
+      "defaultLoaded": "The built-in default prompt has been loaded into the editor; keep editing if you like, and save to apply",
+      "preset": {
+        "refactor": "Refactor this module's architecture for me and split out a separate domain layer",
+        "translate": "Translate this passage into English",
+        "proof": "Prove: every continuous function on a closed interval is uniformly continuous"
+      }
+    }
+  }
+}

@@ -1,0 +1,675 @@
+{
+  "app": {
+    "connecting": "サービスに接続中…",
+    "notFound": {
+      "title": "ページが見つかりません",
+      "lead": "このアドレスに一致するページはありません。左のナビゲーションから選んでください。"
+    },
+    "forbidden": {
+      "lead": "このページは管理者専用です。必要な場合は、管理者に「アクセス制御」でアカウントを追加してもらってください。"
+    }
+  },
+  "common": {
+    "actions": "操作",
+    "close": "閉じる",
+    "confirmDiscard": "未保存の変更をすべて破棄して config.yaml から再読み込みしますか？",
+    "copied": "コピーしました",
+    "copy": "コピー",
+    "delete": "削除",
+    "dirtySections_other": "（{{count}} セクション）",
+    "discardChanges": "変更を破棄",
+    "emptyContent": "（内容なし）",
+    "error": "エラー",
+    "hasUnsavedChanges": "未保存の変更があります",
+    "inSyncWithFile": "config.yaml と一致しています",
+    "hide": "隠す",
+    "listSeparator": "、",
+    "loading": "読み込み中…",
+    "no": "いいえ",
+    "noData": "データがありません",
+    "refresh": "更新",
+    "reload": "再読み込み",
+    "reloadedFromFile": "config.yaml から再読み込みしました",
+    "retry": "再試行",
+    "saveAndApply": "保存して即時反映",
+    "saving": "保存中…",
+    "show": "表示",
+    "status": "ステータス",
+    "yes": "はい"
+  },
+  "nav": {
+    "group": {
+      "overview": "概要",
+      "monitor": "モニタリング",
+      "manage": "管理"
+    },
+    "usage": {
+      "label": "使用状況",
+      "title": "使用状況",
+      "subtitle": "リクエスト数、トークン消費、レイテンシ分布"
+    },
+    "keys": {
+      "label": "API キー",
+      "title": "API キー",
+      "subtitle": "キーを作成すれば Copilot BYOK からこのサービスを呼び出せます"
+    },
+    "traces": {
+      "label": "トレース",
+      "title": "トレース",
+      "subtitle": "各リクエストのルーティング判断、バックエンドのパラメーター、レスポンスをすべて記録"
+    },
+    "playground": {
+      "label": "プレイグラウンド",
+      "title": "プレイグラウンド",
+      "subtitle": "自分の API キーでルーティング付きのリクエストを 1 回送信"
+    },
+    "config": {
+      "label": "ルーティング設定",
+      "title": "ルーティング設定",
+      "subtitle": "バックエンド接続、モデルカタログ、ルーティング戦略、ルールルーティング"
+    },
+    "access": {
+      "label": "アクセス制御",
+      "title": "アクセス制御",
+      "subtitle": "管理者とサインイン範囲、GitHub OAuth アプリ、そして Enterprise / Team / Organization 単位で誰が API キーを作成できるかの制御"
+    }
+  },
+  "shell": {
+    "collapseNav": "ナビゲーションを折りたたむ",
+    "expandNav": "ナビゲーションを展開する",
+    "language": "言語",
+    "roleAdmin": "管理者",
+    "roleUser": "一般ユーザー",
+    "running": "稼働中",
+    "signOut": "サインアウト",
+    "toggleTheme": "テーマを切り替える",
+    "unreachable": "サービスに到達できません"
+  },
+  "login": {
+    "title": "Foundry Model Router コンソール",
+    "lead": "GitHub アカウントでサインインします。サインイン後は API キーを作成し、自分の呼び出しと使用量を確認できます。管理者はルーティング戦略とバックエンド接続も管理できます。",
+    "failed": "GitHub サインインに失敗しました：{{error}}",
+    "signInWithGitHub": "GitHub でサインイン",
+    "local": {
+      "or": "または",
+      "reveal": "ユーザー名とパスワードでサインイン",
+      "hide": "GitHub サインインに戻る",
+      "username": "ユーザー名",
+      "password": "パスワード",
+      "submit": "サインイン",
+      "hint": "ローカル管理者アカウントは github.com に到達できない場合のためのものです。config.yaml で設定され、GitHub アカウントではありません。",
+      "failed": "このユーザー名とパスワードの組み合わせは受け付けられませんでした。"
+    }
+  },
+  "setup": {
+    "blocked": {
+      "title": "先に GitHub OAuth を設定してください",
+      "lead": "このサービスは常に本人確認を行いますが、GitHub OAuth が未設定で、初期化ウィザードはサービスを実行しているマシン（127.0.0.1）からのアクセスのみ許可します。サーバー上で <code>config.yaml</code> の <code>auth.github</code> セクションを直接編集し、client_id / client_secret と <code>admin_logins</code> を記入してからサービスを再起動してください。",
+      "callbackComment": "空欄なら自動導出"
+    },
+    "title": "初期設定：GitHub OAuth",
+    "lead": "まず GitHub → Settings → Developer settings → OAuth Apps でアプリを作成し、コールバック URL には下記を指定してから、Client ID / Secret をこのフォームに貼り付けてください。このウィザードは未設定かつローカルマシンからのアクセス時のみ利用できます。",
+    "secretPlaceholder": "config.yaml に書き込まれます（このファイルは .gitignore で除外されています）",
+    "adminLogins": "管理者の GitHub login",
+    "adminLoginsHint": "複数はカンマまたは空白で区切ります",
+    "saving": "書き込み中…",
+    "save": "設定を保存してサインインへ",
+    "localHint": "github.com に到達できませんか？<code>config.yaml</code> で <code>auth.local_admin.enabled: true</code> を設定し、ローカル管理者アカウント（<code>admin</code> / <code>admin1234</code>）でサインインしてください。このパスワードを変更するまで、コンソールの他の画面には入れません。"
+  },
+  "password": {
+    "title": "管理者パスワードの変更",
+    "lead": "このアカウントはまだ組み込みの初期パスワードを使っているため、コンソールの他の画面には入れません。新しいパスワードを設定してください。",
+    "username": "ユーザー名",
+    "current": "現在のパスワード",
+    "next": "新しいパスワード",
+    "confirm": "新しいパスワード（確認）",
+    "tooShort": "新しいパスワードは 8 文字以上にしてください。",
+    "mismatch": "新しいパスワードが一致しません。",
+    "submit": "パスワードを変更して続行",
+    "recovery": "サインインできなくなった場合は、config.yaml の auth.local_admin にある password_hash と password_salt を空にすると、組み込みの初期パスワードが再び有効になります。"
+  },
+  "usage": {
+    "allUsers": "全ユーザー",
+    "byUser": "ユーザー別",
+    "drillDown": "ドリルダウン",
+    "loading": "集計中…",
+    "noRecords": "この期間に呼び出し記録はありません",
+    "scope": "表示範囲",
+    "range": {
+      "today": "今日",
+      "lastDays_other": "直近 {{count}} 日"
+    },
+    "tile": {
+      "requests": "リクエスト数",
+      "totalTokens": "合計トークン",
+      "tokenSplit": "入力 {{prompt}} · 出力 {{completion}}",
+      "errorRate": "エラー率",
+      "failures_other": "{{count}} 件の失敗",
+      "avgLatency": "平均レイテンシ"
+    },
+    "chart": {
+      "byModel": "モデル別のリクエスト数",
+      "byDay": "日付別のリクエスト数"
+    },
+    "table": {
+      "title": "明細データ（テーブル表示）",
+      "date": "日付",
+      "requests": "リクエスト数",
+      "totalTokens": "合計トークン",
+      "failures": "失敗",
+      "user": "ユーザー"
+    },
+    "tooltip": {
+      "model_other": "{{model}}：{{count}} 件のリクエスト",
+      "day_other": "{{date}}：{{count}} 件のリクエスト · {{tokens}} トークン · {{errors}} 件の失敗"
+    }
+  },
+  "keys": {
+    "created": {
+      "title": "キーを作成しました",
+      "readyBadge": "すぐに使えます",
+      "note": "今すぐクライアント設定にコピーしてください。あとから下のキー一覧でいつでも確認できます — このキーはあなたには常に表示されます。",
+      "byokTitle": "GitHub Copilot で BYOK として使う",
+      "modelHint": "「ルーティング設定」に登録されている任意のモデル名",
+      "curlComment": "コマンドラインでの確認",
+      "attribution": "このキーで送られたすべてのリクエストは <code>{{login}}</code> に紐付けられ、トレースの <code>user_id</code> がその GitHub アカウントになります。"
+    },
+    "create": {
+      "title": "新しいキー",
+      "notAllowedBadge": "現在は作成できません",
+      "name": "名前",
+      "nameHint": "用途を見分けやすい名前、例：copilot-laptop",
+      "creating": "作成中…",
+      "submit": "キーを作成",
+      "blockedNote": "あなたのアカウントは承認されていないためキーを作成できず、したがって<strong>BYOK も利用できません</strong>。理由は上の「キー作成権限」を参照してください。"
+    },
+    "list": {
+      "title": "自分のキー",
+      "showAll": "全ユーザーのキーを表示",
+      "emptyBlocked": "キーがまだなく、このアカウントはキー作成を承認されていません。",
+      "empty": "キーがまだありません。1 つ作成すれば BYOK からこのサービスを呼び出せます。"
+    },
+    "table": {
+      "name": "名前",
+      "key": "キー",
+      "keyUnavailable": "表示できません",
+      "keyUnavailableHint": "このキーは閲覧機能の導入前に作成され、ハッシュ値のみが保存されています。使用は可能です。値を確認したい場合は新しいキーを作成してください。",
+      "keyOwnerOnly": "本人のみ表示",
+      "keyOwnerOnlyHint": "キーは所有するアカウントにのみ表示されます。管理者は任意のキーを無効化・削除できますが、他人の資格情報を読むことはできません。",
+      "owner": "所有ユーザー",
+      "created": "作成日時",
+      "lastUsed": "最終使用",
+      "calls": "呼び出し数",
+      "disabled": "無効",
+      "enable": "有効化",
+      "disable": "無効化",
+      "confirmDelete": "キー「{{name}}」を削除しますか？これを使っているクライアントは即座に動かなくなります。"
+    },
+    "copyFailed": "クリップボードにコピーできませんでした。ブラウザーは HTTPS（または localhost）でのみこの操作を許可します — 「表示」を押して手動でコピーしてください。",
+    "access": {
+      "title": "キー作成権限",
+      "unknown": "確認できません",
+      "checking": "あなたの Enterprise と Organization の所属を GitHub に確認しています…",
+      "allowed": "作成が許可されています",
+      "denied": "作成が拒否されています",
+      "policyOn": "エンタープライズのアクセス制御は有効です",
+      "hideEvidence": "根拠を隠す",
+      "showEvidence": "根拠を表示",
+      "recheck": "再確認",
+      "account": "現在のアカウント",
+      "grantedVia": "許可の経路",
+      "enterpriseParenOpen": "（Enterprise ",
+      "enterpriseParenClose": "）",
+      "deniedExplanation": "<strong>これが意味するのは</strong>：サインインしてこのページを見ることはできますが、API キーは作成できません。キーがなければ GitHub Copilot BYOK からこのサービスの <code>/v1/chat/completions</code> を呼び出せません。利用したい場合は、以下の根拠を管理者に送り、「アクセス制御 → キーポリシー」であなたの Organization または Enterprise チームを許可してもらってください。",
+      "table": {
+        "enterprise": "Enterprise",
+        "scope": "範囲",
+        "name": "名前",
+        "isMember": "あなたはメンバーか",
+        "source": "判定元"
+      },
+      "source": {
+        "cache": "キャッシュ",
+        "cacheHint": "data/github のローカルメンバー一覧から判定。GitHub は呼び出していません",
+        "probe": "プローブ",
+        "probeHint": "以前のライブプローブの結果から判定",
+        "live": "ライブ",
+        "liveHint": "このリクエストで GitHub を呼び出して判定。この行は判定ごとに往復が発生します"
+      },
+      "scanned": "（{{count}} 件を調査）",
+      "scannedTruncated": "（{{count}} 件を調査、以降は省略）",
+      "undecidable": "判定できません",
+      "undecidableHint": "GitHub から回答が得られず、不許可として扱います"
+    }
+  },
+  "access": {
+    "loading": "アクセス制御の設定を読み込み中…",
+    "saved": "保存して即時反映しました：config.yaml の auth セクションを書き戻しました（コメントは保持）",
+    "section": {
+      "admins": {
+        "label": "管理者とサインイン",
+        "hint": "管理者リストとサインインを許可する範囲"
+      },
+      "oauth": {
+        "label": "GitHub OAuth",
+        "hint": "サインインに使う OAuth アプリの資格情報"
+      },
+      "local": {
+        "label": "ローカル管理者",
+        "hint": "github.com に到達できないときのための組み込みアカウント"
+      },
+      "policy": {
+        "label": "キーポリシー",
+        "hint": "Enterprise / Team / Organization 単位で誰がキーを作成できるかを制御"
+      }
+    },
+    "kind": {
+      "organization": "Organization",
+      "team": "Enterprise チーム",
+      "enterprise": "Enterprise 直属メンバー",
+      "org-scan": "Organization の一括調査",
+      "admin": "サービス管理者"
+    },
+    "admins": {
+      "title": "管理者",
+      "count_other": "{{count}} 人",
+      "logins": "管理者の GitHub login",
+      "loginsHint": "カンマ区切り。保存すると即時に有効になります",
+      "note": "管理者はこのページと「ルーティング設定」、ユーザーを横断した使用統計とすべてのトレースを閲覧でき、さらに<strong>エンタープライズのキーポリシーの対象外</strong>です（そうでないとポリシーを誤って設定した際に自分自身も締め出されます）。<strong>このリストを空にすると全員が管理者権限を失い</strong>、その時は <code>config.yaml</code> を編集するしか復旧手段がありません。"
+    },
+    "signIn": {
+      "title": "サインイン範囲",
+      "allowAny": "任意の GitHub アカウントのサインインを許可する",
+      "note": "これは<strong>サインイン</strong>のスイッチであり、<strong>認可</strong>のスイッチではありません。オンの間は任意の GitHub アカウントがサインインして自分の（空の）データを見られますが、API キーを作成できるかどうかは「キーポリシー」が決めます。オフにすると上記の管理者だけがサインインできます。いずれの場合も <code>/v1/chat/completions</code> の呼び出しには有効な API キーが必要です。"
+    },
+    "oauth": {
+      "title": "GitHub OAuth アプリ",
+      "configured": "設定済み",
+      "notConfigured": "未設定",
+      "warning": "<strong>ここを誤ると自分を含む全員がサインインできなくなり</strong>、サーバー側の <code>config.yaml</code> を編集するしか復旧手段がありません。変更する前に、資格情報が GitHub → Settings → Developer settings → OAuth Apps のものであることを確認してください。保存しても現在のセッションは無効になりませんが、次回のサインインでは新しい資格情報が使われます。",
+      "clientIdHint": "OAuth App ページに表示される Client ID",
+      "clientSecretHint": "GitHub で生成した時に一度だけ表示されます。ここに保存した後も同様に再表示されません",
+      "secretKeepPlaceholder": "設定済み（変更しない）",
+      "secretPastePlaceholder": "Client Secret を貼り付け",
+      "callbackUrl": "コールバック URL",
+      "callbackUrlHint": "空欄が最も安全です — アクセス元から自動導出し、リバースプロキシ環境では X-Forwarded-Proto / Host に従います",
+      "registerTitle": "GitHub に登録する必要のある URL",
+      "registerNote": "OAuth App のこの 2 項目は、このサービスの実際のアクセス URL と一致しなければなりません。一致しないと GitHub はコールバックを拒否します："
+    },
+    "local": {
+      "title": "ローカル管理者",
+      "on": "有効",
+      "off": "無効",
+      "lead": "GitHub を経由せず、ユーザー名とパスワードでサインインするスーパー管理者です。github.com に到達できないときでもコンソールに入れます。常に管理者なので、すべてのユーザーのトレースを閲覧・削除できます。",
+      "toggle": "ローカル管理者アカウントでのサインインを許可する",
+      "note": "資格情報は <code>config.yaml</code> の <code>auth.local_admin</code> セクションに保存されます（このファイルは .gitignore で無視されます）。保存されるのはソルト付きハッシュだけで、パスワードそのものは保存されません。<strong>GitHub OAuth が未設定のままこれを無効にすると、サインインする手段がまったくなくなり</strong>、その時は config.yaml を編集するしか復旧手段がありません。",
+      "enabledSaved": "ローカル管理者のサインインを有効にしました",
+      "disabledSaved": "ローカル管理者のサインインを無効にしました",
+      "passwordSaved": "保存しました：新しい資格情報が有効になり、このアカウントの他のセッションはサインアウトされました",
+      "credentialTitle": "ユーザー名とパスワード",
+      "changedAt": "最終変更 {{at}}",
+      "neverChanged": "まだ組み込みの初期パスワードのままです",
+      "username": "ユーザー名",
+      "usernameHint": "変更するとこのアカウントの他のセッションはサインアウトされます",
+      "current": "現在のパスワード",
+      "currentHint": "一度も設定していない場合は組み込みの初期パスワードです",
+      "next": "新しいパスワード",
+      "nextHint": "8 文字以上で、組み込みの初期パスワードは使えません",
+      "confirm": "新しいパスワード（確認）",
+      "submit": "資格情報を変更",
+      "recovery": "<strong>サインインできなくなりましたか？</strong><code>config.yaml</code> の <code>auth.local_admin</code> にある <code>password_hash</code> と <code>password_salt</code> を空にすると、組み込みの初期パスワードが再び有効になり、次のサインインでコンソールが改めて変更を求めます。"
+    },
+    "cache": {
+      "title": "ローカル GitHub キャッシュ",
+      "stale": "期限切れ",
+      "fresh": "最新",
+      "tokenChanged": "token が変更されました",
+      "refreshNow": "今すぐ更新",
+      "refreshing": "更新中…",
+      "refreshed": "GitHub から取得して data/github に書き込みました",
+      "lead": "エンタープライズ / 組織 / チームの構造とそのメンバー一覧は <code>data/github</code> に保存され、タイマーで更新されます。そのためメンバー判定は GitHub への往復ではなくローカルの集合参照で済みます。<strong>メンバー一覧が切り詰められた、あるいは取得に失敗したスコープは判定の根拠にしません</strong>——それらはライブプローブにフォールバックします。「読めた範囲の一覧にいない」ことは「メンバーではない」ことではないからです。",
+      "interval": "更新間隔（秒）",
+      "intervalHint": "60 以上。このページを保存すると反映されます",
+      "unavailable": "まだ何もキャッシュされていません。Enterprise token を保存して更新してください。",
+      "structureFetched": "構造の取得時刻",
+      "membersFetched": "メンバー一覧の取得時刻",
+      "never": "なし",
+      "scopeCount": "キャッシュ済みスコープ",
+      "scopes_other": "{{count}} 件のスコープ",
+      "incomplete_other": "{{count}} 件が不完全",
+      "probeCount": "記憶しているライブプローブ",
+      "probes_other": "{{count}} 件の結果",
+      "table": {
+        "scope": "種別",
+        "name": "名前",
+        "members": "メンバー数",
+        "state": "状態",
+        "errored": "取得エラー",
+        "truncated": "切り詰め",
+        "complete": "完全"
+      }
+    },
+    "policy": {
+      "title": "キー作成ポリシー",
+      "enabled": "有効",
+      "disabled": "無効",
+      "toggle": "指定した Enterprise / Organization のユーザーだけに API キーの作成を許可する",
+      "enabledNote": "有効：一般ユーザーがキーを作成する際、その Enterprise と Organization の所属を GitHub にリアルタイムで確認し、許可された範囲のいずれにも属さないユーザーは拒否されます（403）。そのため BYOK も使えません。管理者はこの制限を受けません。",
+      "disabledNote": "無効：<strong>サインインできる GitHub アカウントであれば誰でも API キーを作成し BYOK を使えます</strong>。上の「任意の GitHub アカウントのサインインを許可する」もオンなら、GitHub 全体に開放しているのと同じです。",
+      "missingTokenBadge": "token がありません",
+      "missingTokenNote": "ポリシーは有効ですが Enterprise token が未設定のため所属を確認できず、<strong>現在は管理者以外のすべてのキー作成リクエストを拒否します</strong>。下に token を入力してください。",
+      "tokenTitle": "GitHub Enterprise 管理者 token",
+      "tokenOk": "有効",
+      "tokenBad": "異常",
+      "tokenHint": "admin:enterprise 権限が必要です",
+      "tokenSavedPlaceholder": "設定済み {{hint}}（変更しない）",
+      "verifying": "検証中…",
+      "verify": "検証",
+      "tokenValid": "token は有効です。所有者は {{login}}",
+      "tokenValidWithScopes": "token は有効です。所有者は {{login}}（scope: {{scopes}}）",
+      "tokenOwner": "token の所有者",
+      "fineGrainedToken": "（fine-grained token）",
+      "canListEnterprises": "Enterprise を列挙できる",
+      "missingEnterpriseScope": "admin:enterprise がありません",
+      "githubError": "GitHub がエラーを返しました",
+      "tokenUnsaved": "token は変更されていますが<strong>まだ保存されていません</strong>。保存後にはじめて Enterprise 一覧の自動取得に使えます。",
+      "structureTitle": "Enterprise、Enterprise チーム、Organization",
+      "enterpriseCount_other": "{{count}} 件の Enterprise",
+      "fetching": "取得中…",
+      "refetch": "再取得",
+      "needTokenFirst": "先に Enterprise token を入力して保存すると、その token から見える Enterprise がここに一覧表示されます。",
+      "fetchFailed": "取得に失敗しました",
+      "fetchingFromGitHub": "GitHub から Enterprise 一覧を取得中…",
+      "noEnterprises": "この token から見える Enterprise はありません。",
+      "noEnterprisesVisible": "この token から見える Enterprise はありません。admin:enterprise 権限があるか確認してください。",
+      "structureLead": "以下の構造は GitHub API から直接取得したものです。Enterprise ごとにマスタースイッチをオンにしてから、どの<strong>Organization</strong>または<strong>Enterprise チーム</strong>のメンバーに API キーの作成を許可するか選択してください。",
+      "nobodyAllowed": "ポリシーは有効ですが、許可された Enterprise がありません — 現在は管理者以外<strong>誰も</strong>API キーを作成できません。",
+      "entOn": "許可済み",
+      "entOff": "未許可",
+      "entOffNote": "マスタースイッチがオフです — この Enterprise 配下の Organization とチームの設定は<strong>すべて無効</strong>です。",
+      "allowAllOrgs": "この Enterprise 配下の<strong>いずれかの Organization</strong>のメンバーにキー作成を許可する",
+      "allOrgsNote": "オンにすれば Organization を 1 つずつ選ぶ必要はありません。判定順序は、まず Enterprise の直属メンバーを確認し、見つからなければ列挙済みの Organization を順に調査します（最大 30 件）。",
+      "allOrgsTruncated": "<strong>この Enterprise の Organization 数は {{total}} で、先頭の {{listed}} 件のみ表示しています</strong>。表示されていない Organization は調査されません — 厳密に制御したい場合はこの項目をオフにして 1 つずつ選択してください。",
+      "allOrgsOffNote": "オフの間は、下でチェックした Organization と Enterprise チームだけが有効です。",
+      "allowedOrgs": "許可する Organization",
+      "allowedOrgsHint": "メンバー判定は /orgs/{org}/members/{user} 経由で、リアルタイムに反映されます",
+      "orgListUnavailable": "Organization 一覧を取得できません",
+      "noOrgs": "この Enterprise には Organization がありません。",
+      "orgsListedPartially": "全部で {{total}} 件の Organization があり、ここでは先頭の {{listed}} 件のみ表示しています。",
+      "allowedTeams": "許可する Enterprise チーム",
+      "allowedTeamsHint": "メンバー判定はチームの数値 id で行います（GitHub は id しか受け付けません）。画面とユーザー側にはチーム名を表示します",
+      "teamListUnavailable": "チーム一覧を取得できません",
+      "teamListUnavailableNote": "— この Enterprise は Organization 単位でのみ許可できます。",
+      "noTeams": "この Enterprise には Enterprise チームがありません。"
+    }
+  },
+  "playground": {
+    "sendRequest": "リクエストを送信",
+    "apiKey": "API キー",
+    "apiKeyHint": "「API キー」ページで作成します。リクエストはそのキーの所有者に紐付けられます",
+    "remember": "このブラウザーに記憶する（localStorage）",
+    "sessionId": "セッション ID（任意、セッション固定を有効にします）",
+    "sessionIdPlaceholder": "空欄なら毎回独立にルーティングします",
+    "stream": "ストリーミング（SSE）",
+    "sending": "送信中…",
+    "send": "送信",
+    "samplePrompt": "このモジュールのアーキテクチャをリファクタリングして、設計案を出してください",
+    "routingResult": "ルーティング結果",
+    "decisionMs": "判断 {{ms}}ms",
+    "waiting": "モデルの応答を待っています…",
+    "emptyContent": "（内容なし）",
+    "viewTrace": "完全なトレースを表示",
+    "idle": "リクエストを送信するとここにルーティングと応答が表示されます"
+  },
+  "traces": {
+    "list": {
+      "title": "トレース",
+      "autoRefresh": "自動更新",
+      "empty": "呼び出し記録がまだありません — 「プレイグラウンド」から 1 件送ってみてください",
+      "emptyFiltered": "この絞り込み条件に一致するトレースはありません — 条件を緩めるか、絞り込みを解除してください"
+    },
+    "filter": {
+      "date": "日付",
+      "traceId": "トレース ID",
+      "traceIdHint": "ID の一部でも可",
+      "user": "ユーザー",
+      "userHint": "GitHub login",
+      "clear": "フィルターをクリア"
+    },
+    "paging": {
+      "count": "{{total}} 件中 {{shown}} 件",
+      "truncated": "（直近の日付ディレクトリのみを走査しました）",
+      "loadMore_other": "さらに {{count}} 件読み込む"
+    },
+    "delete": {
+      "one": "このトレースを削除",
+      "filtered": "絞り込んだトレースを削除",
+      "confirmOne": "トレース {{id}} を削除しますか？元に戻せません。",
+      "confirmMany": "{{criteria}} に一致するトレース {{count}} 件をすべて削除しますか？元に戻せません。",
+      "criteriaDate": "日付 {{date}}",
+      "criteriaUser": "ユーザー {{user}}",
+      "done_other": "{{count}} 件のトレースを削除しました"
+    },
+    "json": {
+      "expandAll": "すべて展開",
+      "collapseAll": "すべて折りたたむ",
+      "copy": "JSON をコピー",
+      "copied": "コピーしました"
+    },
+    "table": {
+      "time": "時刻",
+      "user": "ユーザー",
+      "model": "モデル",
+      "decision": "判断",
+      "latency": "レイテンシ",
+      "turns": "呼び出し",
+      "turnsHint": "このインタラクション内の上流呼び出し回数。1 より大きい場合はエージェントのツールループです"
+    },
+    "turns": {
+      "nth": "{{index}}/{{total}} 回目の呼び出し",
+      "tokens_other": "{{count}} トークン",
+      "noTools": "ツール呼び出しなし",
+      "messageCount": "送信したメッセージ数",
+      "requestId": "リクエスト ID",
+      "rewritten": "messages（この呼び出しで会話が書き換えられました）",
+      "superseded": "messages（この呼び出し時点）"
+    },
+    "detail": {
+      "overview": "概要",
+      "time": "時刻",
+      "user": "ユーザー",
+      "apiKey": "API キー",
+      "apiKeyValue": "{{name}}（{{id}}）",
+      "session": "セッション",
+      "stickySuffix": "（sticky）",
+      "totalLatency": "合計レイテンシ",
+      "latencyBreakdown": "{{total}} ms（判断 {{decision}} ms + バックエンド {{backend}} ms）",
+      "routingDecision": "ルーティング判断",
+      "requestParams": "リクエストパラメーター",
+      "backendCall": "バックエンド呼び出し",
+      "modelResponse": "モデルの応答",
+      "noResponse": "まだ応答がありません",
+      "notFound": "このトレースは存在しないか、他のユーザーのものです。",
+      "interaction": "インタラクション",
+      "noInteraction": "クライアントから報告なし",
+      "turns": "上流呼び出し",
+      "turnCount_other": "{{count}} 回の呼び出し",
+      "oneDecision": "ルーティング判断は 1 回のみ",
+      "chain": "呼び出しチェーン",
+      "chainNote": "クライアントは 1 つのユーザーの質問に対して複数回の上流呼び出しで応答し、そのたびにツール結果を会話に追加して再送しています。これらは同じルーティング判断と同じモデルを共有し、ここでは 1 件のトレースとして記録されます。",
+      "turnsTruncated_other": "それ以前の {{count}} 回の呼び出しは保存されていません（1 トレースあたりの上限に達しました）",
+      "messagesFinal": "最後の呼び出し時点の完全なチェーン",
+      "finalTurn": "最後の呼び出し",
+      "usageSummed_other": "{{count}} 回の呼び出しの合計"
+    },
+    "analysis": {
+      "matchedKeyword": "\"{{keyword}}\" に一致",
+      "decisionModel": "判断モデル",
+      "rationale": "判断の理由",
+      "decisionLatency": "判断のレイテンシ",
+      "decisionTokens": "判断のトークン数",
+      "candidates": "候補モデル",
+      "systemPrompt": "プロンプト（system）",
+      "charsExpand_other": "{{count}} 文字、クリックで展開",
+      "decisionInput": "判断の入力",
+      "truncated": "…(省略しました)",
+      "rawOutput": "生の出力",
+      "fallback": "フォールバック",
+      "fellBackToDefault": "既定モデルにフォールバックしました",
+      "interactionReuse": "このインタラクションではモデルを 1 度だけ選択しており、この呼び出しはそれを再利用しています。判断モデルは呼び出されず、判断のレイテンシも発生していません。"
+    }
+  },
+  "config": {
+    "loading": "設定を読み込み中…",
+    "saved": "保存して即時反映しました：config.yaml を書き戻し（コメントは保持）、接続資格情報は直ちに有効になりました",
+    "section": {
+      "providers": {
+        "label": "バックエンド接続",
+        "hint": "URL とキー。環境ごとに分けられます"
+      },
+      "models": {
+        "label": "モデルカタログ",
+        "hint": "外部に公開するモデルと、それぞれが紐付く接続"
+      },
+      "strategy": {
+        "label": "ルーティング戦略",
+        "hint": "AI / ルール、セッション固定、判断モデルのパラメーター"
+      },
+      "rules": {
+        "label": "ルールルーティング",
+        "hint": "キーワードと長さのルール。順に評価されます"
+      }
+    },
+    "providers": {
+      "title": "バックエンド接続（Providers）",
+      "count_other": "{{count}} 件",
+      "add": "+ 接続を追加",
+      "lead": "接続は「URL + キー」1 組です。モデルは既定で「既定」と印の付いた接続を継承しますが、それぞれ別の接続に紐付けることもできます — 別環境の Azure AI Foundry でも、任意の OpenAI 互換サービスでも構いません。キーはサーバー側の <code>config.yaml</code> に保存されます（このファイルは <code>.gitignore</code> で除外されています）。",
+      "empty": "接続がまだありません。1 つ追加してからモデルを紐付けてください。",
+      "promptName": "新しい接続の名前（models はこの名前で参照します。例：openrouter）：",
+      "promptRename": "接続の名前を変更：",
+      "alreadyExists": "接続「{{name}}」はすでに存在します",
+      "isDefaultConnection": "接続「{{name}}」は既定の接続です。先に既定を別の接続に切り替えてください",
+      "stillReferenced": "接続「{{name}}」はまだモデル {{models}} から参照されています。先に「モデルカタログ」で紐付けを変更してください",
+      "defaultBadge": "既定",
+      "typeOpenAI": "OpenAI 互換",
+      "typeAzure": "Azure",
+      "boundModels_other": "{{count}} 件のモデル",
+      "setDefault": "既定にする",
+      "rename": "名前を変更",
+      "baseUrl": "URL（base_url）",
+      "baseUrlHint": "Azure は https://xxx.openai.azure.com/ を、OpenAI 互換は /v1 まで指定します",
+      "apiKey": "キー（api_key）",
+      "apiKeyHint": "保存すると config.yaml に書き込まれます",
+      "apiKeyPlaceholder": "空欄なら .env の AZURE_OPENAI_API_KEY にフォールバックします",
+      "apiType": "インターフェイス種別（api_type）",
+      "apiTypeAzureOption": "azure — Azure OpenAI / AI Foundry",
+      "apiTypeOpenAIOption": "openai — OpenAI 互換サービス",
+      "apiVersionHint": "azure のみ必要です"
+    },
+    "models": {
+      "title": "モデルカタログ",
+      "count_other": "{{count}} 件",
+      "add": "+ モデルを追加",
+      "lead": "ここでの名前が、クライアントがリクエストに指定できるモデル名です。説明は候補カタログとして AI 判断モデルに渡されるため、「どんなタスクに向くか」を明記するとルーティングの精度が大きく上がります。接続は<providersLink>バックエンド接続</providersLink>で管理します。",
+      "empty": "モデルがまだありません。少なくとも 1 つ追加し、既定モデルに設定してください。",
+      "promptName": "この新しいモデルをルーターで公開する名前：",
+      "alreadyExists": "モデル「{{name}}」はすでに存在します",
+      "removedWithRules_other": "モデル「{{name}}」を削除し、それを参照していた {{count}} 件のルールも削除しました",
+      "defaultBadge": "既定",
+      "reasoningBadge": "推論系",
+      "connectionMissing": "— 接続が存在しません",
+      "description": "説明",
+      "descriptionHint": "AI 判断モデルが参照します",
+      "descriptionPlaceholder": "例：フラッグシップの高性能モデル。最も複雑な推論、大規模なシステム設計、難しいバグの分析に向きます。",
+      "provider": "使用する接続（provider）",
+      "followDefault": "既定に従う（{{name}}）",
+      "modelNameOverride": "上流での名前の上書き（model_name）",
+      "modelNameOverrideHint": "空欄なら上のモデル名を使います",
+      "isDefault": "既定モデル（ルールに一致しない / 判断が失敗した場合に使用）",
+      "isReasoning": "推論系（max_completion_tokens、サンプリングパラメーターを除去）"
+    },
+    "strategy": {
+      "title": "ルーティング戦略",
+      "ai": {
+        "title": "AI ルーティング",
+        "desc": "軽量な判断モデルがリクエストの意図を読み取ってモデルを選びます。精度は高い一方、リクエストごとに約 1 秒の判断呼び出しが 1 回増えます。"
+      },
+      "rule": {
+        "title": "ルールルーティング",
+        "desc": "キーワードとプロンプト長で順に評価します。LLM 呼び出しはゼロ、所要 1ms 未満で、ルールは<rulesLink>ルールルーティング</rulesLink>で管理します。"
+      }
+    },
+    "session": {
+      "title": "セッション固定",
+      "sticky": "同一セッションでモデルを固定する（一貫性とキャッシュヒット率の向上）",
+      "stickyNote": "オンにすると、1 回のユーザーインタラクションで選ばれたモデルがそのインタラクションの残りでも再利用されます。エージェントのツール呼び出しループは同じモデルを維持し、ルーティング判断は 1 回で済みます。リクエストは GitHub Copilot などのクライアントが既に送信している <code>x-interaction-id</code> ヘッダーでグループ化され、<code>x-session-id</code> が指定されていればそれも使われます。",
+      "ttl": "TTL（秒）",
+      "ttlHint": "セッションがアイドル状態のまま何秒で紐付けを解除するか",
+      "maxSessions": "最大セッション数",
+      "maxSessionsHint": "これを超えると LRU 順に破棄します"
+    },
+    "aiRouter": {
+      "title": "AI 判断モデル",
+      "inactive": "現在の戦略はルールルーティングのため、以下の設定は反映されません",
+      "decisionModel": "判断モデル",
+      "decisionModelHint": "軽量で高速なものを選びます。例：gpt-4.1",
+      "decisionProvider": "判断モデルが使う接続",
+      "timeout": "判断のタイムアウト（秒）",
+      "timeoutHint": "タイムアウトすると既定モデルにフォールバックします",
+      "maxPromptChars": "プロンプトの切り詰め長",
+      "maxPromptCharsHint": "これを超えると先頭と末尾を半分ずつ残します"
+    },
+    "rules": {
+      "title": "ルールルーティング",
+      "count_other": "{{count}} 件",
+      "inactive": "現在の戦略は AI ルーティングのため、ルールは反映されません",
+      "add": "+ ルールを追加",
+      "lead": "<strong>上から下へ</strong>順に評価し、最初に一致したルールがモデルを決めて以降は評価しません — 優先順位は ↑↓ で調整します。どれも一致しなければ既定モデル <model>{{model}}</model> になります。1 つのルールにキーワードと長さの両方を指定した場合、長さだけを見ます。戦略の切り替えは<strategyLink>ルーティング戦略</strategyLink>にあります。",
+      "noDefaultModel": "（未設定）",
+      "empty": "ルールがまだありません。ルールルーティング戦略では、すべてのリクエストが既定モデルに送られます。",
+      "keywords": "キーワード",
+      "keywordsHint": "カンマ区切り、大文字小文字を区別せず、いずれか 1 つ一致すればルーティングします",
+      "keywordsPlaceholder": "リファクタリング, アーキテクチャ, refactor",
+      "minPromptChars": "最小プロンプト長",
+      "minPromptCharsHint": "空欄なら無効",
+      "disabled": "無効",
+      "moveUp": "上へ移動",
+      "moveDown": "下へ移動"
+    },
+    "prompt": {
+      "title": "AI 判断プロンプト",
+      "usingDefault": "組み込みの既定プロンプトを使用中",
+      "lead": "これは判断モデルに送られる <code>system</code> の内容です。<code>{{placeholder}}</code> は「モデルカタログ」ページの各モデルの名前と <code>description</code> に置き換えられます。空欄なら組み込みの既定プロンプトを使います。判断モデルが <code>{{shape}}</code> のみを出力するという制約は残してください — 戻り値を解析できない場合は黙って既定モデルにフォールバックします。",
+      "template": "プロンプトのテンプレート",
+      "templateHint": "空欄 = 組み込みの既定。波かっこのエスケープは不要です",
+      "templatePlaceholder": "ここにプロンプトを書きます…",
+      "loadDefault": "既定のプロンプトを読み込む",
+      "clear": "クリア（既定に戻す）",
+      "insertPlaceholder": "{{placeholder}} を挿入",
+      "templateChars": "テンプレート {{count}} 文字",
+      "defaultTemplateChars": "既定のテンプレート {{count}} 文字",
+      "noPlaceholderWarning": "テンプレートに <code>{{placeholder}}</code> がありません：モデルカタログは末尾に自動で追加されますが（下のプレビュー参照）、位置は制御できません。プレースホルダーを明示的に挿入することをおすすめします。",
+      "missingDescription_other": "{{count}} 件のモデルに description がありません：<code>{{models}}</code> — カタログ上では名前だけなので、判断モデルは選ぶべきかどうかをほとんど判断できません。",
+      "goFixModels": "モデルカタログで補う",
+      "previewTitle": "実際のプロンプトのプレビュー",
+      "previewHint": "バックエンドが現在の下書きから描画します。実際のリクエストと同じコードです",
+      "rendering": "描画中…",
+      "previewFailed": "プレビューに失敗しました：{{error}}",
+      "metaProvider": "接続 {{name}}",
+      "metaCandidates_other": "{{count}} 件の候補モデル",
+      "metaFallback": "{{name}} にフォールバック",
+      "metaRenderedChars": "描画後 {{count}} 文字",
+      "sample": "サンプルリクエスト（任意）",
+      "sampleHint": "ユーザーの質問を 1 文入れると、切り詰め後の user メッセージをプレビューできます",
+      "samplePlaceholder": "例：このモジュールのアーキテクチャをリファクタリングしてください",
+      "sampleTruncated": "{{count}} 文字で先頭と末尾を残して切り詰めました",
+      "defaultLoaded": "組み込みの既定プロンプトを編集欄に読み込みました。続けて編集できます。保存すると反映されます",
+      "preset": {
+        "refactor": "このモジュールのアーキテクチャをリファクタリングして、独立したドメイン層を切り出してください",
+        "translate": "この文章を英語に翻訳してください",
+        "proof": "証明せよ：閉区間上の任意の連続関数は一様連続である"
+      }
+    }
+  }
+}

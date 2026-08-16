@@ -1,0 +1,52 @@
+# Python
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Credentials -- never commit these.
+#   config.yaml  provider api_key, the OAuth client_secret, the GitHub Enterprise admin
+#                token and the local administrator's password hash
+#   .env         local environment overrides
+# config.example.yaml is the committed template and carries placeholders only.
+config.yaml
+.env
+.env.*
+!.env.example
+
+# Runtime state: sign-in sessions, API keys, and the GitHub structure/member cache
+data/
+
+# Logs and full-chain trace records
+logs/
+*.log
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+node_modules/
+
+# Scratch space. Working notes live here and have held real credentials, so the whole
+# directory is excluded rather than filtered file by file.
+tmp/
+*.tmp
+*.bak
+*.orig
+
+# Tool output. Screenshots are scoped to this directory rather than ignored by extension,
+# so a deliberate docs image can still be committed.
+.playwright-mcp/
+
+# IDE / OS
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+desktop.ini
