@@ -19,7 +19,7 @@ import hashlib
 import secrets
 
 DEFAULT_USERNAME = "admin"
-# Documented in the README and in config.example.yaml. It is only ever enough to reach the
+# Documented in docs/authentication.md and in config.example.yaml. It is only ever enough to reach the
 # change-password form, never the console itself.
 DEFAULT_PASSWORD = "admin1234"
 
