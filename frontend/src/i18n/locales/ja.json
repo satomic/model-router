@@ -86,7 +86,7 @@
     "unreachable": "サービスに到達できません"
   },
   "login": {
-    "title": "Foundry Model Router コンソール",
+    "title": "Model Router コンソール",
     "lead": "GitHub アカウントでサインインします。サインイン後は API キーを作成し、自分の呼び出しと使用量を確認できます。管理者はルーティング戦略とバックエンド接続も管理できます。",
     "failed": "GitHub サインインに失敗しました：{{error}}",
     "signInWithGitHub": "GitHub でサインイン",

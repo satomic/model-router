@@ -83,7 +83,7 @@ try:
     assert bad_pw.status_code == 401 and bad_user.status_code == 401, (
         bad_pw.status_code, bad_user.status_code)
     assert bad_pw.json()["detail"] == bad_user.json()["detail"], "the two failures differ"
-    assert "fmr_session" not in bad_pw.cookies, "a failed sign-in must not set a session"
+    assert "mr_session" not in bad_pw.cookies, "a failed sign-in must not set a session"
     print("wrong password and wrong username -> 401 with one message:",
           bad_pw.json()["detail"])
 

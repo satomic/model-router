@@ -3,11 +3,11 @@ through the API, and UI hosting."""
 import _bootstrap  # noqa: F401
 
 import json
-from pathlib import Path
 from uuid import uuid4
 
 import httpx
 
+from app.config import CONFIG_PATH, LOG_DIR
 from app.traces import _safe
 from verify_auth_helper import BASE, make_client
 
@@ -76,7 +76,7 @@ print("healthz confirms the hot reload | providers:", health["providers"])
 # Restore
 cfg["session"]["sticky"] = orig_sticky
 client.put("/v1/config", json=cfg)
-with open("config.yaml", encoding="utf-8") as f:
+with open(CONFIG_PATH, encoding="utf-8") as f:
     text = f.read()
 # The live config.yaml is the operator's own file, so its header text is not fixed -- assert only
 # that the round-trip preserved a leading comment, in whatever language it is written.
@@ -193,9 +193,9 @@ assert len(lst) >= 4 and lst[0]["id"]
 assert page["total"] >= len(lst), (page["total"], len(lst))
 print(f"GET /v1/traces -> {len(lst)}/{page['total']} entries, newest:",
       lst[0]["id"], lst[0]["model"], lst[0]["reason"])
-mine = list(Path("logs/traces").glob(f"*/{_safe(login)}/*.json"))
+mine = list((LOG_DIR / "traces").glob(f"*/{_safe(login)}/*.json"))
 assert len(mine) >= 4, f"there should be at least 4 trace files under {login}, found {len(mine)}"
-print(f"logs/traces/*/{_safe(login)}/ -> {len(mine)} persisted trace files")
+print(f"{LOG_DIR.name}/traces/*/{_safe(login)}/ -> {len(mine)} persisted trace files")
 
 # 10. Usage aggregation
 section("Usage statistics")

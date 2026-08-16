@@ -1,7 +1,7 @@
 # Full-chain logging
 
 Every **user interaction** produces one trace file:
-`logs/traces/<date YYYY-MM-DD>/<user_id>/<trace_id>.json` ([app/traces.py](../app/traces.py)).
+`data/logs/traces/<date YYYY-MM-DD>/<user_id>/<trace_id>.json` ([app/traces.py](../app/traces.py)).
 `user_id` is the GitHub login of the API key's owner (sanitized for path traversal), so the
 directories are naturally split by real user.
 

@@ -1,4 +1,4 @@
-# Foundry Model Router
+# Model Router
 
 An OpenAI-compatible model router: it accepts `/v1/chat/completions` requests and routes them to a
 suitable backend model, either by rules or by an AI decision (gpt-4.1). The backend is not limited to
@@ -6,27 +6,43 @@ Azure AI Foundry — any OpenAI-compatible address and key can be configured, an
 bound to a different connection. It ships with an Azure-portal-styled React console: GitHub sign-in,
 API key management, usage statistics, full-chain traces, and configuration management.
 
-## Quick start
+## Quick start (Docker)
 
-```powershell
-.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-copy config.example.yaml config.yaml     # first run: generate the local config from the template
-uvicorn app.main:app --host 0.0.0.0 --port 8000
+```bash
+docker run -d --name model-router \
+  -p 8000:8000 -v mr-data:/data --restart unless-stopped \
+  ghcr.io/satomic/model-router:latest
 ```
 
-Open http://localhost:8000/ . The first visit lands on the setup wizard; enter a GitHub OAuth Client
-ID / Secret and the administrator logins, sign in, then create an API key on the "API keys" page and
-point your client at it:
+Nothing to prepare: the configuration is created from the template on first start, and the single
+`/data` volume holds all of it — the configuration, the sign-in state, the keys and the traces — so
+an upgrade is just a new image over the same volume.
+
+Open http://localhost:8000/ and sign in as the local super administrator — `admin` / `admin1234`,
+which forces a password change first. Configure a backend connection from the console, create an API
+key on the "API keys" page, and point your client at it:
 
 | Field | Value |
 |---|---|
 | Base URL | `http://localhost:8000/v1` |
-| API Key | `fmr_...` |
+| API Key | `mr_...` |
 | Model | any model name registered under "Routing configuration" |
 
-Without access to github.com, sign in with the local super administrator instead
-(`admin` / `admin1234`, which forces a password change before anything else is reachable).
+Volumes, port mapping, upgrades and reverse proxies: [Docker deployment](docs/docker.md).
+
+## Running from source
+
+```powershell
+.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+cd frontend; npm ci; npm run build; cd ..   # FastAPI serves the built console from /
+uvicorn app.main:app --host 0.0.0.0 --port 8000
+```
+
+`data/config.yaml` is created from `config.example.yaml` on first start here too, and `data/` is the
+same single directory the container mounts. Running on your own machine, the first visit can also
+use the **setup wizard** to enter a GitHub OAuth Client ID / Secret — it is offered only to requests
+from `127.0.0.1`, which is why a container uses the local administrator instead.
 
 ## What it does
 
@@ -47,7 +63,8 @@ Without access to github.com, sign in with the local super administrator instead
 
 | Document | Contents |
 |---|---|
-| [Getting started](docs/getting-started.md) | installation, running behind a proxy, frontend development, console languages |
+| [Docker deployment](docs/docker.md) | **the recommended path** — the image, port mapping, the data volume, upgrades, reverse proxies |
+| [Getting started](docs/getting-started.md) | running from source, frontend development, console languages |
 | [Sign-in and authentication](docs/authentication.md) | the GitHub OAuth App, API keys, the local super administrator, the permission matrix |
 | [Backend connections](docs/providers.md) | providers, per-model bindings, non-Foundry OpenAI-compatible endpoints |
 | [Router logic](docs/router-logic.md) | the request flow, interaction stickiness, rule and AI routing, the editable decision prompt |
@@ -64,8 +81,10 @@ app/         FastAPI backend: routing, providers, auth, key policy, traces
 frontend/    React + Vite console (built output is served by FastAPI from /)
 docs/        the documents listed above
 verify/      end-to-end verification scripts
-config.yaml  all configuration, including credentials -- gitignored
+Dockerfile   multi-stage build: the console is built in a discarded Node stage
+data/        ALL persistent state -- config.yaml, sessions, keys, traces -- gitignored
 ```
 
-Credentials never enter the repository: `config.yaml`, `.env`, `data/` and `logs/` are gitignored,
-and [config.example.yaml](config.example.yaml) is the committed template with placeholders only.
+Credentials never enter the repository: the whole of `data/` (which is where `config.yaml` lives)
+and `.env` are gitignored, and [config.example.yaml](config.example.yaml) is the committed template
+with placeholders only.

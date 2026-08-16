@@ -1,8 +1,8 @@
-"""Foundry Model Router: OpenAI-compatible entry point + configuration API + end-to-end
+"""Model Router: OpenAI-compatible entry point + configuration API + end-to-end
 trace recording.
 
 Authentication model:
-- /v1/chat/completions, /v1/models  -> API key required (Authorization: Bearer fmr_...)
+- /v1/chat/completions, /v1/models  -> API key required (Authorization: Bearer mr_...)
 - /v1/config                        -> administrators only (GitHub OAuth session)
 - /v1/keys, /v1/usage, /v1/traces   -> signed-in users; non-admins see only their own data
 - /v1/auth/*, /healthz, the console -> public (the console itself is served from /, and
@@ -33,12 +33,17 @@ from . import ghadmin, ghcache, keypolicy, localadmin
 from .authstore import AuthStore
 from .config import (
     CATALOG_PLACEHOLDER,
+    CONFIG_PATH,
     DATA_DIR,
     DEFAULT_DECISION_PROMPT,
+    LOG_DIR,
     ROOT,
+    TEMPLATE_PATH,
     RouterConfig,
+    ensure_config_file,
     load_config,
     load_raw,
+    migrate_legacy_layout,
     save_raw,
     validate_raw,
 )
@@ -55,11 +60,25 @@ from .traces import TraceStore
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s"
 )
-logger = logging.getLogger("fmr")
+logger = logging.getLogger("mr")
+
+# Before the seeding check, never after: this is what stops an upgrade from finding the new
+# data/config.yaml empty and quietly starting from the template with every credential gone.
+for _moved in migrate_legacy_layout():
+    logger.info("moved existing state under data/: %s", _moved)
+
+if ensure_config_file():
+    # Worth a line at INFO: on a fresh volume this is the difference between "my settings are
+    # gone" and "this deployment started from the template", and the operator needs to know
+    # the local-admin password change is waiting for them.
+    logger.info(
+        "created %s from %s -- sign in as the local administrator to configure it",
+        CONFIG_PATH, TEMPLATE_PATH,
+    )
 
 cfg = load_config()
 sessions = SessionStore(cfg.session_ttl, cfg.max_sessions)
-traces = TraceStore(ROOT / "logs" / "traces")
+traces = TraceStore(LOG_DIR / "traces")
 authstore = AuthStore(DATA_DIR)
 pool = ClientPool()
 
@@ -113,7 +132,7 @@ async def lifespan(app: FastAPI):
     await pool.aclose()
 
 
-app = FastAPI(title="Foundry Model Router", lifespan=lifespan)
+app = FastAPI(title="Model Router", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],  # Vite dev server

@@ -1,9 +1,10 @@
-# Foundry Model Router configuration (template)
+# Model Router configuration (template)
 #
-# Copy this to config.yaml and fill in your real credentials. config.yaml holds api_key /
-# client_secret / key_policy.github_token; it is listed in .gitignore and is never committed.
-# Everything here can also be edited from the console's "Routing configuration" and
-# "Access control" pages -- saving writes config.yaml back and preserves its comments.
+# You do not have to copy this by hand: on first start it is copied to data/config.yaml if
+# nothing is there yet. data/config.yaml holds api_key / client_secret /
+# key_policy.github_token; the whole data/ directory is listed in .gitignore and is never
+# committed. Everything here can also be edited from the console's "Routing configuration"
+# and "Access control" pages -- saving writes the file back and preserves its comments.
 
 # Routing strategy: rule (keyword/length rules) | ai (an AI decision model)
 strategy: ai

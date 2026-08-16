@@ -65,7 +65,7 @@ export default function PlaygroundPage({ onOpenTrace }: { onOpenTrace: (id: stri
               type="password"
               className="mono"
               value={apiKey}
-              placeholder="fmr_..."
+              placeholder="mr_..."
               onChange={(e) => setApiKey(e.target.value)}
             />
           </label>

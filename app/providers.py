@@ -12,7 +12,7 @@ from openai import AsyncAzureOpenAI, AsyncOpenAI
 
 from .config import Provider
 
-logger = logging.getLogger("fmr")
+logger = logging.getLogger("mr")
 
 _TIMEOUT = 180.0
 _MAX_RETRIES = 1

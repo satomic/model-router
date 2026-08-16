@@ -47,7 +47,7 @@ import logging
 
 from . import ghadmin, ghcache
 
-logger = logging.getLogger("fmr")
+logger = logging.getLogger("mr")
 
 # Under allow_all_orgs, when enterprise-level membership is unavailable, how many orgs
 # to probe individually at most. Very large enterprises have thousands of orgs, and

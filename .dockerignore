@@ -1,0 +1,59 @@
+# What the build context may NOT contain. This file is the first line of defence against a
+# credential reaching a published image: anything excluded here cannot be COPYed even by
+# mistake, and `docker build` does not consult .gitignore.
+#
+# Everything that .gitignore excludes for the same reason is repeated here on purpose --
+# the two files are read by different tools and neither implies the other.
+
+# Runtime state, credentials included: data/ holds config.yaml, the sessions, the API keys,
+# the GitHub cache and the traces. It belongs on a mounted volume, never in an image layer --
+# baking it in would ship one deployment's credentials and prompts to everybody who pulls the
+# image. config.example.yaml (the placeholder template) is deliberately NOT ignored: it is what
+# a missing config.yaml is seeded from at startup.
+data/
+config.yaml
+.env
+.env.*
+logs/
+*.log
+
+# Scratch space. Working notes here have held real credentials.
+tmp/
+
+# Python
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Frontend. node_modules/ is reinstalled inside the build stage (a host tree may hold
+# native modules built for the wrong platform), and dist/ is rebuilt from source so the
+# image can never ship a stale bundle a developer forgot to rebuild.
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+node_modules/
+
+# Not needed at runtime, and excluded so editing them cannot invalidate the build cache.
+.git/
+.github/
+.gitignore
+.dockerignore
+docs/
+verify/
+README.md
+Dockerfile
+.playwright-mcp/
+
+# IDE / OS
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+desktop.ini

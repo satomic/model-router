@@ -5,8 +5,26 @@ Read and written through ruamel.yaml so comments survive: after the frontend edi
 the configuration, config.yaml is still pleasant to edit by hand.
 config.yaml holds credentials such as api_key, so it is gitignored;
 config.example.yaml is the committed template.
+
+Everything mutable lives under ONE directory, data/, so that persistent state is a single
+thing to back up, move or mount:
+
+  data/config.yaml           the configuration, written back to by the console
+  data/logs/traces/          full-chain trace records
+  data/auth_sessions.json    sign-in sessions
+  data/api_keys.json         API keys
+  data/github/               the GitHub structure / member cache
+
+That one directory is what a container mounts as a volume -- an image layer is discarded on
+every upgrade, so nothing writable may live inside the image. Each path is still individually
+overridable, for a deployment that wants traces on a bigger disk than the configuration:
+
+  MR_DATA_DIR       the root of all persistent state      (default <root>/data)
+  MR_CONFIG_FILE    the config.yaml to read and write     (default <data>/config.yaml)
+  MR_LOG_DIR        full-chain trace records              (default <data>/logs)
 """
 import os
+import shutil
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -21,12 +39,101 @@ ENV_ENDPOINT = os.environ.get("AZURE_OPENAI_ENDPOINT", "")
 ENV_API_KEY = os.environ.get("AZURE_OPENAI_API_KEY", "")
 ENV_API_VERSION = os.environ.get("AZURE_OPENAI_API_VERSION", "2024-12-01-preview")
 
-DATA_DIR = ROOT / "data"
 
-_CONFIG_PATH = ROOT / "config.yaml"
+def _path_from_env(var: str, default: Path) -> Path:
+    """Resolve a path override, falling back to the repository-root default."""
+    raw = os.environ.get(var, "").strip()
+    return Path(raw).expanduser().resolve() if raw else default
+
+
+# DATA_DIR first: the other two default to positions *inside* it, so overriding it alone
+# relocates all persistent state together -- which is what makes a container need exactly one
+# mount point and one variable.
+DATA_DIR = _path_from_env("MR_DATA_DIR", ROOT / "data")
+LOG_DIR = _path_from_env("MR_LOG_DIR", DATA_DIR / "logs")
+
+# The committed template, which is also what a missing config.yaml is seeded from. It stays at
+# the repository root: it ships with the code and is never written to, so it is not state.
+TEMPLATE_PATH = ROOT / "config.example.yaml"
+CONFIG_PATH = _path_from_env("MR_CONFIG_FILE", DATA_DIR / "config.yaml")
+_CONFIG_PATH = CONFIG_PATH  # kept: the private name is used throughout this module
 _yaml = YAML()
 _yaml.preserve_quotes = True
 _yaml.width = 120
+
+
+# Where these two lived before all state was consolidated under data/. Kept so that an
+# existing checkout keeps working across the change instead of looking unconfigured.
+_LEGACY_CONFIG_PATH = ROOT / "config.yaml"
+_LEGACY_LOG_DIR = ROOT / "logs"
+
+
+def migrate_legacy_layout() -> list[str]:
+    """Move a pre-existing root-level config.yaml / logs/ under data/. Returns what moved.
+
+    This is the one genuinely dangerous part of consolidating the layout: config.yaml holds
+    every credential, and without this an upgrade would find the new default path empty, seed
+    it from the template, and present a working-looking install whose providers, OAuth app and
+    admin list had all silently reverted. Losing the traces would be recoverable; that would
+    not be.
+
+    Only ever moves INTO an empty destination, and only when the destination is still at its
+    default position under DATA_DIR -- an operator who pointed MR_CONFIG_FILE somewhere
+    explicitly is not migrated on top of. A partially migrated tree therefore stays as it is
+    and is reported rather than merged, because merging two trace trees or picking between two
+    config files is a judgement call this function has no business making.
+    """
+    moved = []
+    if (
+        CONFIG_PATH == DATA_DIR / "config.yaml"
+        and not CONFIG_PATH.exists()
+        and _LEGACY_CONFIG_PATH.is_file()
+    ):
+        CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
+        shutil.move(str(_LEGACY_CONFIG_PATH), str(CONFIG_PATH))
+        moved.append(f"{_LEGACY_CONFIG_PATH} -> {CONFIG_PATH}")
+
+    # The traces live one level down, under <log dir>/traces, so that is what moves: it keeps
+    # the uvicorn logs an operator may have redirected into logs/ out of the migration.
+    legacy_traces = _LEGACY_LOG_DIR / "traces"
+    new_traces = LOG_DIR / "traces"
+    if (
+        LOG_DIR == DATA_DIR / "logs"
+        and legacy_traces.is_dir()
+        and not new_traces.exists()
+    ):
+        new_traces.parent.mkdir(parents=True, exist_ok=True)
+        shutil.move(str(legacy_traces), str(new_traces))
+        moved.append(f"{legacy_traces} -> {new_traces}")
+    return moved
+
+
+def ensure_config_file() -> bool:
+    """Create config.yaml from the template when it does not exist yet. Returns True when
+    a file was created.
+
+    Called before the first read so that a fresh deployment starts instead of dying on
+    FileNotFoundError. It matters most in a container: the config lives on a mounted volume
+    that starts out empty, and requiring the operator to place a file there before the very
+    first `docker run` would make the image unusable without a checkout of this repository.
+
+    The template carries placeholders only -- no credentials -- so a seeded file grants no
+    access by itself. The local administrator account is what makes it reachable: it is
+    enabled by default and forces a password change before anything else can be used.
+
+    shutil.copyfile rather than a YAML round-trip: the template's comments explain every
+    field, and they are the seeded file's documentation. copyfile keeps them byte for byte.
+    """
+    if _CONFIG_PATH.exists():
+        return False
+    if not TEMPLATE_PATH.exists():
+        raise FileNotFoundError(
+            f"neither {_CONFIG_PATH} nor the template {TEMPLATE_PATH} exists; "
+            "cannot start without a configuration"
+        )
+    _CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(TEMPLATE_PATH, _CONFIG_PATH)
+    return True
 
 DEFAULT_PROVIDER_NAME = "foundry"
 _API_TYPES = ("azure", "openai")
@@ -228,6 +335,9 @@ class RouterConfig:
 
 
 def load_raw() -> dict:
+    # Seeding here rather than at import time covers every entry point -- the app, the verify
+    # scripts, and any future CLI -- instead of only whichever one remembered to call it.
+    ensure_config_file()
     with open(_CONFIG_PATH, encoding="utf-8") as f:
         return _yaml.load(f)
 

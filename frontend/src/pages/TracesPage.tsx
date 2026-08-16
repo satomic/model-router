@@ -17,7 +17,7 @@ import {
 const PAGE_SIZE = 50
 /** Where the split ratio is remembered. A dragged layout that resets on every navigation is
  *  worse than no drag at all. */
-const SPLIT_KEY = 'fmr_traces_split'
+const SPLIT_KEY = 'mr_traces_split'
 const SPLIT_DEFAULT = 70
 const SPLIT_MIN = 25
 const SPLIT_MAX = 85

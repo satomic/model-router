@@ -1,0 +1,126 @@
+name: Build and Publish Docker Image
+
+on:
+  # A published image comes from a version tag, so every image traces back to a named
+  # release rather than to whatever main happened to hold.
+  push:
+    tags: ["v*"]
+  # Lets a build be started by hand from the Actions tab -- useful to re-publish after a
+  # registry hiccup without inventing a throwaway tag.
+  workflow_dispatch:
+  # Pull requests build but never push: it verifies the Dockerfile still builds without
+  # granting a fork's PR the ability to publish under this repository's name.
+  pull_request:
+    paths:
+      - Dockerfile
+      - .dockerignore
+      - requirements.txt
+      - app/**
+      - frontend/**
+      - .github/workflows/docker-publish.yml
+
+env:
+  REGISTRY: ghcr.io
+  # Spelled out rather than ${{ github.repository }}: the image name is part of the published
+  # contract that people put in `docker pull`, so it must not change out from under them just
+  # because the repository was renamed. The owner still comes from the repository, so a fork
+  # publishes under its own account.
+  IMAGE_NAME: model-router
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # Required for pushing to GHCR with the automatic GITHUB_TOKEN, so no PAT has to be
+      # stored as a secret.
+      packages: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # arm64 is built under emulation; without QEMU the arm64 half of the manifest fails.
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # A registry reference must be lowercase, while a GitHub account name may contain
+      # capitals -- and the ${{ }} expression syntax has no lowercase function, so it is done
+      # here once and reused by every step below.
+      - name: Resolve the image reference
+        id: image
+        run: |
+          echo "ref=$(echo "${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}" | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
+
+      # Skipped for pull requests: a PR build does not push, so it needs no credentials.
+      - name: Log in to the registry
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ steps.image.outputs.ref }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=ref,event=tag
+            type=raw,value=latest,enable=${{ startsWith(github.ref, 'refs/tags/v') }}
+          # A tag v2.1.0 therefore publishes 2.1.0, 2.1, 2, v2.1.0 and latest -- so a
+          # deployment can pin as tightly or as loosely as it wants. `latest` is guarded on
+          # the ref being a version tag: a manual workflow_dispatch run off a branch must not
+          # move `latest` to an unreleased build.
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          # Registry cache rather than type=gha: the GitHub Actions cache is scoped per branch
+          # and evicted at 10 GB, so a tag build (its own ref) would almost always miss it.
+          # A registry-side buildcache tag is shared by every build of this image, which is
+          # what makes the arm64 emulated leg cheap on the second run.
+          cache-from: type=registry,ref=${{ steps.image.outputs.ref }}:buildcache
+          cache-to: ${{ github.event_name != 'pull_request' && format('type=registry,ref={0}:buildcache,mode=max', steps.image.outputs.ref) || '' }}
+
+      # Fails the run if the image cannot serve /healthz, so a broken image is never left
+      # sitting under `latest` with a green check next to it. amd64 only -- the runner cannot
+      # execute the arm64 image without paying emulation for a whole boot.
+      - name: Smoke-test the published image
+        if: github.event_name != 'pull_request'
+        run: |
+          set -euo pipefail
+          IMAGE=$(echo "${{ steps.meta.outputs.tags }}" | head -n1)
+          docker run -d --name smoke -p 8000:8000 -v smoke-data:/data "$IMAGE"
+          for i in $(seq 1 30); do
+            if curl -fsS http://localhost:8000/healthz > /tmp/health.json; then
+              echo "healthy after ${i}s: $(cat /tmp/health.json)"
+              # The config must have been created on the empty volume, and the traces
+              # directory must sit under the same mount: that single-volume layout plus the
+              # auto-creation is what makes `docker run` need no preparation at all. Asserted
+              # rather than assumed -- a path regression would otherwise only show up as
+              # somebody's configuration vanishing on their next upgrade.
+              docker exec smoke test -f /data/config.yaml \
+                && echo "config.yaml auto-created on the volume OK"
+              docker exec smoke test -d /data/logs \
+                && echo "traces directory is on the volume OK"
+              docker rm -f smoke > /dev/null
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "::error::the image did not answer /healthz within 30s"
+          docker logs smoke
+          exit 1

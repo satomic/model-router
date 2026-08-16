@@ -11,7 +11,7 @@ from .config import RouterConfig
 if TYPE_CHECKING:
     from .providers import ClientPool
 
-logger = logging.getLogger("fmr")
+logger = logging.getLogger("mr")
 
 # Clients such as Copilot wrap the real question in a <userRequest> tag, preceded by a
 # large block of context

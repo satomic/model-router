@@ -86,7 +86,7 @@
     "unreachable": "서비스에 연결할 수 없습니다"
   },
   "login": {
-    "title": "Foundry Model Router 콘솔",
+    "title": "Model Router 콘솔",
     "lead": "GitHub 계정으로 로그인하세요. 로그인하면 API 키를 만들고 자신의 호출과 사용량을 확인할 수 있으며, 관리자는 라우팅 전략과 백엔드 연결도 관리할 수 있습니다.",
     "failed": "GitHub 로그인에 실패했습니다: {{error}}",
     "signInWithGitHub": "GitHub으로 로그인",

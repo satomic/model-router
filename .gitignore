@@ -9,20 +9,27 @@ __pycache__/
 .mypy_cache/
 .ruff_cache/
 
-# Credentials -- never commit these.
-#   config.yaml  provider api_key, the OAuth client_secret, the GitHub Enterprise admin
-#                token and the local administrator's password hash
-#   .env         local environment overrides
-# config.example.yaml is the committed template and carries placeholders only.
+# All persistent state lives under data/, and all of it is either a credential or private:
+#   data/config.yaml          provider api_key, the OAuth client_secret, the GitHub
+#                             Enterprise admin token, the local admin's password hash
+#   data/auth_sessions.json   live sign-in sessions
+#   data/api_keys.json        issued API keys
+#   data/github/              the cached GitHub structure and member lists
+#   data/logs/traces/         full-chain trace records, i.e. real prompts and replies
+# One ignored directory covers all of it. config.example.yaml is the committed template and
+# carries placeholders only.
+data/
+
+# The bare filename too, belt and braces: this is the one file whose accidental commit would
+# publish every credential, and it sat at the repository root in earlier versions.
 config.yaml
+
+#   .env         local environment overrides
 .env
 .env.*
 !.env.example
 
-# Runtime state: sign-in sessions, API keys, and the GitHub structure/member cache
-data/
-
-# Logs and full-chain trace records
+# Logs -- uvicorn output at the root; the traces themselves are covered by data/ above.
 logs/
 *.log
 

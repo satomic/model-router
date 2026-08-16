@@ -357,7 +357,7 @@ export async function setLocalAdminEnabled(enabled: boolean): Promise<{ ok: bool
 /** sessionStorage slot holding the page the user was trying to reach when they were asked to
  *  sign in. The server's OAuth callback always redirects to '/', so the deep link has to be
  *  parked somewhere that survives the round trip through GitHub -- per tab, not per browser. */
-export const RETURN_KEY = 'fmr_return_to'
+export const RETURN_KEY = 'mr_return_to'
 
 // ── Config ───────────────────────────────────────────────────────
 export async function getConfig(): Promise<RouterConfig> {

@@ -25,7 +25,7 @@ print("no key -> 401:", r.json()["detail"][:40], "…")
 
 r = httpx.post(
     f"{BASE}/v1/chat/completions", json=body, timeout=60,
-    headers={"Authorization": "Bearer fmr_totally-bogus"},
+    headers={"Authorization": "Bearer mr_totally-bogus"},
 )
 assert r.status_code == 401
 print("forged key -> 401:", r.json()["detail"])
@@ -122,7 +122,7 @@ nsid = store.create_session(
 )
 _nrec, nkey = store.create_api_key(normal_login, "verify-normal")
 normal = httpx.Client(
-    base_url=BASE, timeout=300, cookies={"fmr_session": nsid},
+    base_url=BASE, timeout=300, cookies={"mr_session": nsid},
     headers={"Authorization": f"Bearer {nkey}"},
 )
 

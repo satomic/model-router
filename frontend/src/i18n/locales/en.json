@@ -87,7 +87,7 @@
     "unreachable": "Service unreachable"
   },
   "login": {
-    "title": "Foundry Model Router console",
+    "title": "Model Router console",
     "lead": "Sign in with your GitHub account. Once signed in you can create API keys and review your own calls and usage; administrators can also manage the routing strategy and the backend connections.",
     "failed": "GitHub sign-in failed: {{error}}",
     "signInWithGitHub": "Sign in with GitHub",

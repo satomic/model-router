@@ -86,7 +86,7 @@
     "unreachable": "服務無法連線"
   },
   "login": {
-    "title": "Foundry Model Router 主控台",
+    "title": "Model Router 主控台",
     "lead": "使用 GitHub 帳號登入。登入後可建立 API 金鑰、檢視自己的呼叫與用量；管理員還可以管理路由策略與後端連線。",
     "failed": "GitHub 登入失敗：{{error}}",
     "signInWithGitHub": "使用 GitHub 登入",

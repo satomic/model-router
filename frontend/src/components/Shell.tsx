@@ -74,7 +74,7 @@ export default function Shell({
           ☰
         </button>
         <span className="brand">
-          <span className="glyph">◆</span> Foundry Model Router
+          <span className="glyph">◆</span> Model Router
         </span>
         <div className="status">
           {health ? (
@@ -163,7 +163,7 @@ export default function Shell({
 
         <div className="content">
           <div className="breadcrumb">
-            <span>Foundry Model Router</span>
+            <span>Model Router</span>
             <span className="sep">›</span>
             <span>{title}</span>
             {crumb && (

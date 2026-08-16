@@ -15,10 +15,10 @@ from fastapi import HTTPException, Request, Response
 from . import localadmin
 from .authstore import AuthStore
 
-logger = logging.getLogger("fmr")
+logger = logging.getLogger("mr")
 
-SESSION_COOKIE = "fmr_session"
-STATE_COOKIE = "fmr_oauth_state"
+SESSION_COOKIE = "mr_session"
+STATE_COOKIE = "mr_oauth_state"
 CALLBACK_PATH = "/v1/auth/github/callback"
 
 GITHUB_AUTHORIZE = "https://github.com/login/oauth/authorize"

@@ -15,7 +15,9 @@ import threading
 import time
 from pathlib import Path
 
-KEY_PREFIX = "fmr_"
+# Only the *display* prefix and what new keys are minted with: lookup compares the sha256
+# digest (hash_key below), so keys issued under an older prefix keep working unchanged.
+KEY_PREFIX = "mr_"
 _PREFIX_VISIBLE = 8  # How much of the plaintext prefix the listing shows
 
 

@@ -32,7 +32,7 @@ import time
 
 import httpx
 
-logger = logging.getLogger("fmr")
+logger = logging.getLogger("mr")
 
 API = "https://api.github.com"
 GRAPHQL = f"{API}/graphql"

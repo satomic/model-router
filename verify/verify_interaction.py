@@ -18,12 +18,12 @@ import _bootstrap  # noqa: F401
 
 import json
 import uuid
-from pathlib import Path
 
+from app.config import LOG_DIR
 from app.traces import _safe
 from verify_auth_helper import make_client
 
-TRACES = Path("logs/traces")
+TRACES = LOG_DIR / "traces"
 
 client, api_key, login = make_client()
 print(f"auth ready: login={login} key={api_key[:12]}…")

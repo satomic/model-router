@@ -52,14 +52,14 @@ to be recreated just because a panel was closed. Copy it into the client:
 | Field | Value |
 |---|---|
 | Base URL | `http://localhost:8000/v1` |
-| API Key | `fmr_...` |
+| API Key | `mr_...` |
 | Model | any model name registered under "Routing configuration" |
 
 From the command line:
 
 ```powershell
 curl http://localhost:8000/v1/chat/completions `
-  -H "Authorization: Bearer fmr_xxxxx" `
+  -H "Authorization: Bearer mr_xxxxx" `
   -H "Content-Type: application/json" `
   -d '{"messages":[{"role":"user","content":"help me refactor this module architecture"}]}'
 ```

@@ -40,7 +40,7 @@ from pathlib import Path
 from . import config, ghadmin
 from .authstore import mtime, read_json, write_json
 
-logger = logging.getLogger("fmr")
+logger = logging.getLogger("mr")
 
 CACHE_DIR = config.DATA_DIR / "github"
 STRUCTURE_PATH = CACHE_DIR / "structure.json"

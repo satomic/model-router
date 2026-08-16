@@ -55,7 +55,7 @@ def user_client(login: str) -> httpx.Client:
     sid = AuthStore(DATA_DIR).create_session(
         {"login": login, "name": login, "avatar_url": None, "is_admin": False}, 3600
     )
-    return httpx.Client(base_url=BASE, timeout=300, cookies={"fmr_session": sid})
+    return httpx.Client(base_url=BASE, timeout=300, cookies={"mr_session": sid})
 
 
 def sources_for(verdict: dict, kind: str | None = None) -> list[str]:

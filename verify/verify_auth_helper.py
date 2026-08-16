@@ -55,7 +55,7 @@ def make_client() -> tuple[httpx.Client, str, str]:
     client = httpx.Client(
         base_url=BASE,
         timeout=300,
-        cookies={"fmr_session": sid},
+        cookies={"mr_session": sid},
         headers={"Authorization": f"Bearer {key}"},
     )
     status = client.get("/v1/auth/status").json()

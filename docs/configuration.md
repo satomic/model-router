@@ -1,8 +1,18 @@
 # Configuration
 
-All configuration (including credentials) lives in `config.yaml`, which is **gitignored** (it never
-enters the repository); see [config.example.yaml](../config.example.yaml) for the template. Edit the
-text directly or change it from the console (comments are preserved on write-back).
+All configuration (including credentials) lives in `data/config.yaml`, which is **gitignored** (it
+never enters the repository); see [config.example.yaml](../config.example.yaml) for the template.
+Edit the text directly or change it from the console (comments are preserved on write-back).
+
+You do not create the file yourself: if it is missing at startup it is copied from the template,
+comments included, and the log records that it happened. An existing file is never overwritten.
+
+It sits under `data/` with the rest of the persistent state — sessions, keys, the GitHub cache and
+the traces — so a deployment is one directory to back up or mount; see
+[Getting started](getting-started.md) for the layout. `MR_DATA_DIR` relocates all of it, and
+`MR_CONFIG_FILE` / `MR_LOG_DIR` split off the configuration or the traces individually, which is
+how the [Docker image](docker.md) keeps everything on one volume instead of inside the container.
+Editing the file by hand takes effect on restart; saving from the console applies immediately.
 
 The console splits the configuration into two top-level pages: **Routing configuration**
 (`providers` / `models` / `strategy` / `session` / `ai_router` / `rules`) and **Access control**
