@@ -75,10 +75,16 @@ jobs:
             type=semver,pattern={{major}}
             type=ref,event=tag
             type=raw,value=latest,enable=${{ startsWith(github.ref, 'refs/tags/v') }}
+            # The fallback for a workflow_dispatch off a branch. Without it such a run produces
+            # NO tags at all -- all three semver patterns need a version tag, type=ref,event=tag
+            # needs a tag event, and `latest` is guarded below -- and a push with an empty tag
+            # list is a failure, not a no-op.
+            type=raw,value=branch-{{sha}},enable=${{ !startsWith(github.ref, 'refs/tags/v') }}
           # A tag v2.1.0 therefore publishes 2.1.0, 2.1, 2, v2.1.0 and latest -- so a
           # deployment can pin as tightly or as loosely as it wants. `latest` is guarded on
           # the ref being a version tag: a manual workflow_dispatch run off a branch must not
-          # move `latest` to an unreleased build.
+          # move `latest` to an unreleased build, so it gets a throwaway branch-<sha> tag
+          # instead and `latest` keeps pointing at the last real release.
 
       - name: Build and push
         uses: docker/build-push-action@v6
@@ -88,12 +94,21 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          # Registry cache rather than type=gha: the GitHub Actions cache is scoped per branch
-          # and evicted at 10 GB, so a tag build (its own ref) would almost always miss it.
-          # A registry-side buildcache tag is shared by every build of this image, which is
-          # what makes the arm64 emulated leg cheap on the second run.
-          cache-from: type=registry,ref=${{ steps.image.outputs.ref }}:buildcache
-          cache-to: ${{ github.event_name != 'pull_request' && format('type=registry,ref={0}:buildcache,mode=max', steps.image.outputs.ref) || '' }}
+          # The Actions cache, NOT a registry cache tag. A registry cache written to
+          # `<image>:buildcache` lands in the same package as the releases: it shows up in the
+          # package's tag list, and because the cache is exported *after* the image push it is
+          # the most recent manifest, so GHCR promotes it to the package's headline and suggests
+          # `docker pull ...:buildcache` -- a cache manifest, which will not run. Never point a
+          # cache export at the package people pull from.
+          #
+          # The honest trade: on a tags-only trigger the Actions cache is usually cold, because a
+          # run writes to its own ref's scope and can only read its own scope plus the default
+          # branch's, and nothing builds on the default branch. So this mostly helps a re-run of
+          # the same tag. That is the right price for a build that runs a few times per release.
+          # If the emulated arm64 leg ever becomes the bottleneck, the fix is a *separate* cache
+          # package (ref=${{ steps.image.outputs.ref }}-cache:latest), not a tag on this one.
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       # Fails the run if the image cannot serve /healthz, so a broken image is never left
       # sitting under `latest` with a green check next to it. amd64 only -- the runner cannot

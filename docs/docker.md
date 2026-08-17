@@ -204,11 +204,23 @@ git tag v1.0.0
 git push origin v1.0.0
 ```
 
+A tag `v1.0.0` publishes five tags — `1.0.0`, `1.0`, `1`, `v1.0.0` and `latest` — so a deployment
+can pin as tightly or as loosely as it likes. A manual `workflow_dispatch` run off a branch gets a
+throwaway `branch-<sha>` tag instead and does **not** move `latest`, so `latest` only ever points
+at a real release.
+
 The workflow builds both architectures, pushes to GHCR, and then **smoke-tests the image it just
 published** — starting it on an empty volume and requiring `/healthz` to answer and
 `config.yaml` to have been auto-created. A broken image fails the run instead of sitting under
 `latest` with a green check. Pull requests that touch the Dockerfile or the application build the
 image but never push it.
+
+The build cache goes to the GitHub Actions cache, never to a tag on this package. A registry cache
+exported to `<image>:buildcache` would appear in the package's own tag list, and since the cache is
+written *after* the image push it would be the newest manifest — which is what GHCR shows as a
+package's headline, so the package page would advertise `docker pull ...:buildcache`, a cache
+manifest that will not run. Should the emulated arm64 leg ever need a warm cache badly enough, the
+answer is a separate `<image>-cache` package, not a tag on the one people pull from.
 
 The first published package is private; make it public from the repository's **Packages** page if
 you want `docker pull` to work without a login.
