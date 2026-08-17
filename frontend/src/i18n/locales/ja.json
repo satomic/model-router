@@ -78,12 +78,18 @@
     "collapseNav": "ナビゲーションを折りたたむ",
     "expandNav": "ナビゲーションを展開する",
     "language": "言語",
+    "reportIssue": "問題を報告",
     "roleAdmin": "管理者",
     "roleUser": "一般ユーザー",
     "running": "稼働中",
     "signOut": "サインアウト",
+    "sourceRepo": "ソースリポジトリ",
     "toggleTheme": "テーマを切り替える",
-    "unreachable": "サービスに到達できません"
+    "unreachable": "サービスに到達できません",
+    "update": {
+      "available": "更新 {{version}}",
+      "title": "バージョン {{version}} が公開されています。リリースノートを開きます。"
+    }
   },
   "login": {
     "title": "Model Router コンソール",

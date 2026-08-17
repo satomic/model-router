@@ -78,12 +78,18 @@
     "collapseNav": "折叠导航",
     "expandNav": "展开导航",
     "language": "语言",
+    "reportIssue": "反馈问题",
     "roleAdmin": "管理员",
     "roleUser": "普通用户",
     "running": "运行中",
     "signOut": "退出登录",
+    "sourceRepo": "源码仓库",
     "toggleTheme": "切换主题",
-    "unreachable": "服务不可达"
+    "unreachable": "服务不可达",
+    "update": {
+      "available": "更新 {{version}}",
+      "title": "版本 {{version}} 已发布，点击查看发布说明。"
+    }
   },
   "login": {
     "title": "Model Router 控制台",

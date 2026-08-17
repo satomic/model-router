@@ -79,12 +79,18 @@
     "collapseNav": "Collapse navigation",
     "expandNav": "Expand navigation",
     "language": "Language",
+    "reportIssue": "Report a problem",
     "roleAdmin": "Administrator",
     "roleUser": "Standard user",
     "running": "Running",
     "signOut": "Sign out",
+    "sourceRepo": "Source repository",
     "toggleTheme": "Toggle theme",
-    "unreachable": "Service unreachable"
+    "unreachable": "Service unreachable",
+    "update": {
+      "available": "Update {{version}}",
+      "title": "Version {{version}} is available. Open the release notes."
+    }
   },
   "login": {
     "title": "Model Router console",

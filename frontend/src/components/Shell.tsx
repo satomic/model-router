@@ -1,8 +1,14 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { NavLink } from 'react-router-dom'
-import { logout, type SessionUser } from '../api'
+import { logout, type Health, type ReleaseStatus, type SessionUser } from '../api'
 import LocalePicker from './LocalePicker'
+
+/** Where the project lives, for the builds that predate /healthz reporting it. The server is the
+ *  authority whenever it answers; these only keep the header's links working while it does not. */
+const REPO_FALLBACK = 'https://github.com/satomic/model-router'
+const ISSUES_FALLBACK = `${REPO_FALLBACK}/issues/new`
+const RELEASES_FALLBACK = `${REPO_FALLBACK}/releases/latest`
 
 export interface NavEntry {
   key: string
@@ -22,6 +28,7 @@ export default function Shell({
   nav,
   user,
   health,
+  release,
   theme,
   onToggleTheme,
   onLoggedOut,
@@ -33,7 +40,9 @@ export default function Shell({
 }: {
   nav: NavEntry[]
   user: SessionUser
-  health: { strategy: string; sticky: boolean } | null
+  health: Health | null
+  /** The last answer from the background release check, or null while it has not been read. */
+  release?: ReleaseStatus | null
   theme: 'light' | 'dark'
   onToggleTheme: () => void
   onLoggedOut: () => void
@@ -63,6 +72,14 @@ export default function Shell({
 
   const initials = (user.name || user.login).slice(0, 2).toUpperCase()
 
+  // Server-reported where available. The version has no fallback on purpose: inventing one would
+  // be a claim about which build is running, and an absent version is more honest than a wrong one.
+  const version = health?.version
+  const repoUrl = health?.repo_url || REPO_FALLBACK
+  const issuesUrl = health?.issues_url || ISSUES_FALLBACK
+  const releasesUrl = release?.release_url || health?.releases_url || RELEASES_FALLBACK
+  const updateAvailable = Boolean(release?.update_available && release.latest_version)
+
   return (
     <>
       <header className="topbar">
@@ -75,8 +92,48 @@ export default function Shell({
         </button>
         <span className="brand">
           <span className="glyph">◆</span> Model Router
+          {version && <span className="version">v{version}</span>}
         </span>
         <div className="status">
+          {updateAvailable && (
+            /* Shown only when a newer tag exists, and it links straight to that release rather
+               than to the repository: an update notice that lands on a project page still leaves
+               the reader hunting for what changed. */
+            <a
+              className="chip update"
+              href={releasesUrl}
+              target="_blank"
+              rel="noreferrer"
+              title={t('shell.update.title', { version: release!.latest_version })}
+            >
+              <span aria-hidden>↑</span>{' '}
+              {t('shell.update.available', { version: release!.latest_version })}
+            </a>
+          )}
+          <a
+            className="icon-btn"
+            href={repoUrl}
+            target="_blank"
+            rel="noreferrer"
+            title={t('shell.sourceRepo')}
+            aria-label={t('shell.sourceRepo')}
+          >
+            {/* The GitHub mark, inline: the console loads no third-party assets, so an icon font
+                or a remote image would be the only such request in the app. */}
+            <svg viewBox="0 0 16 16" width="15" height="15" fill="currentColor" aria-hidden>
+              <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.07-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.42 7.42 0 0 1 2-.27c.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A7.995 7.995 0 0 0 16 8c0-4.42-3.58-8-8-8Z" />
+            </svg>
+          </a>
+          <a
+            className="icon-btn"
+            href={issuesUrl}
+            target="_blank"
+            rel="noreferrer"
+            title={t('shell.reportIssue')}
+            aria-label={t('shell.reportIssue')}
+          >
+            ⚑
+          </a>
           {health ? (
             <span className="chip">
               <span className="dot">●</span> {t('shell.running')} · {health.strategy}

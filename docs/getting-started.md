@@ -78,3 +78,25 @@ translated: the API-key eligibility `reason`, configuration validation errors, G
 error messages, and the trace `analysis` notes. Those strings reach the UI verbatim, so an error
 banner shows English even when the console is set to Japanese. This keeps the API's responses
 identical for every client and avoids locale plumbing through the request path.
+
+## Version and updates
+
+The top bar shows the running version next to the product name, followed by a link to the source
+repository and one that opens a new issue. The version comes from `app/version.py`, which is the
+single place it is defined; `/healthz` reports it, so the console never has a version of its own
+that could drift from the server's.
+
+A background task asks GitHub once a day for the latest published release and compares its tag with
+the running version. When the tag is higher, the header shows an update chip that links to that
+release. The answer is cached in `data/release.json`, so a restart does not re-poll and several
+workers do not each ask; `GET /v1/release` serves the cached answer and never calls GitHub itself.
+
+The check is unauthenticated, because the releases endpoint is public and requiring a token would
+disable the feature on exactly the fresh deployment that needs it most. It is also entirely
+optional: a router that cannot reach github.com keeps routing, the last known answer is kept, and
+the header simply shows no chip. `POST /v1/release/check` forces a check immediately and is
+restricted to administrators, since it makes an outbound request.
+
+A pre-release tag compares on its numeric part alone, so `v0.0.3-rc1` reads as newer than `v0.0.2`
+while `v0.0.2-rc1` does not read as newer than `v0.0.2`. A tag that cannot be parsed is never
+treated as an update.

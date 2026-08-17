@@ -7,6 +7,8 @@ Authentication model:
 - /v1/keys, /v1/usage, /v1/traces   -> signed-in users; non-admins see only their own data
 - /v1/auth/*, /healthz, the console -> public (the console itself is served from /, and
                                        every non-API path falls through to it)
+- /v1/release                       -> public (the header shows the version to everyone);
+                                       forcing a check is administrators only
 """
 import asyncio
 import contextlib
@@ -29,7 +31,8 @@ from fastapi.responses import (
 )
 
 from . import auth as authlib
-from . import ghadmin, ghcache, keypolicy, localadmin
+from . import ghadmin, ghcache, keypolicy, localadmin, release
+from .version import ISSUES_URL, RELEASES_URL, REPO_URL, VERSION
 from .authstore import AuthStore
 from .config import (
     CATALOG_PLACEHOLDER,
@@ -124,15 +127,20 @@ async def _cache_refresh_loop() -> None:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    task = asyncio.create_task(_cache_refresh_loop())
+    tasks = [
+        asyncio.create_task(_cache_refresh_loop()),
+        asyncio.create_task(release.loop()),
+    ]
     yield
-    task.cancel()
-    with contextlib.suppress(asyncio.CancelledError):
-        await task
+    for task in tasks:
+        task.cancel()
+    for task in tasks:
+        with contextlib.suppress(asyncio.CancelledError):
+            await task
     await pool.aclose()
 
 
-app = FastAPI(title="Model Router", lifespan=lifespan)
+app = FastAPI(title="Model Router", version=VERSION, lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],  # Vite dev server
@@ -1207,7 +1215,31 @@ async def healthz():
         "strategy": cfg.strategy,
         "sticky": cfg.sticky,
         "providers": list(cfg.providers),
+        # The console's header reads the version and the project links from here rather than
+        # from a second request: it already polls this endpoint, and a build's identity belongs
+        # with the rest of what it reports about itself.
+        "version": VERSION,
+        "repo_url": REPO_URL,
+        "issues_url": ISSUES_URL,
+        "releases_url": RELEASES_URL,
     }
+
+
+@app.get("/v1/release")
+async def release_status():
+    """The last answer from the release check. Public, like /healthz.
+
+    Never triggers a check of its own: the console asks on every load, and a page open in ten
+    tabs must not become ten calls to github.com.
+    """
+    return release.status()
+
+
+@app.post("/v1/release/check")
+async def release_check(request: Request):
+    """Force a check now. Administrators only: it makes an outbound request."""
+    _admin(request)
+    return await release.check()
 
 
 _dist = ROOT / "frontend" / "dist"

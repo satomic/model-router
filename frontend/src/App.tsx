@@ -2,7 +2,15 @@ import { useCallback, useEffect, useState, type ReactElement } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Navigate, Route, Routes, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import Shell from './components/Shell'
-import { getAuthStatus, RETURN_KEY, type AuthStatus } from './api'
+import {
+  getAuthStatus,
+  getHealth,
+  getReleaseStatus,
+  RETURN_KEY,
+  type AuthStatus,
+  type Health,
+  type ReleaseStatus,
+} from './api'
 import AccessPage from './pages/AccessPage'
 import ChangePasswordPage from './pages/ChangePasswordPage'
 import ConfigPage from './pages/ConfigPage'
@@ -68,7 +76,8 @@ function Forbidden() {
 export default function App() {
   const { t } = useTranslation()
   const [status, setStatus] = useState<AuthStatus | null>(null)
-  const [health, setHealth] = useState<{ strategy: string; sticky: boolean } | null>(null)
+  const [health, setHealth] = useState<Health | null>(null)
+  const [rel, setRel] = useState<ReleaseStatus | null>(null)
   const [theme, toggleTheme] = useTheme()
   const navigate = useNavigate()
   const location = useLocation()
@@ -87,14 +96,17 @@ export default function App() {
 
   useEffect(() => {
     if (!status?.authenticated) return
-    const load = () =>
-      fetch('/healthz')
-        .then((r) => r.json())
-        .then(setHealth)
-        .catch(() => setHealth(null))
+    const load = () => getHealth().then(setHealth).catch(() => setHealth(null))
     load()
     const t = setInterval(load, 10000)
     return () => clearInterval(t)
+  }, [status?.authenticated])
+
+  // Once per sign-in, not on a timer: the answer comes from a cache the backend refreshes daily,
+  // so polling it would ask the same question of the same local file over and over.
+  useEffect(() => {
+    if (!status?.authenticated) return
+    getReleaseStatus().then(setRel).catch(() => setRel(null))
   }, [status?.authenticated])
 
   // Once signed in: go back to whatever page prompted the sign-in, and drop login_error from
@@ -175,6 +187,7 @@ export default function App() {
       nav={nav}
       user={user}
       health={health}
+      release={rel}
       theme={theme}
       onToggleTheme={toggleTheme}
       onLoggedOut={refreshStatus}

@@ -24,7 +24,9 @@
 | `DELETE /v1/traces/{id}` | delete one trace, i.e. the whole interaction (administrators); 404 if it is already gone |
 | `DELETE /v1/traces?date=&user_id=` | delete every trace matching the criteria, returning `{deleted: N}` (administrators). **At least one criterion is required** — an unfiltered call is refused with 422 rather than treated as a wipe-all |
 | `GET /v1/router/decisions` | a legacy endpoint, kept for compatibility |
-| `GET /healthz` | health check (including the loaded provider list) |
+| `GET /healthz` | health check: the loaded provider list, plus the running `version` and the project links the console's header shows |
+| `GET /v1/release` | the last answer from the background release check — `{current_version, latest_version, update_available, release_url, published_at, checked_at, error}` (public). Reads a cached result, so it never calls GitHub |
+| `POST /v1/release/check` | ask GitHub for the latest release now instead of waiting for the daily check (administrators, since it makes an outbound request) |
 
 Which identity each endpoint requires is tabulated in
 [the permission matrix](authentication.md#permission-matrix).

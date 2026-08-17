@@ -78,12 +78,18 @@
     "collapseNav": "내비게이션 접기",
     "expandNav": "내비게이션 펼치기",
     "language": "언어",
+    "reportIssue": "문제 신고",
     "roleAdmin": "관리자",
     "roleUser": "일반 사용자",
     "running": "실행 중",
     "signOut": "로그아웃",
+    "sourceRepo": "소스 저장소",
     "toggleTheme": "테마 전환",
-    "unreachable": "서비스에 연결할 수 없습니다"
+    "unreachable": "서비스에 연결할 수 없습니다",
+    "update": {
+      "available": "업데이트 {{version}}",
+      "title": "버전 {{version}}이(가) 출시되었습니다. 릴리스 노트를 엽니다."
+    }
   },
   "login": {
     "title": "Model Router 콘솔",

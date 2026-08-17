@@ -174,6 +174,14 @@ body {
   white-space: nowrap;
 }
 .brand .glyph { color: #50e6ff; font-size: 17px; }
+/* Lighter and smaller than the product name it follows: the build number is reference
+   information, not part of the identity. */
+.brand .version {
+  font-size: 11.5px;
+  font-weight: 400;
+  font-family: var(--mono);
+  color: rgba(255, 255, 255, 0.7);
+}
 .topbar .status {
   margin-left: auto;
   font-size: 12px;
@@ -193,6 +201,16 @@ body {
 }
 .dot { color: #6bb700; font-size: 10px; }
 .dot.off { color: #ffb900; }
+/* The update notice is a link wearing the chip shape, so it reads as part of the status group
+   rather than as an alert bar. Amber carries the "worth a look, nothing is wrong" reading that
+   the health chip's green and the error red both fail to. */
+.topbar .status a.chip.update {
+  background: #ffb900;
+  color: #201f1e;
+  font-weight: 600;
+  text-decoration: none;
+}
+.topbar .status a.chip.update:hover { background: #ffc83d; }
 
 .icon-btn {
   height: 32px;
@@ -207,6 +225,14 @@ body {
   font-family: var(--sans);
 }
 .icon-btn:hover { background: rgba(255, 255, 255, 0.12); }
+/* The class is also worn by the two project links in the header. An <a> is not a button, so it
+   needs the centring a button gives its label for free, and it must not carry an underline. */
+a.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
 
 /* Language selector. In the topbar it sits on the dark header, so it borrows the
    transparent-on-white treatment of .icon-btn; `.compact` is the variant used on the

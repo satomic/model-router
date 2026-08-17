@@ -313,6 +313,43 @@ function jsonBody(method: string, body: unknown): RequestInit {
   return { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }
 }
 
+// ── Version and releases ─────────────────────────────────────────
+export interface Health {
+  status: string
+  strategy: string
+  sticky: boolean
+  providers: string[]
+  version: string
+  repo_url: string
+  issues_url: string
+  releases_url: string
+}
+
+export interface ReleaseStatus {
+  current_version: string
+  latest_version: string | null
+  update_available: boolean
+  release_url: string | null
+  published_at: string | null
+  checked_at: number | null
+  error: string | null
+}
+
+export async function getHealth(): Promise<Health> {
+  return json<Health>('/healthz')
+}
+
+/** The last answer from the background release check. Reads a cached result, so calling it on
+ *  every page load costs nothing upstream. */
+export async function getReleaseStatus(): Promise<ReleaseStatus> {
+  return json<ReleaseStatus>('/v1/release')
+}
+
+/** Force a check now. Administrators only, since it makes an outbound request. */
+export async function checkForUpdate(): Promise<ReleaseStatus> {
+  return json<ReleaseStatus>('/v1/release/check', { method: 'POST' })
+}
+
 // ── Auth ─────────────────────────────────────────────────────────
 export async function getAuthStatus(): Promise<AuthStatus> {
   return json<AuthStatus>('/v1/auth/status')

@@ -123,7 +123,8 @@ identity that can delete traces.
 | Endpoint | Identity required |
 |---|---|
 | `POST /v1/chat/completions`, `GET /v1/models` | **a valid API key** (no key → 401) |
-| `GET /v1/auth/status`, `/v1/auth/github/*`, `GET /healthz`, the console (`/` and every non-API path) | public |
+| `GET /v1/auth/status`, `/v1/auth/github/*`, `GET /healthz`, `GET /v1/release`, the console (`/` and every non-API path) | public |
+| `POST /v1/release/check` | administrators (it makes an outbound request to GitHub) |
 | `POST /v1/auth/setup` | only "OAuth unconfigured + request from the local machine" |
 | `GET/PATCH/DELETE /v1/keys` | any signed-in user (their own keys only; an administrator sees all with `?all=1`) |
 | `POST /v1/keys` | a signed-in user **and** passing the key policy (not in any allowed enterprise/organization → 403, see [access control](access-control.md)) |

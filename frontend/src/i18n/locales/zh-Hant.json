@@ -78,12 +78,18 @@
     "collapseNav": "收合導覽",
     "expandNav": "展開導覽",
     "language": "語言",
+    "reportIssue": "回報問題",
     "roleAdmin": "管理員",
     "roleUser": "一般使用者",
     "running": "執行中",
     "signOut": "登出",
+    "sourceRepo": "原始碼儲存庫",
     "toggleTheme": "切換主題",
-    "unreachable": "服務無法連線"
+    "unreachable": "服務無法連線",
+    "update": {
+      "available": "更新 {{version}}",
+      "title": "版本 {{version}} 已發布，點選查看發布說明。"
+    }
   },
   "login": {
     "title": "Model Router 主控台",
