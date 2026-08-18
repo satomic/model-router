@@ -913,6 +913,17 @@ textarea.prompt-editor {
   flex-wrap: wrap;
 }
 .step:last-child { border-bottom: none; }
+/* The two stages of the rule-then-ai analysis. A labelled indent rather than a card each: the
+   two stages are one decision, and the reason the second one ran is the first one's outcome. */
+.stage + .stage { margin-top: 12px; }
+.stage-name {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 4px;
+}
 .step .mark { width: 18px; text-align: center; flex: none; }
 .step .rule-name { min-width: 150px; flex: 1 1 auto; }
 .step .badge { flex: none; }

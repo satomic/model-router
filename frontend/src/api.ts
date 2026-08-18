@@ -32,7 +32,14 @@ export interface RuleStep {
 }
 
 export interface RoutingAnalysis {
-  type: 'rule' | 'ai' | 'session'
+  type: 'rule' | 'ai' | 'session' | 'rule-then-ai'
+  /** `rule-then-ai` only: which of the two strategies actually produced the model, and the two
+   *  sub-analyses. Each keeps the `type` its single-strategy counterpart emits, so the console
+   *  renders them with the same code rather than a third copy of it. `ai` is absent when a rule
+   *  matched -- no decision call was made. */
+  decided_by?: 'rule' | 'ai'
+  rule?: RoutingAnalysis
+  ai?: RoutingAnalysis
   evaluated?: RuleStep[]
   fallback?: string | boolean
   note?: string
@@ -197,8 +204,12 @@ export interface AuthConfig {
   local_admin?: LocalAdminConfig
 }
 
+/** `rule-then-ai` runs both: the rules decide when one matches, and only an unmatched request
+ *  costs a decision call. */
+export type Strategy = 'rule' | 'ai' | 'rule-then-ai'
+
 export interface RouterConfig {
-  strategy: 'rule' | 'ai'
+  strategy: Strategy
   session: { sticky: boolean; ttl_seconds: number; max_sessions: number }
   ai_router: {
     decision_model: string

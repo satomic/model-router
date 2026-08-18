@@ -55,6 +55,7 @@ from .routing import (
     extract_user_prompt,
     route_by_ai,
     route_by_rules,
+    route_combined,
     truncate_for_decision,
 )
 from .sessions import SessionStore
@@ -202,6 +203,8 @@ async def _decide_model(
 
     if cfg.strategy == "ai":
         model, reason, analysis = await route_by_ai(prompt, cfg, pool)
+    elif cfg.strategy == "rule-then-ai":
+        model, reason, analysis = await route_combined(prompt, cfg, pool)
     else:
         model, reason, analysis = route_by_rules(prompt, cfg)
 

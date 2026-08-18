@@ -1,5 +1,6 @@
-"""Routing strategies: rule (keyword/length rules) and ai (decision model). Both emit
-the full decision analysis."""
+"""Routing strategies: rule (keyword/length rules), ai (decision model), and rule-then-ai
+(rules first, the decision model only when no rule matched). All emit the full decision
+analysis."""
 import json
 import logging
 import re
@@ -44,9 +45,16 @@ def truncate_for_decision(prompt: str, max_chars: int) -> str:
     return f"{prompt[:half]}\n...[...omitted...]...\n{prompt[-half:]}"
 
 
-def route_by_rules(prompt: str, cfg: RouterConfig) -> tuple[str, str, dict]:
-    """Return (model, reason, analysis). analysis records how each rule was evaluated."""
-    evaluated = []
+def match_rules(prompt: str, cfg: RouterConfig) -> tuple[str | None, str | None, list[dict]]:
+    """Evaluate the rules in order. Return (model, rule_name, evaluated) for the first hit,
+    or (None, None, evaluated) when nothing matched.
+
+    Separate from `route_by_rules` because "no rule matched" is a decision in its own right
+    under the rule-then-ai strategy: there it hands the request to the decision model rather
+    than to the default model. Returning None instead of substituting a default keeps that
+    distinction, and keeps the substitution in exactly one place per strategy.
+    """
+    evaluated: list[dict] = []
     for rule in cfg.rules:
         name = rule.get("name", "unnamed")
         model = rule.get("model")
@@ -61,7 +69,7 @@ def route_by_rules(prompt: str, cfg: RouterConfig) -> tuple[str, str, dict]:
             if len(prompt) >= min_chars:
                 step["matched"] = True
                 evaluated.append(step)
-                return model, name, {"type": "rule", "evaluated": evaluated}
+                return model, name, evaluated
         keywords = rule.get("keywords") or []
         if keywords:
             m = re.search(
@@ -72,12 +80,59 @@ def route_by_rules(prompt: str, cfg: RouterConfig) -> tuple[str, str, dict]:
                 step["matched"] = True
                 step["matched_keyword"] = m.group(0)
                 evaluated.append(step)
-                return model, name, {"type": "rule", "evaluated": evaluated}
+                return model, name, evaluated
         evaluated.append(step)
+    return None, None, evaluated
+
+
+def route_by_rules(prompt: str, cfg: RouterConfig) -> tuple[str, str, dict]:
+    """Return (model, reason, analysis). analysis records how each rule was evaluated."""
+    model, name, evaluated = match_rules(prompt, cfg)
+    if model is not None:
+        return model, name, {"type": "rule", "evaluated": evaluated}
     return cfg.default_model, "default", {
         "type": "rule",
         "evaluated": evaluated,
         "fallback": "no rule matched, using the default model",
+    }
+
+
+async def route_combined(
+    prompt: str, cfg: RouterConfig, pool: "ClientPool"
+) -> tuple[str, str, dict]:
+    """Rules first; the AI decision model only when no rule matched.
+
+    Both strategies are configured and both are live. The rules win when one of them fires,
+    which is the point of the strategy: a keyword rule is the operator stating an explicit
+    intent, and an explicit intent should not be second-guessed by a classifier -- nor should
+    it be paid for with a decision call it cannot change.
+
+    A rule that matched on `min_prompt_chars` rather than on a keyword also wins. It is just as
+    explicitly configured, and making the Rules page authoritative for some of its own rows and
+    advisory for others would be impossible to reason about from the UI.
+
+    The analysis nests both sub-analyses under their own keys, each keeping the `type` its
+    single-strategy counterpart emits, so the console renders the handover with the renderers it
+    already has instead of a third copy of them.
+    """
+    model, name, evaluated = match_rules(prompt, cfg)
+    rule_analysis = {"type": "rule", "evaluated": evaluated}
+    if model is not None:
+        return model, name, {
+            "type": "rule-then-ai",
+            "decided_by": "rule",
+            "rule": rule_analysis,
+        }
+
+    # No rule fired, so the decision model gets the request. Its own fallback to the default
+    # model stays inside route_by_ai -- from here it is one strategy that answers or does not.
+    rule_analysis["fallback"] = "no rule matched, handing over to the AI decision model"
+    ai_model, ai_reason, ai_analysis = await route_by_ai(prompt, cfg, pool)
+    return ai_model, ai_reason, {
+        "type": "rule-then-ai",
+        "decided_by": "ai",
+        "rule": rule_analysis,
+        "ai": ai_analysis,
     }
 
 

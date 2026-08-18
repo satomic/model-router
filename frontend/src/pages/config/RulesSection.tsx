@@ -1,5 +1,6 @@
 import { Trans, useTranslation } from 'react-i18next'
 import type { Rule } from '../../api'
+import { rulesActive } from './strategy'
 import type { SectionProps } from './types'
 
 /** Rule routing: evaluated in order, the first match decides the model. */
@@ -33,17 +34,26 @@ export default function RulesSection({ cfg, set, goto }: SectionProps) {
         <div className="panel-head">
           {t('config.rules.title')}
           <span className="badge">{t('config.rules.count', { count: cfg.rules.length })}</span>
-          {cfg.strategy !== 'rule' && <span className="badge">{t('config.rules.inactive')}</span>}
+          {!rulesActive(cfg.strategy) && (
+            <span className="badge">{t('config.rules.inactive')}</span>
+          )}
           <span className="spacer" />
           <button className="btn ghost sm" onClick={addRule}>{t('config.rules.add')}</button>
         </div>
         <div className="panel-body">
           {/* One key for the whole paragraph: the default-model badge, the "not set" case and
               the link to the strategy page all sit inside the sentence, and CJK/EN word order
-              differs, so it must never be assembled from fragments. */}
+              differs, so it must never be assembled from fragments.
+
+              Two variants, because what happens to an unmatched request is the difference
+              between the two strategies that consult these rules: under `rule` it goes to the
+              default model, under `rule-then-ai` to the decision model. Stating the wrong one
+              would make the rules page describe behaviour the router does not have. */}
           <p className="panel-note" style={{ marginBottom: 0 }}>
             <Trans
-              i18nKey="config.rules.lead"
+              i18nKey={
+                cfg.strategy === 'rule-then-ai' ? 'config.rules.leadThenAi' : 'config.rules.lead'
+              }
               values={{ model: defaultModel ?? t('config.rules.noDefaultModel') }}
               components={{
                 strong: <strong />,

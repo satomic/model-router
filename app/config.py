@@ -138,6 +138,11 @@ def ensure_config_file() -> bool:
 DEFAULT_PROVIDER_NAME = "foundry"
 _API_TYPES = ("azure", "openai")
 
+# The routing strategies. "rule-then-ai" runs both: the rules decide when one of them matches,
+# and only an unmatched request costs a decision call. Exported so the validator, the router and
+# anything else that has to enumerate them read from one list.
+STRATEGIES = ("rule", "ai", "rule-then-ai")
+
 # Placeholder standing for the "model catalog" inside the AI decision prompt.
 # Rendering does a **literal replacement** rather than str.format: a custom prompt
 # almost always contains JSON braces, which format would treat as placeholders and
@@ -190,6 +195,9 @@ class ResolvedModel:
 class RouterConfig:
     def __init__(self, raw: dict):
         self.raw = raw
+        # One scalar rather than two toggles, so a config can never describe a state the
+        # router has no branch for. "rule-then-ai" is the both-at-once value; the two
+        # single-strategy values keep their old meaning, so existing files are unaffected.
         self.strategy: str = raw.get("strategy", "rule")
         self.models: dict[str, dict] = raw.get("models", {})
         self.rules: list[dict] = raw.get("rules", [])
@@ -370,8 +378,8 @@ def save_raw(updates: dict) -> RouterConfig:
 def validate_raw(raw: dict) -> list[str]:
     """Return the list of configuration errors; an empty list means valid."""
     errors = []
-    if raw.get("strategy") not in ("rule", "ai", None):
-        errors.append("strategy must be 'rule' or 'ai'")
+    if raw.get("strategy") not in STRATEGIES + (None,):
+        errors.append("strategy must be one of %s" % ", ".join(repr(s) for s in STRATEGIES))
 
     providers = raw.get("providers")
     if providers is not None:

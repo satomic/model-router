@@ -19,7 +19,11 @@ python verify/verify_userrequest.py      # <userRequest> extraction
 python verify/verify_prompt.py           # the AI decision prompt: rendering, validation, the preview
                                          # endpoint, and end-to-end effect (temporarily rewrites
                                          # ai_router and restores it)
-python verify/verify_rules.py            # rule routing (switch strategy to rule first)
+python verify/verify_rules.py            # rule routing (switches strategy to rule itself and restores it)
+python verify/verify_combined.py         # the rule-then-ai strategy: a matched rule decides and costs
+                                         # no decision call, an unmatched request reaches the decision
+                                         # model (switches strategy and disables stickiness for the
+                                         # run, then restores both)
 python verify/verify_localadmin.py       # the local super administrator: sign-in, the forced
                                          # password change, salted-scrypt storage, renaming,
                                          # disabling (temporarily rewrites auth.local_admin in

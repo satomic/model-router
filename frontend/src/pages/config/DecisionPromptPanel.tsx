@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Trans, useTranslation } from 'react-i18next'
 import { getDefaultDecisionPrompt, previewDecisionPrompt, type PromptPreview } from '../../api'
+import { aiRouterActive } from './strategy'
 import type { SectionProps } from './types'
 
 const PLACEHOLDER = '{catalog}'
@@ -18,7 +19,6 @@ const SAMPLE_PRESET_KEYS = ['refactor', 'translate', 'proof']
  *  edited model descriptions show up without having to save first. */
 export default function DecisionPromptPanel({ cfg, set, notify, goto }: SectionProps) {
   const { t } = useTranslation()
-  const isAi = cfg.strategy === 'ai'
   const prompt = cfg.ai_router.decision_prompt ?? ''
   const [sample, setSample] = useState('')
   const [preview, setPreview] = useState<PromptPreview | null>(null)
@@ -80,7 +80,9 @@ export default function DecisionPromptPanel({ cfg, set, notify, goto }: SectionP
     <div className="panel">
       <div className="panel-head">
         {t('config.prompt.title')}
-        {!isAi && <span className="badge">{t('config.aiRouter.inactive')}</span>}
+        {!aiRouterActive(cfg.strategy) && (
+          <span className="badge">{t('config.aiRouter.inactive')}</span>
+        )}
         {preview?.is_default_prompt && <span className="badge">{t('config.prompt.usingDefault')}</span>}
       </div>
       <div className="panel-body">

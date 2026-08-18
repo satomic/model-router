@@ -1,13 +1,26 @@
 import { Trans, useTranslation } from 'react-i18next'
+import { aiRouterActive } from './strategy'
 import DecisionPromptPanel from './DecisionPromptPanel'
 import type { SectionProps } from './types'
 
-/** Routing strategy: rule / ai, session stickiness, and the AI decision model's parameters
- *  and prompt. */
+/** Routing strategy: rule / ai / rule-then-ai, session stickiness, and the AI decision model's
+ *  parameters and prompt. */
 export default function StrategySection({ cfg, set, notify, goto }: SectionProps) {
   const { t } = useTranslation()
   const providerNames = Object.keys(cfg.providers ?? {})
-  const isAi = cfg.strategy === 'ai'
+
+  /** The rules link inside a choice card's description. The card is a `<label>`, so a click on
+   *  the button would also select its radio -- hence the stopPropagation. */
+  const rulesLink = (
+    <button
+      className="btn subtle sm"
+      onClick={(e) => {
+        e.preventDefault()
+        e.stopPropagation()
+        goto('rules')
+      }}
+    />
+  )
 
   return (
     <>
@@ -15,35 +28,49 @@ export default function StrategySection({ cfg, set, notify, goto }: SectionProps
         <div className="panel-head">{t('config.strategy.title')}</div>
         <div className="panel-body">
           <div className="choice-list">
-            <label className={`choice ${isAi ? 'selected' : ''}`}>
-              <input type="radio" checked={isAi} onChange={() => set({ strategy: 'ai' })} />
+            {/* rule-then-ai is listed first: it is the strategy that needs no trade-off
+                explained, since the rules cost nothing and the decision call is only paid for
+                a request they did not answer. */}
+            <label className={`choice ${cfg.strategy === 'rule-then-ai' ? 'selected' : ''}`}>
+              <input
+                type="radio"
+                checked={cfg.strategy === 'rule-then-ai'}
+                onChange={() => set({ strategy: 'rule-then-ai' })}
+              />
+              <span>
+                <span className="choice-title">
+                  {t('config.strategy.ruleThenAi.title')}
+                  <span className="badge ok">{t('config.strategy.recommended')}</span>
+                </span>
+                <span className="choice-desc">
+                  <Trans
+                    i18nKey="config.strategy.ruleThenAi.desc"
+                    components={{ rulesLink }}
+                  />
+                </span>
+              </span>
+            </label>
+            <label className={`choice ${cfg.strategy === 'ai' ? 'selected' : ''}`}>
+              <input
+                type="radio"
+                checked={cfg.strategy === 'ai'}
+                onChange={() => set({ strategy: 'ai' })}
+              />
               <span>
                 <span className="choice-title">{t('config.strategy.ai.title')}</span>
                 <span className="choice-desc">{t('config.strategy.ai.desc')}</span>
               </span>
             </label>
-            <label className={`choice ${!isAi ? 'selected' : ''}`}>
-              <input type="radio" checked={!isAi} onChange={() => set({ strategy: 'rule' })} />
+            <label className={`choice ${cfg.strategy === 'rule' ? 'selected' : ''}`}>
+              <input
+                type="radio"
+                checked={cfg.strategy === 'rule'}
+                onChange={() => set({ strategy: 'rule' })}
+              />
               <span>
                 <span className="choice-title">{t('config.strategy.rule.title')}</span>
                 <span className="choice-desc">
-                  <Trans
-                    i18nKey="config.strategy.rule.desc"
-                    components={{
-                      rulesLink: (
-                        <button
-                          className="btn subtle sm"
-                          // The card itself is a label, so clicking the button would also select
-                          // the radio -- stop the event from bubbling
-                          onClick={(e) => {
-                            e.preventDefault()
-                            e.stopPropagation()
-                            goto('rules')
-                          }}
-                        />
-                      ),
-                    }}
-                  />
+                  <Trans i18nKey="config.strategy.rule.desc" components={{ rulesLink }} />
                 </span>
               </span>
             </label>
@@ -95,7 +122,9 @@ export default function StrategySection({ cfg, set, notify, goto }: SectionProps
       <div className="panel">
         <div className="panel-head">
           {t('config.aiRouter.title')}
-          {!isAi && <span className="badge">{t('config.aiRouter.inactive')}</span>}
+          {!aiRouterActive(cfg.strategy) && (
+            <span className="badge">{t('config.aiRouter.inactive')}</span>
+          )}
         </div>
         <div className="panel-body">
           <div className="row">

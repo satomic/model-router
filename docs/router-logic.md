@@ -12,6 +12,9 @@ flowchart TD
     B -- unbound / disabled --> C{strategy}
     C -- rule --> D[match rules in order: keywords / prompt length]
     C -- ai --> E[call the decision model gpt-4.1]
+    C -- rule-then-ai --> R[match rules in order]
+    R -- a rule matched --> F
+    R -- nothing matched --> E
     D --> F[a hit picks that model; otherwise the default model]
     E --> F
     F --> G{sticky and an interaction or session id present?}
@@ -111,7 +114,34 @@ sent to the decision model**:
    - you can type a sample request to preview what the user message looks like after being truncated
      to `max_prompt_chars`.
 
-**4. Parameter adaptation**: the model's provider and upstream model name (`model_name`) are
+**4. Both at once (`strategy: rule-then-ai`)**: the rules and the decision model are **both** active
+(`route_combined`). The rules are evaluated first, exactly as in step 2; a match returns that rule's
+model immediately and **no decision call is made**. Only a request no rule matched is handed to the
+decision model, which then behaves exactly as in step 3 — including its own fallback to the default
+model on a timeout or an unusable answer. So an unmatched request is the only one that costs a
+decision call, and the default model is reached only through the AI branch's fallback, never directly.
+
+A rule that matched on `min_prompt_chars` wins just as a keyword rule does: it is equally an explicit
+instruction from the operator, and making the Rules page authoritative for some of its own rows and
+merely advisory for others would be impossible to reason about from the UI.
+
+The trace's `routing.analysis` **nests both stages** rather than flattening them:
+
+```json
+{
+  "type": "rule-then-ai",
+  "decided_by": "ai",
+  "rule": { "type": "rule", "evaluated": [...], "fallback": "no rule matched, handing over to the AI decision model" },
+  "ai":   { "type": "ai", "decision_system": "...", ... }
+}
+```
+
+`decided_by` names the stage that produced the model, and each sub-analysis keeps the `type` its
+single-strategy counterpart emits, so the console renders the handover with the renderers it already
+has. **`ai` is absent exactly when a rule fired** — which is itself the evidence that no decision call
+was paid for.
+
+**5. Parameter adaptation**: the model's provider and upstream model name (`model_name`) are
 resolved, then the `models.<name>.reasoning` / `models.<name>.api` flags are applied:
    - `reasoning: true` (newer reasoning models such as the gpt-5.x / o3 families): `max_tokens`
      becomes `max_completion_tokens`, and sampling parameters such as `temperature` / `top_p` are
@@ -120,11 +150,11 @@ resolved, then the `models.<name>.reasoning` / `models.<name>.api` flags are app
      Completions, and the result is adapted back to the standard `chat.completion` shape; a
      streaming request is returned as one SSE chunk.
 
-**5. Writing the sticky binding back**: if a real decision was made (not a sticky hit) and
+**6. Writing the sticky binding back**: if a real decision was made (not a sticky hit) and
 stickiness is enabled, both keys the request carried — `interaction_id → model` and
 `session_id → model` — are written to the in-memory store for the rest of that interaction, and any
 later request of that session, to reuse.
 
-**6. Recording the turn**: the request is closed out as one *turn* and handed to
+**7. Recording the turn**: the request is closed out as one *turn* and handed to
 [app/traces.py](../app/traces.py), which folds it into the trace of the interaction it belongs to
 rather than opening a record of its own — see [Full-chain logging](traces.md).

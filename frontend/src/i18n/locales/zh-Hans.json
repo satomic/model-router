@@ -510,6 +510,10 @@
     },
     "analysis": {
       "matchedKeyword": "命中 \"{{keyword}}\"",
+      "decidedByRule": "由规则决定，未调用决策模型",
+      "decidedByAi": "未命中规则，由决策模型决定",
+      "stageRules": "1. 规则匹配",
+      "stageAi": "2. AI 决策",
       "decisionModel": "决策模型",
       "rationale": "决策理由",
       "decisionLatency": "决策耗时",
@@ -539,7 +543,7 @@
       },
       "strategy": {
         "label": "路由策略",
-        "hint": "AI / 规则、会话保持、决策器参数"
+        "hint": "规则与 AI 策略、会话粘性、决策模型参数"
       },
       "rules": {
         "label": "规则路由",
@@ -597,6 +601,11 @@
     },
     "strategy": {
       "title": "路由策略",
+      "recommended": "推荐",
+      "ruleThenAi": {
+        "title": "规则优先，AI 兜底",
+        "desc": "两种策略同时生效。命中<rulesLink>规则</rulesLink>的请求直接使用该规则指定的模型，不产生任何 LLM 调用；只有未命中任何规则的请求才交给决策模型。"
+      },
       "ai": {
         "title": "AI 智能路由",
         "desc": "用轻量决策模型读懂请求意图后挑选模型。准确度高，每次请求多一次约 1 秒的决策调用。"
@@ -617,7 +626,7 @@
     },
     "aiRouter": {
       "title": "AI 决策器",
-      "inactive": "当前策略为规则路由，以下设置暂不生效",
+      "inactive": "当前策略为纯规则路由，以下设置不生效",
       "decisionModel": "决策模型",
       "decisionModelHint": "选轻量高速的，例如 gpt-4.1",
       "decisionProvider": "决策模型所用连接",
@@ -629,9 +638,10 @@
     "rules": {
       "title": "规则路由",
       "count_other": "{{count}} 条",
-      "inactive": "当前策略为 AI 智能路由，规则暂不生效",
+      "inactive": "当前策略为纯 AI 路由，规则不生效",
       "add": "+ 添加规则",
       "lead": "<strong>自上而下</strong>逐条评估，第一条命中的规则决定模型，后续不再评估——用 ↑↓ 调整优先级。全部未命中则走默认模型 <model>{{model}}</model>。一条规则里同时填了关键词和长度时，只检查长度。策略开关在<strategyLink>路由策略</strategyLink>里。",
+      "leadThenAi": "<strong>自上而下</strong>依次匹配，第一条命中的规则决定模型，其余不再评估 —— 用 ↑↓ 调整顺序。若全部未命中，请求将交给<strategyLink>AI 决策模型</strategyLink>，而不是直接使用默认模型。同一条规则同时配置关键词和长度时，只检查长度。",
       "noDefaultModel": "（尚未设置）",
       "empty": "还没有规则。规则路由策略下，所有请求都会走默认模型。",
       "keywords": "关键词",

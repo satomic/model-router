@@ -37,6 +37,32 @@ function AnalysisView({ analysis }: { analysis: RoutingAnalysis }) {
       </>
     )
   }
+  if (analysis.type === 'rule-then-ai') {
+    // Both strategies were configured. Render each stage with the renderer that stage's own
+    // type already has, rather than a third copy of them -- and state which one decided,
+    // because the model alone does not say whether a rule fired or a decision call was paid
+    // for. `analysis.ai` is absent exactly when a rule matched: no call was made.
+    const byRule = analysis.decided_by === 'rule'
+    return (
+      <>
+        <div className={`badge ${byRule ? 'ok' : ''}`} style={{ marginBottom: 8 }}>
+          {t(byRule ? 'traces.analysis.decidedByRule' : 'traces.analysis.decidedByAi')}
+        </div>
+        {analysis.rule && (
+          <div className="stage">
+            <div className="stage-name">{t('traces.analysis.stageRules')}</div>
+            <AnalysisView analysis={analysis.rule} />
+          </div>
+        )}
+        {analysis.ai && (
+          <div className="stage">
+            <div className="stage-name">{t('traces.analysis.stageAi')}</div>
+            <AnalysisView analysis={analysis.ai} />
+          </div>
+        )}
+      </>
+    )
+  }
   if (analysis.type === 'rule') {
     return (
       <>

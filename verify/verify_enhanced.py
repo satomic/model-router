@@ -7,7 +7,7 @@ from uuid import uuid4
 
 import httpx
 
-from app.config import CONFIG_PATH, LOG_DIR
+from app.config import CONFIG_PATH, LOG_DIR, STRATEGIES
 from app.traces import _safe
 from verify_auth_helper import BASE, make_client
 
@@ -60,7 +60,9 @@ print("GET /ui, /ui/, /ui/keys -> 404 (the prefix is gone)")
 # 2. Reading the config (administrators only)
 section("Config API")
 cfg = client.get("/v1/config").json()
-assert cfg["strategy"] in ("rule", "ai") and cfg["models"]
+# Read from app.config rather than repeating the list here: a hardcoded pair would fail against a
+# deployment left on a strategy added later, which is a wrong precondition, not a defect.
+assert cfg["strategy"] in STRATEGIES and cfg["models"]
 print("GET /v1/config -> strategy:", cfg["strategy"], "| models:", list(cfg["models"]))
 print("providers:", list(cfg.get("providers") or {}), "| default:", cfg.get("default_provider"))
 

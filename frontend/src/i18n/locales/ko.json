@@ -510,6 +510,10 @@
     },
     "analysis": {
       "matchedKeyword": "\"{{keyword}}\" 일치",
+      "decidedByRule": "규칙으로 결정되어 결정 모델을 호출하지 않았습니다",
+      "decidedByAi": "일치하는 규칙이 없어 결정 모델이 결정했습니다",
+      "stageRules": "1. 규칙 평가",
+      "stageAi": "2. AI 결정",
       "decisionModel": "결정 모델",
       "rationale": "결정 이유",
       "decisionLatency": "결정 지연 시간",
@@ -539,7 +543,7 @@
       },
       "strategy": {
         "label": "라우팅 전략",
-        "hint": "AI / 규칙, 세션 고정, 결정 모델 파라미터"
+        "hint": "규칙 및 AI 전략, 세션 고정, 결정 모델 매개변수"
       },
       "rules": {
         "label": "규칙 라우팅",
@@ -597,6 +601,11 @@
     },
     "strategy": {
       "title": "라우팅 전략",
+      "recommended": "권장",
+      "ruleThenAi": {
+        "title": "규칙 우선, AI 보완",
+        "desc": "두 전략이 동시에 적용됩니다. <rulesLink>규칙</rulesLink>에 일치하는 요청은 LLM 호출 없이 해당 규칙의 모델을 사용하고, 어떤 규칙에도 일치하지 않은 요청만 결정 모델로 전달됩니다."
+      },
       "ai": {
         "title": "AI 라우팅",
         "desc": "가벼운 결정 모델이 요청의 의도를 파악해 모델을 고릅니다. 정확도가 높은 대신 요청마다 약 1초의 결정 호출이 한 번 늘어납니다."
@@ -617,7 +626,7 @@
     },
     "aiRouter": {
       "title": "AI 결정 모델",
-      "inactive": "현재 전략이 규칙 라우팅이므로 아래 설정은 적용되지 않습니다",
+      "inactive": "현재 전략이 규칙 라우팅 전용이므로 아래 설정은 적용되지 않습니다",
       "decisionModel": "결정 모델",
       "decisionModelHint": "가볍고 빠른 것을 고릅니다. 예: gpt-4.1",
       "decisionProvider": "결정 모델이 사용할 연결",
@@ -629,9 +638,10 @@
     "rules": {
       "title": "규칙 라우팅",
       "count_other": "{{count}}개",
-      "inactive": "현재 전략이 AI 라우팅이므로 규칙은 적용되지 않습니다",
+      "inactive": "현재 전략이 AI 라우팅 전용이므로 규칙이 적용되지 않습니다",
       "add": "+ 규칙 추가",
       "lead": "<strong>위에서 아래로</strong> 차례로 평가하며, 처음 걸린 규칙이 모델을 결정하고 이후는 평가하지 않습니다 — 우선순위는 ↑↓로 조정합니다. 하나도 걸리지 않으면 기본 모델 <model>{{model}}</model>을 사용합니다. 한 규칙에 키워드와 길이를 함께 적으면 길이만 확인합니다. 전략 스위치는 <strategyLink>라우팅 전략</strategyLink>에 있습니다.",
+      "leadThenAi": "<strong>위에서 아래로</strong> 평가되며 처음 일치한 규칙이 모델을 결정하고 나머지는 건너뜁니다(↑↓ 로 순서 변경). 아무것도 일치하지 않으면 요청은 기본 모델이 아니라 <strategyLink>AI 결정 모델</strategyLink>로 전달됩니다. 하나의 규칙에 키워드와 길이가 모두 있으면 길이만 검사합니다.",
       "noDefaultModel": "(아직 설정되지 않음)",
       "empty": "아직 규칙이 없습니다. 규칙 라우팅 전략에서는 모든 요청이 기본 모델로 갑니다.",
       "keywords": "키워드",

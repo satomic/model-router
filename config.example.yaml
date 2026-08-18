@@ -6,7 +6,11 @@
 # committed. Everything here can also be edited from the console's "Routing configuration"
 # and "Access control" pages -- saving writes the file back and preserves its comments.
 
-# Routing strategy: rule (keyword/length rules) | ai (an AI decision model)
+# Routing strategy, one of:
+#   rule         keyword/length rules only; no decision call
+#   ai           an AI decision model only; the rules below are not consulted
+#   rule-then-ai both: the rules decide when one matches, and only an unmatched request pays
+#                for a decision call
 strategy: ai
 
 # Session stickiness: whether a session keeps using the model picked on its first request

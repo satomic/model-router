@@ -526,6 +526,10 @@
     },
     "analysis": {
       "matchedKeyword": "matched \"{{keyword}}\"",
+      "decidedByRule": "decided by a rule, no decision model was called",
+      "decidedByAi": "no rule matched, the decision model decided",
+      "stageRules": "1. Rules",
+      "stageAi": "2. AI decision",
       "decisionModel": "Decision model",
       "rationale": "Rationale",
       "decisionLatency": "Decision latency",
@@ -556,7 +560,7 @@
       },
       "strategy": {
         "label": "Routing strategy",
-        "hint": "AI / rules, session stickiness, decision model parameters"
+        "hint": "rules and/or AI, session stickiness, decision model parameters"
       },
       "rules": {
         "label": "Rule routing",
@@ -618,6 +622,11 @@
     },
     "strategy": {
       "title": "Routing strategy",
+      "recommended": "Recommended",
+      "ruleThenAi": {
+        "title": "Rules first, then AI",
+        "desc": "Both strategies are active. A request matched by a <rulesLink>rule</rulesLink> takes that rule's model with zero LLM calls; only a request no rule matched goes to the decision model."
+      },
       "ai": {
         "title": "AI routing",
         "desc": "A lightweight decision model reads the request's intent and picks a model. Accurate, at the cost of one extra ~1s decision call per request."
@@ -638,7 +647,7 @@
     },
     "aiRouter": {
       "title": "AI decision model",
-      "inactive": "the strategy is currently rule routing, so the settings below have no effect",
+      "inactive": "the strategy is currently rule routing only, so the settings below have no effect",
       "decisionModel": "Decision model",
       "decisionModelHint": "pick a light, fast one, e.g. gpt-4.1",
       "decisionProvider": "Connection used by the decision model",
@@ -651,9 +660,10 @@
       "title": "Rule routing",
       "count_one": "{{count}} rule",
       "count_other": "{{count}} rules",
-      "inactive": "the strategy is currently AI routing, so rules have no effect",
+      "inactive": "the strategy is currently AI routing only, so rules have no effect",
       "add": "+ Add rule",
       "lead": "Evaluated <strong>top to bottom</strong>; the first rule that matches decides the model and the rest are skipped — use ↑↓ to reorder. If nothing matches, the default model <model>{{model}}</model> is used. When one rule carries both keywords and a length, only the length is checked. The strategy switch lives under <strategyLink>Routing strategy</strategyLink>.",
+      "leadThenAi": "Evaluated <strong>top to bottom</strong>; the first rule that matches decides the model and the rest are skipped — use ↑↓ to reorder. If nothing matches, the request goes to the <strategyLink>AI decision model</strategyLink> instead of to the default model. When one rule carries both keywords and a length, only the length is checked.",
       "noDefaultModel": "(not set yet)",
       "empty": "No rules yet. Under the rule routing strategy, every request goes to the default model.",
       "keywords": "Keywords",
