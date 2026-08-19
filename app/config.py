@@ -138,6 +138,11 @@ def ensure_config_file() -> bool:
 DEFAULT_PROVIDER_NAME = "foundry"
 _API_TYPES = ("azure", "openai")
 
+# The scopes a model policy can bind a model group to, in the order the resolver reports them.
+# "user" is the most specific and "organization" the least, but the order carries no precedence:
+# resolution is a union (see app/modelpolicy.py), so this is a display order only.
+POLICY_SCOPES = ("user", "team", "organization")
+
 # The routing strategies. "rule-then-ai" runs both: the rules decide when one of them matches,
 # and only an unmatched request costs a decision call. Exported so the validator, the router and
 # anything else that has to enumerate them read from one list.
@@ -235,6 +240,17 @@ class RouterConfig:
             iter(self.providers), DEFAULT_PROVIDER_NAME
         )
 
+        # Named model groups: {group name: [model name, ...]}. A group may legally be empty --
+        # "this scope contributes nothing" is a configuration an operator asks for on purpose
+        # (see app/modelpolicy.py for what that means once the scopes are unioned).
+        self.model_groups: dict[str, list[str]] = {
+            str(name): [str(m) for m in (members or [])]
+            for name, members in (raw.get("model_groups") or {}).items()
+        }
+        # Which group each scope gets. Defaults to an empty dict, i.e. disabled, so upgrading
+        # an existing deployment does not suddenly restrict anybody.
+        self.model_policy: dict = dict(raw.get("model_policy") or {})
+
         auth = raw.get("auth") or {}
         gh = auth.get("github") or {}
         self.gh_client_id: str = (gh.get("client_id") or "").strip()
@@ -281,6 +297,58 @@ class RouterConfig:
     @property
     def gh_admin_token(self) -> str:
         return str(self.key_policy.get("github_token") or "").strip()
+
+    # -- Model policy ---------------------------------------------------------
+    @property
+    def model_policy_enabled(self) -> bool:
+        """Whether the model policy is enforced at all.
+
+        Defaults to False so that adding the section to config.yaml without turning it on
+        changes nothing: an operator can build up groups and bindings first, then enable.
+        """
+        return bool(self.model_policy.get("enabled", False))
+
+    @property
+    def default_group(self) -> str:
+        """The group every signed-in user starts with, before any scope binding applies.
+
+        Empty string means "no default", which under union semantics leaves an unbound user
+        with nothing of their own -- see app/modelpolicy.py for what happens then.
+        """
+        return str(self.model_policy.get("default_group") or "").strip()
+
+    def restricted_to(self, names) -> "RouterConfig":
+        """A view of this configuration whose model catalog is narrowed to `names`.
+
+        This is how the model policy is enforced, and it is deliberately a *narrowing of the
+        catalog* rather than a check bolted onto each routing strategy. Everything downstream
+        already treats "not in the models catalog" as a first-class case: match_rules skips such
+        a rule with a recorded reason, route_by_ai only ever offers `cfg.models` as candidates
+        and falls back when the answer is not one of them, and `default_model` reads from the
+        same dict. Narrowing therefore makes a disallowed model unreachable through every path at
+        once, with no new failure mode to test and no way for a future strategy to miss the check.
+
+        The view shares `raw`, `providers` and everything else by reference: it is read-only and
+        per-request, so copying the provider objects would only cost the connection pool its
+        cache keys. Order follows the full catalog, so a narrowed decision prompt lists models in
+        the same order the Models page does.
+        """
+        allowed = set(names)
+        view = object.__new__(RouterConfig)
+        view.__dict__.update(self.__dict__)
+        view.models = {
+            name: meta for name, meta in self.models.items() if name in allowed
+        }
+        return view
+
+    def group_models(self, group: str) -> list[str]:
+        """The models in `group`, filtered to what the catalog still has.
+
+        Filtering here rather than at save time keeps a group honest after a model is deleted
+        straight out of config.yaml by hand: a group naming a model that no longer exists must
+        not make that name routable.
+        """
+        return [m for m in self.model_groups.get(group, []) if m in self.models]
 
     def is_admin_login(self, login: str) -> bool:
         return (login or "").lower() in self.admin_logins
@@ -420,6 +488,10 @@ def validate_raw(raw: dict) -> list[str]:
         errors.append("session.sticky must be a boolean")
 
     errors.extend(_validate_ai_router(raw.get("ai_router"), providers))
+    errors.extend(_validate_model_groups(raw.get("model_groups"), raw.get("models")))
+    errors.extend(
+        _validate_model_policy(raw.get("model_policy"), raw.get("model_groups"))
+    )
 
     auth = raw.get("auth")
     if auth is not None:
@@ -488,6 +560,90 @@ def _validate_ai_router(ai, providers) -> list[str]:
                 "ai_router.decision_prompt is too short for the decision model to "
                 "reliably emit JSON (leave it empty to use the built-in default)"
             )
+    return errors
+
+
+def _validate_model_groups(groups, models) -> list[str]:
+    """Validate model_groups: {name: [model, ...]}.
+
+    An **empty list is legal and meaningful** -- it is how an operator says "this group grants
+    nothing", which the requirement asks for explicitly (a freshly signed-in user can be given
+    an empty group). So emptiness is never an error here.
+
+    A member that is not in the models catalog *is* an error, because it can only be a typo or a
+    stale reference: the group would silently grant less than it appears to. Deleting a model in
+    the console prunes it from every group (see the frontend's removeModel), so a save arriving
+    from the UI cannot produce this.
+    """
+    if groups is None:
+        return []
+    if not isinstance(groups, dict):
+        return ["model_groups must be an object keyed by group name"]
+
+    errors: list[str] = []
+    known = set(models or {})
+    for name, members in groups.items():
+        if not str(name).strip():
+            errors.append("model_groups has an entry with an empty name")
+        if members is None:
+            continue  # an omitted list reads the same as [], i.e. an empty group
+        if not isinstance(members, list):
+            errors.append(f"model_groups[{name!r}] must be a list of model names")
+            continue
+        for member in members:
+            if known and member not in known:
+                errors.append(
+                    f"model_groups[{name!r}] references unknown model {member!r}"
+                )
+    return errors
+
+
+def _validate_model_policy(policy, groups) -> list[str]:
+    """Validate model_policy: which model group each scope gets.
+
+      model_policy:
+        enabled: false
+        default_group: starter        # every signed-in user, before any binding
+        users:         {login: group}
+        teams:         {team slug or id: group}
+        organizations: {org login: group}
+
+    Like _validate_key_policy this leans towards warning-free tolerance: an enabled policy with
+    no bindings at all is legal (it just means everyone gets the default group), so that an
+    admin can turn the toggle on before filling the tables in rather than being deadlocked by
+    the validator. A binding naming a group that does not exist is an error, though -- it grants
+    nothing while looking like it grants something, which is the one failure mode an operator
+    cannot see from the page.
+    """
+    if policy is None:
+        return []
+    if not isinstance(policy, dict):
+        return ["model_policy must be an object"]
+
+    errors: list[str] = []
+    if not isinstance(policy.get("enabled", False), bool):
+        errors.append("model_policy.enabled must be a boolean")
+
+    known_groups = set(groups or {})
+
+    default_group = policy.get("default_group")
+    if default_group not in (None, "") and known_groups and default_group not in known_groups:
+        errors.append(f"model_policy.default_group {default_group!r} is not a known model group")
+
+    for field in ("users", "teams", "organizations"):
+        table = policy.get(field)
+        if table is None:
+            continue
+        if not isinstance(table, dict):
+            errors.append(f"model_policy.{field} must be an object keyed by name")
+            continue
+        for key, group in table.items():
+            if group in (None, ""):
+                continue  # an explicit blank is "no binding", not a broken one
+            if known_groups and group not in known_groups:
+                errors.append(
+                    f"model_policy.{field}[{key!r}] references unknown model group {group!r}"
+                )
     return errors
 
 

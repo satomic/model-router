@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useTranslation } from 'react-i18next'
+import { Trans, useTranslation } from 'react-i18next'
 import { NavLink, useNavigate, useParams } from 'react-router-dom'
 import { getConfig, putConfig, type RouterConfig } from '../api'
+import { useDialogs } from '../components/Dialog'
 import ModelsSection from './config/ModelsSection'
 import ProvidersSection from './config/ProvidersSection'
 import RulesSection from './config/RulesSection'
@@ -41,6 +42,21 @@ const SECTIONS: SectionDef[] = [
   },
 ]
 
+/** What each sub-page hands off to, shown under its heading.
+ *
+ *  These four sub-pages are one pipeline read top to bottom -- a connection carries models, a model
+ *  is chosen by a strategy, and a rule-based strategy needs rules -- but a tab strip says nothing
+ *  about order or dependency. Naming the next step, and the page that decides *who may call* what
+ *  is configured here, is what stops Model policy from being looked for on this page now that it
+ *  has moved out.
+ */
+const NEXT: Record<SectionKey, { key: SectionKey | 'policy'; page?: 'policy' }> = {
+  providers: { key: 'models' },
+  models: { key: 'strategy' },
+  strategy: { key: 'rules' },
+  rules: { key: 'policy', page: 'policy' },
+}
+
 /** Key-order-independent comparison: sub-pages rebuild objects with Object.fromEntries,
  *  which can change key order, and a plain JSON.stringify would then report a mere
  *  reordering as a change. */
@@ -54,6 +70,7 @@ function canonical(value: unknown): string {
 
 export default function ConfigPage() {
   const { t } = useTranslation()
+  const dialogs = useDialogs()
   /** saved = the server's current value (advanced on a successful save), cfg = the local draft. */
   const [saved, setSaved] = useState<RouterConfig | null>(null)
   const [cfg, setCfg] = useState<RouterConfig | null>(null)
@@ -122,10 +139,11 @@ export default function ConfigPage() {
     setSaving(true)
     setToast(null)
     try {
-      // The auth section belongs to the Access control page: it is not sent back from here,
-      // so the values this page loaded cannot overwrite edits saved over there afterwards
-      // (the backend merges by top-level key).
-      const { auth: _auth, ...rest } = cfg
+      // Three keys this page loads but does not own are dropped rather than echoed back: `auth`
+      // belongs to Access control, `model_groups`/`model_policy` to Model policy. The backend
+      // merges a PUT by top-level key, so anything sent here would overwrite whatever those pages
+      // saved while this one sat open -- with a value this page loaded before their edit.
+      const { auth: _auth, model_groups: _g, model_policy: _p, ...rest } = cfg
       await putConfig(rest as RouterConfig)
       setSaved(structuredClone(cfg))
       setToast({ kind: 'ok', msg: t('config.saved') })
@@ -136,8 +154,17 @@ export default function ConfigPage() {
     }
   }
 
-  const discard = () => {
-    if (dirty && !confirm(t('common.confirmDiscard'))) return
+  const discard = async () => {
+    if (
+      dirty &&
+      !(await dialogs.confirm({
+        title: t('common.discardChanges'),
+        message: t('common.confirmDiscard'),
+        confirmLabel: t('common.discardChanges'),
+        danger: true,
+      }))
+    )
+      return
     void load(t('common.reloadedFromFile'))
   }
 
@@ -195,8 +222,38 @@ export default function ConfigPage() {
       {toast && <div className={`toast ${toast.kind}`}>{toast.msg}</div>}
 
       <div className="section-intro">
-        <h2>{t(`config.section.${current.key}.label`)}</h2>
+        <h2>
+          {t('config.step', {
+            n: SECTIONS.indexOf(current) + 1,
+            total: SECTIONS.length,
+            label: t(`config.section.${current.key}.label`),
+          })}
+        </h2>
         <span className="dim">{t(`config.section.${current.key}.hint`)}</span>
+        <p className="section-guide">
+          <Trans
+            i18nKey={`config.guide.${current.key}`}
+            components={{ strong: <strong />, code: <code /> }}
+          />{' '}
+          {/* A link rather than prose: the next step is one click away, and the last step's
+              next stop is a different page entirely. */}
+          <button
+            className="btn-link"
+            onClick={() => {
+              const next = NEXT[current.key]
+              if (next.page) navigate(`/${next.page}`)
+              else props.goto(next.key as SectionKey)
+            }}
+          >
+            {t('config.nextStep', {
+              label: t(
+                NEXT[current.key].page
+                  ? `nav.${NEXT[current.key].key}.label`
+                  : `config.section.${NEXT[current.key].key}.label`,
+              ),
+            })}
+          </button>
+        </p>
       </div>
 
       {current.render(props)}

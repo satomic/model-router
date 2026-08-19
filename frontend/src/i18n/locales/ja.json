@@ -37,6 +37,12 @@
     "status": "ステータス",
     "yes": "はい"
   },
+  "dialog": {
+    "cancel": "キャンセル",
+    "confirm": "確認",
+    "ok": "OK",
+    "valueRequired": "値を入力してください"
+  },
   "nav": {
     "group": {
       "overview": "概要",
@@ -47,6 +53,11 @@
       "label": "使用状況",
       "title": "使用状況",
       "subtitle": "リクエスト数、トークン消費、レイテンシ分布"
+    },
+    "models": {
+      "label": "利用可能なモデル",
+      "title": "利用可能なモデル",
+      "subtitle": "呼び出せるモデルと、それぞれがどのポリシー付与によって使えるようになったか"
     },
     "keys": {
       "label": "API キー",
@@ -68,10 +79,114 @@
       "title": "ルーティング設定",
       "subtitle": "バックエンド接続、モデルカタログ、ルーティング戦略、ルールルーティング"
     },
+    "policy": {
+      "label": "モデルポリシー",
+      "title": "モデルポリシー",
+      "subtitle": "モデルグループと、各ユーザー・チーム・Organization に付与されるグループ — 呼び出し元が要求できるモデルの範囲"
+    },
     "access": {
       "label": "アクセス制御",
       "title": "アクセス制御",
       "subtitle": "管理者とサインイン範囲、GitHub OAuth アプリ、そして Enterprise / Team / Organization 単位で誰が API キーを作成できるかの制御"
+    }
+  },
+  "policy": {
+    "title": "モデルポリシー",
+    "enabled": "有効",
+    "disabled": "無効",
+    "toggle": "呼び出し元ごとに使用できるモデルを制限する",
+    "enabledNote": "有効です。各呼び出し元のリストは、その人に付与されたモデルグループの<strong>和集合</strong>なので、順序や優先度を設定する必要はありません。管理者は対象外です。これは権限の境界ではなく配布のコントロールだからです。<strong>何も紐づいていない</strong>呼び出し元は無制限のままなので、下の表を埋める前にこのスイッチを入れても誰かを締め出すことはありません。",
+    "disabledNote": "無効です。ログイン済みのすべてのユーザーとすべての API キーが、カタログのすべてのモデルを呼び出せます。下でいずれかにモデルグループを紐づけるまで、これを有効にしても何も変わりません。",
+    "defaultGroup": "ログインユーザーの既定モデルグループ",
+    "defaultGroupHint": "新しいアカウントが最初に受け取るグループ",
+    "noDefaultGroup": "既定モデルグループなし",
+    "groupOption_other": "{{name}}（{{count}} 個のモデル）",
+    "defaultGroupNote": "ログインした人は全員このグループから始まります。<strong>空のグループ</strong>を指定すれば、新しいアカウントは明示的に付与されるまで何も持ちません。「既定モデルグループなし」のままにすると、他に紐づけのないアカウントは逆に無制限になります。",
+    "groupsTitle": "モデルグループ",
+    "groupCount_other": "{{count}} 個のグループ",
+    "addGroup": "+ グループを追加",
+    "groupsLead": "グループは再利用できるモデルのリストで、モデルカタログから直接チェックして作ります。グループは<strong>スコープから独立</strong>していて、同じグループをユーザー・チーム・組織に同時に付与できます。<strong>空のグループも正当</strong>です。「このスコープは何も付与しない」と言うための手段です。",
+    "noModels": "モデルカタログが空なので、チェックする対象がありません。まず「モデルカタログ」でモデルを登録してください。",
+    "noGroups": "グループがまだありません。まず追加して、付与するモデルにチェックを入れてください。",
+    "memberCount_other": "{{count}} 個のモデル",
+    "emptyGroup": "空",
+    "isDefaultGroup": "既定グループ",
+    "boundCount_other": "{{count}} 件の紐づけ",
+    "selectAll": "すべて選択",
+    "selectNone": "選択解除",
+    "rename": "名前を変更",
+    "emptyGroupNote": "このグループは<strong>モデルを付与しません</strong>。付与がすべて空の呼び出し元は 403 で拒否されます。「新しいアカウントは割り当てられるまで何も使えない」に必要なのは、まさにこれです。",
+    "promptGroupName": "新しいモデルグループの名前（例: starter）:",
+    "addGroupTitle": "モデルグループを新規作成",
+    "groupNameLabel": "グループ名",
+    "promptRenameGroup": "モデルグループの名前を変更します（紐づけは自動的に付け替えられます）:",
+    "renameGroupTitle": "モデルグループの名前を変更",
+    "groupExists": "モデルグループ「{{name}}」は既に存在します",
+    "confirmDeleteBoundTitle": "モデルグループを削除",
+    "confirmDeleteBound_other": "モデルグループ「{{name}}」は今も {{count}} 件の紐づけから参照されており、それらは解除されます。削除しますか？",
+    "usersTitle": "ログインしたことのあるユーザー",
+    "userCount_other": "{{count}} 人のユーザー",
+    "usersLead": "このコンソールに一度以上ログインしたすべてのユーザーを、最近の活動順に並べています。行でグループを選ぶとそのアカウントに紐づきます。これが<strong>ユーザー</strong>スコープで、保存すると有効になります。",
+    "noUsers": "まだ誰もログインしていません。ログインがあると、このリストは自動的に埋まります。",
+    "noBinding": "紐づけなし",
+    "bindingExists": "「{{name}}」は既に紐づけられています",
+    "bindingCount_other": "{{count}} 件の紐づけ",
+    "kind": {
+      "github": "GitHub",
+      "local": "ローカル"
+    },
+    "table": {
+      "login": "ログイン名",
+      "kind": "ログイン方法",
+      "firstSeen": "初回ログイン",
+      "lastSeen": "最終ログイン",
+      "signIns": "ログイン回数",
+      "group": "モデルグループ",
+      "enterprise": "エンタープライズ",
+      "keyPolicy": "キーポリシー"
+    },
+    "teams": {
+      "title": "チーム",
+      "addTitle": "チームの紐づけを追加",
+      "lead": "キーの形式は <code>enterprise-slug/team-id</code> で、ローカルの GitHub キャッシュがチームを解決するために必要な形です。Enterprise 管理者トークンを設定すると、<strong>アクセス制御 → キーポリシー</strong>で数値のチーム id を確認できます。",
+      "noneDiscovered": "エンタープライズチームが検出されませんでした。「アクセス制御 → キーポリシー」で構成を更新してください。",
+      "search": "チームを絞り込む…",
+      "key": "Enterprise / チーム id",
+      "prompt": "チームキー。<enterprise slug>/<team id> の形式で入力します。例: your-enterprise/14501973",
+      "badKey": "「{{name}}」は正しいチームキーではありません。<enterprise slug>/<team id> の形式で入力してください"
+    },
+    "organizations": {
+      "title": "組織",
+      "addTitle": "Organization の紐づけを追加",
+      "lead": "キーは <strong>Organization のログイン名</strong>で、GitHub の URL に現れるとおりに書きます。メンバーシップは可能な限りローカルの GitHub キャッシュから答え、できない場合のみライブ呼び出しを行います。",
+      "noneDiscovered": "Organization が検出されませんでした。「アクセス制御 → キーポリシー」で構成を更新してください。",
+      "search": "組織を絞り込む…",
+      "key": "Organization のログイン名",
+      "prompt": "Organization のログイン名。例: your-org"
+    },
+    "bindings": {
+      "addManually": "+ 手入力で追加",
+      "loading": "エンタープライズ構成を読み込み中…",
+      "discoverFailed": "取得に失敗",
+      "noStructure": "選択できる構成がありません",
+      "needToken": "「アクセス制御 → キーポリシー」で<strong>エンタープライズ管理者トークン</strong>を設定すると、チームと Organization がここに一覧表示されます。それまでは手入力でキーを追加できます。",
+      "noGroupsYet": "モデルグループがまだありません。上で作成してから、ここで付与してください。",
+      "noMatch": "「{{query}}」に一致する項目はありません。絞り込みを解除するか、キーを手動で入力してください。",
+      "hidden": "{{total}} 件のうち {{shown}} 件を表示中 — 割り当て済みと割り当て可能なスコープが先頭です。",
+      "showAll": "全 {{total}} 件を表示",
+      "partialBadge": "一部のみ",
+      "partial": "GitHub は {{total}} 件の組織のうち {{listed}} 件のみを返したため、この一覧は不完全です。絞り込みは返された分だけを検索します。一覧にない組織は手動で入力できます。",
+      "gateOnBadge": "制限あり",
+      "gateOn": "API キーの作成が<strong>制限されています</strong>。そのためキーを作成できるメンバーがいるスコープだけにグループを付与できます — キーがなければルーターには届かないので、付与しても何も得られません。",
+      "gateOffBadge": "制限なし",
+      "gateOff": "API キーの作成は<strong>サインインできる全員に開放</strong>されているため、検出されたすべてのスコープにグループを付与できます。キー作成を制限するには「アクセス制御 → キーポリシー」へ。",
+      "mayCreateKeys": "キー作成可",
+      "mayNotCreateKeys": "キー作成不可",
+      "entOff": "このエンタープライズはキーポリシーで無効です。メンバーは誰も API キーを作成できません。",
+      "orgNotAllowed": "キーポリシー上、この Organization は API キーを作成できません。",
+      "teamNotAllowed": "キーポリシー上、このチームは API キーを作成できません。",
+      "orphan": "未検出",
+      "orphanHint": "config.yaml では紐づいていますが、検出された構成には含まれていません（手入力、またはこのトークンでは読めなくなったエンタープライズ）。設定自体は有効です。"
     }
   },
   "shell": {
@@ -170,6 +285,45 @@
       "day_other": "{{date}}：{{count}} 件のリクエスト · {{tokens}} トークン · {{errors}} 件の失敗"
     }
   },
+  "models": {
+    "title": "有効なモデルポリシー",
+    "count_other": "{{count}} 個のモデル",
+    "unrestricted": "カタログ全体",
+    "restricted": "限定リスト",
+    "listTitle": "呼び出せるモデル",
+    "reason": {
+      "policy-disabled": "このルーターではモデルポリシーが有効になっていないため、<strong>カタログのすべてのモデル</strong>を利用できます。",
+      "administrator": "あなたは<strong>管理者</strong>です。モデルポリシーは権限の境界ではなく配布のコントロールなので、管理者には適用されず、カタログ全体が利用可能なままです。",
+      "no-binding": "モデルポリシーは有効ですが、<strong>あなたのアカウントに紐づく設定がありません</strong>。既定モデルグループもなく、あなたに届くチーム・組織の付与もありません。紐づけのないアカウントはロックアウトではなく無制限として扱われるため、カタログ全体を利用できます。",
+      "union": "あなたのリストは、アカウント・チーム・組織を通じて付与されたすべてのモデルグループの<strong>和集合</strong>です。付与はモデルを増やすことしかできず、減らすことはありません。",
+      "empty-group": "あなたに付与されたモデルグループはすべて<strong>空</strong>のため、現在利用できるモデルはありません。管理者がアカウント・チーム・組織のいずれかに空でないモデルグループを紐づけるまで、リクエストは <code>403</code> で拒否されます。"
+    },
+    "blockedBadge": "利用可能なモデルなし",
+    "blockedNote": "管理者に<strong>ルーティング設定 → モデルポリシー</strong>でモデルグループを付与してもらってください。それまでルーティングされたリクエストはすべて拒否されます。",
+    "emptyCatalog": "モデルカタログが空です。まず管理者がモデルを 1 つ以上登録する必要があります。",
+    "defaultBadge": "既定",
+    "reasoningBadge": "推論",
+    "generalPurpose": "汎用",
+    "sourceTitle": "このリストの出どころ",
+    "grantCount_other": "{{count}} 件の付与",
+    "sourceLead": "ここには<strong>実際にあなたに適用された</strong>付与のみが並びます。所属していないチームや組織がここに現れることはありません。",
+    "grantsNothing": "（空のグループ）",
+    "scope": {
+      "default": "既定モデルグループ",
+      "user": "アカウント",
+      "team": "チーム",
+      "organization": "組織"
+    },
+    "table": {
+      "model": "モデル",
+      "traits": "特性",
+      "description": "説明",
+      "scope": "スコープ",
+      "name": "名前",
+      "group": "モデルグループ",
+      "grants": "付与されるモデル"
+    }
+  },
   "keys": {
     "created": {
       "title": "キーを作成しました",
@@ -209,7 +363,8 @@
       "disabled": "無効",
       "enable": "有効化",
       "disable": "無効化",
-      "confirmDelete": "キー「{{name}}」を削除しますか？これを使っているクライアントは即座に動かなくなります。"
+      "confirmDelete": "キー「{{name}}」を削除しますか？これを使っているクライアントは即座に動かなくなります。",
+      "confirmDeleteTitle": "API キーを削除"
     },
     "copyFailed": "クリップボードにコピーできませんでした。ブラウザーは HTTPS（または localhost）でのみこの操作を許可します — 「表示」を押して手動でコピーしてください。",
     "access": {
@@ -451,9 +606,12 @@
       "one": "このトレースを削除",
       "filtered": "絞り込んだトレースを削除",
       "confirmOne": "トレース {{id}} を削除しますか？元に戻せません。",
+      "confirmOneTitle": "トレースを削除",
       "confirmMany": "{{criteria}} に一致するトレース {{count}} 件をすべて削除しますか？元に戻せません。",
+      "confirmManyTitle": "絞り込んだトレースを削除",
       "criteriaDate": "日付 {{date}}",
       "criteriaUser": "ユーザー {{user}}",
+      "doneTitle": "トレースを削除しました",
       "done_other": "{{count}} 件のトレースを削除しました"
     },
     "json": {
@@ -532,6 +690,14 @@
   "config": {
     "loading": "設定を読み込み中…",
     "saved": "保存して即時反映しました：config.yaml を書き戻し（コメントは保持）、接続資格情報は直ちに有効になりました",
+    "step": "ステップ {{n}} / {{total}} · {{label}}",
+    "nextStep": "次へ: {{label}} →",
+    "guide": {
+      "providers": "ここから始めます。<strong>バックエンド接続</strong>とは、1 つのバックエンドアドレスとそのキーのことです（Azure AI Foundry、または OpenAI 互換のエンドポイント）。モデルカタログのすべてのモデルはいずれかの接続経由で提供されるため、少なくとも 1 つを保存するまでこのページの他の設定は機能しません。",
+      "models": "各エントリはクライアントが要求できるモデル名で、それを提供する接続に紐づきます。<strong>説明</strong>は飾りではありません。AI ルーターが選択時に読むのはこの文章なので、曖昧な説明は曖昧なルーティングになります。",
+      "strategy": "実際に使うモデルの決め方: <strong>ルール</strong>、<strong>AI</strong> による判断、または <code>rule-then-ai</code>（まずルールを見て、一致しなかったリクエストだけが判断呼び出しを消費します）。",
+      "rules": "キーワードと長さのルールを<strong>順番に</strong>照合し、最初に一致したものが採用されます。ルールを使う戦略のときだけ参照されます。"
+    },
     "section": {
       "providers": {
         "label": "バックエンド接続",
@@ -558,6 +724,7 @@
       "empty": "接続がまだありません。1 つ追加してからモデルを紐付けてください。",
       "promptName": "新しい接続の名前（models はこの名前で参照します。例：openrouter）：",
       "promptRename": "接続の名前を変更：",
+      "promptLabel": "接続の名前",
       "alreadyExists": "接続「{{name}}」はすでに存在します",
       "isDefaultConnection": "接続「{{name}}」は既定の接続です。先に既定を別の接続に切り替えてください",
       "stillReferenced": "接続「{{name}}」はまだモデル {{models}} から参照されています。先に「モデルカタログ」で紐付けを変更してください",
@@ -584,8 +751,9 @@
       "lead": "ここでの名前が、クライアントがリクエストに指定できるモデル名です。説明は候補カタログとして AI 判断モデルに渡されるため、「どんなタスクに向くか」を明記するとルーティングの精度が大きく上がります。接続は<providersLink>バックエンド接続</providersLink>で管理します。",
       "empty": "モデルがまだありません。少なくとも 1 つ追加し、既定モデルに設定してください。",
       "promptName": "この新しいモデルをルーターで公開する名前：",
+      "promptLabel": "モデル名",
       "alreadyExists": "モデル「{{name}}」はすでに存在します",
-      "removedWithRules_other": "モデル「{{name}}」を削除し、それを参照していた {{count}} 件のルールも削除しました",
+      "removedWithRefs": "モデル「{{name}}」を削除しました。削除したルール: {{rules}} 件。更新したモデルグループ: {{groups}} 件。",
       "defaultBadge": "既定",
       "reasoningBadge": "推論系",
       "connectionMissing": "— 接続が存在しません",

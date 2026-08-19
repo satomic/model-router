@@ -204,6 +204,24 @@ export interface AuthConfig {
   local_admin?: LocalAdminConfig
 }
 
+/** Named model groups: {group name: [model name, ...]}. An **empty group is legal** -- it is how
+ *  an operator says "this scope grants nothing", which is what makes "a new user gets nothing
+ *  until an admin assigns them a group" expressible. */
+export type ModelGroups = Record<string, string[]>
+
+/** Which model group each scope gets. Scopes resolve as a **union**, so a binding can only ever
+ *  widen a caller's list. `teams` is keyed '<enterprise slug>/<team id>', the form the backend's
+ *  GitHub cache needs to look a team up. */
+export interface ModelPolicy {
+  enabled?: boolean
+  /** The group every signed-in user starts from. Empty = no default, which under union semantics
+   *  leaves an otherwise-unbound user **unrestricted** rather than locked out. */
+  default_group?: string
+  users?: Record<string, string>
+  teams?: Record<string, string>
+  organizations?: Record<string, string>
+}
+
 /** `rule-then-ai` runs both: the rules decide when one matches, and only an unmatched request
  *  costs a decision call. */
 export type Strategy = 'rule' | 'ai' | 'rule-then-ai'
@@ -224,6 +242,11 @@ export interface RouterConfig {
   default_provider: string
   models: Record<string, ModelMeta>
   rules: Rule[]
+  /** Top-level sections, not part of `auth`: the backend merges a PUT by top-level key, so the
+   *  Access page (which posts `{auth}` alone) cannot wipe them and the Routing configuration page
+   *  (which posts every non-auth key) carries them automatically. */
+  model_groups?: ModelGroups
+  model_policy?: ModelPolicy
   auth?: AuthConfig
 }
 
@@ -456,6 +479,20 @@ export async function putAuthConfig(auth: AuthConfig): Promise<void> {
   await ensureOk(await req('/v1/config', jsonBody('PUT', { auth })))
 }
 
+/** Write back the two model-policy sections only, for the same reason as putAuthConfig: the Model
+ *  policy page is its own first-level page now, so it must not carry -- and therefore cannot
+ *  stale-overwrite -- the routing configuration loaded alongside it.
+ *
+ *  Both keys always travel together even when only one changed: `model_policy` bindings are
+ *  validated against `model_groups`, so a save that sent one without the other could be rejected
+ *  by a rule the submission itself satisfies. */
+export async function putModelPolicyConfig(payload: {
+  model_groups?: ModelGroups
+  model_policy?: ModelPolicy
+}): Promise<void> {
+  await ensureOk(await req('/v1/config', jsonBody('PUT', payload)))
+}
+
 // ── Traces ───────────────────────────────────────────────────────
 /** One page of trace summaries. `total` counts everything matching the filters on disk, not the
  *  number returned -- it is what the "N of M" footer and the batch-delete confirmation quote. */
@@ -652,6 +689,65 @@ export async function getCacheStatus(): Promise<CacheStatus> {
 
 export async function refreshCache(): Promise<CacheStatus> {
   return json<CacheStatus>('/v1/access/cache/refresh', { method: 'POST' })
+}
+
+// ── Model policy ─────────────────────────────────────────────────
+/** One grant that applied to the caller. Only grants that *did* apply are returned: listing the
+ *  teams and organizations they are not in would publish the policy tables to every signed-in
+ *  user. `source` says whether membership was answered from the local cache or a live call. */
+export interface PolicyContribution {
+  scope: 'default' | 'user' | 'team' | 'organization'
+  name: string
+  group: string
+  models: string[]
+  source: string
+}
+
+export interface AvailableModels {
+  login: string
+  is_admin: boolean
+  enabled: boolean
+  /** true when the whole catalog applies: the policy is off, the caller is an administrator, or
+   *  nothing is bound to them at all. */
+  unrestricted: boolean
+  models: string[]
+  default_group: string
+  contributions: PolicyContribution[]
+  /** policy-disabled | administrator | no-binding | union | empty-group */
+  reason: string
+  catalog: Record<string, { description: string; reasoning: boolean; default: boolean }>
+  /** Which model an unrouted request would land on, already narrowed to what the caller may use. */
+  default_model: string | null
+}
+
+/** What the signed-in user may use, and why. The same resolution the API path applies, so this
+ *  page cannot drift from what a real request would be allowed. */
+export async function getAvailableModels(): Promise<AvailableModels> {
+  return json<AvailableModels>('/v1/models/available')
+}
+
+/** One login that has signed in at least once. Read from a durable registry rather than the
+ *  session table -- sessions are purged when they expire, so they can only answer "who is signed
+ *  in right now". */
+export interface KnownUser {
+  login: string
+  name: string
+  avatar_url?: string | null
+  /** 'github' or 'local' (the local super administrator). */
+  kind: string
+  first_seen: number
+  last_seen: number
+  sign_ins: number
+  /** The group bound to this login in model_policy.users, '' when none. */
+  model_group: string
+}
+
+export async function getSignedInUsers(): Promise<{
+  users: KnownUser[]
+  default_group: string
+  policy_enabled: boolean
+}> {
+  return json('/v1/access/users')
 }
 
 // ── Usage ────────────────────────────────────────────────────────

@@ -120,6 +120,34 @@ ai_router:
   #   Respond with ONLY a JSON object: {"model": "<model-name>", "rationale": "<why>"}.
   #   The model name must be exactly one of the listed names.
 
+# Named model groups: reusable, independent lists of models drawn from the catalog above.
+# A group may legally be **empty** -- that is how you say "this scope grants nothing", which is
+# what makes the "a newly signed-in user gets nothing until an admin assigns them a group"
+# arrangement possible (point default_group below at an empty group).
+# Easiest built from the console's "Routing configuration -> Model policy" page: it lists the
+# catalog with a checkbox per model instead of asking you to retype names.
+model_groups:
+  starter: [gpt-4o]              # only the cheapest model
+  full: [gpt-4o, gpt-5.4]        # everything
+  locked: []                     # an empty group: grants nothing
+
+# Which model group each scope gets. Scopes are resolved as a **union**: a caller's effective
+# model list is the default group plus every group bound to a user / team / organization they
+# belong to, so a binding can only ever widen what they already had.
+# Three states are deliberately different:
+#   enabled: false             -- no restriction at all (the default; upgrading changes nothing)
+#   enabled: true, no binding  -- still unrestricted, so turning the switch on before filling the
+#                                tables in cannot lock you out
+#   bound to an empty group    -- no models, refused with a 403 that names the reason
+# Administrators are exempt, exactly as with key_policy: a model policy is a distribution
+# control, not a privilege boundary.
+model_policy:
+  enabled: false
+  default_group: ''            # Every signed-in user starts here, e.g. starter (or locked)
+  users: {}                    # {github-login: group}, e.g. {alice: full}
+  teams: {}                    # {'<enterprise slug>/<team id>': group}, e.g. {'your-enterprise/14501973': full}
+  organizations: {}            # {organization login: group}, e.g. {your-org: starter}
+
 # Keyword matching is a plain substring test, so list every language your users write in --
 # the examples below cover both English and Chinese.
 rules:

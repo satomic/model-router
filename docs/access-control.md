@@ -1,5 +1,9 @@
 # Access control: who may sign in, who may create keys
 
+> Which **models** a caller may then use is a separate control with its own semantics (a union across
+> scopes rather than a single verdict, and fail-open rather than fail-closed): see
+> [model policy](model-policy.md).
+
 Once GitHub OAuth is configured, **any** GitHub account can sign in (unless
 `allow_any_github_user` is set to `false`, which then lets only administrators in). The real
 authorization gate is therefore placed on **creating an API key** — without a key you cannot call

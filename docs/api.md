@@ -3,7 +3,8 @@
 | Endpoint | Notes |
 |---|---|
 | `POST /v1/chat/completions` | OpenAI-compatible, streaming supported. **Requires an API key**; optional `x-interaction-id` (one decision and one trace per user interaction) and `x-session-id` (session stickiness); response headers include `x-trace-id` (the *interaction's* trace) / `x-routed-model` / `x-router-reason` / `x-router-decision-ms`, plus `x-router-interaction-id` when the request carried one |
-| `GET /v1/models` | the available backend models (requires an API key) |
+| `GET /v1/models` | the available backend models (requires an API key), **narrowed to what the key's owner may use** under the [model policy](model-policy.md) |
+| `GET /v1/models/available` | the signed-in user's effective model list and why it looks that way: the resolved names, the catalog descriptions, the default model, a `reason`, and the grants that applied. Resolved through the same code the API path uses, so it cannot disagree with a real request. Available to **every** signed-in user, and returns no trace of the teams or organizations they are not in |
 | `GET /v1/auth/status` | what the frontend uses to choose between the setup page, the sign-in page and the console |
 | `POST /v1/auth/setup` | the first-run wizard (only while unconfigured + from the local machine) |
 | `GET /v1/auth/github/login` · `GET /v1/auth/github/callback` · `POST /v1/auth/logout` | the GitHub OAuth flow |
@@ -14,6 +15,7 @@
 | `GET /v1/access/discover?refresh=` | automatically fetch the enterprise, Enterprise Team and organization lists (administrators; served from `data/github/structure.json`, `?refresh=1` goes to GitHub) |
 | `GET /v1/access/cache` | the state of the on-disk GitHub cache: fetch ages, per-scope member counts, truncation and errors (administrators; never returns member logins) |
 | `POST /v1/access/cache/refresh` | refresh that cache now instead of waiting for the background loop (administrators) |
+| `GET /v1/access/users` | every login that has signed in at least once, with first / last sign-in, a count and the model group currently bound to it (administrators). Read from `data/known_users.json` rather than the session table — expired sessions are purged, so sessions can only answer "who is signed in right now" |
 | `POST /v1/auth/local/login` | sign in as the local super administrator (`{username, password}`; the response reports `must_change_password`) |
 | `POST /v1/auth/local/password` | change that password, and optionally the username (`{current_password, new_password, new_username?}`) |
 | `POST /v1/auth/local/enabled` | enable / disable the local account (administrators) |

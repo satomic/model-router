@@ -10,6 +10,7 @@ import {
   type ApiKey,
   type SessionUser,
 } from '../api'
+import { useDialogs } from '../components/Dialog'
 import { formatDateTime } from '../i18n/format'
 
 /** Unix seconds -> a locale-formatted timestamp, or an em dash when never used. */
@@ -62,6 +63,7 @@ function useCopy(): {
  */
 export default function KeysPage({ user }: { user: SessionUser }) {
   const { t } = useTranslation()
+  const dialogs = useDialogs()
   const [keys, setKeys] = useState<ApiKey[]>([])
   const [showAll, setShowAll] = useState(false)
   const [name, setName] = useState('')
@@ -326,8 +328,14 @@ curl ${origin}/v1/chat/completions \\
                       </button>{' '}
                       <button
                         className="btn danger sm"
-                        onClick={() => {
-                          if (!confirm(t('keys.table.confirmDelete', { name: k.name }))) return
+                        onClick={async () => {
+                          const yes = await dialogs.confirm({
+                            title: t('keys.table.confirmDeleteTitle'),
+                            message: t('keys.table.confirmDelete', { name: k.name }),
+                            confirmLabel: t('common.delete'),
+                            danger: true,
+                          })
+                          if (!yes) return
                           deleteKey(k.id).then(load).catch((e) => setError(String(e)))
                         }}
                       >

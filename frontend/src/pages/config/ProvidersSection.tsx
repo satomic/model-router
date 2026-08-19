@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Trans, useTranslation } from 'react-i18next'
 import type { ProviderMeta } from '../../api'
+import { useDialogs } from '../../components/Dialog'
 import type { SectionProps } from './types'
 
 const BLANK_PROVIDER: ProviderMeta = {
@@ -13,6 +14,7 @@ const BLANK_PROVIDER: ProviderMeta = {
 /** Backend connections: a set of "address + key" pairs that models reference by name. */
 export default function ProvidersSection({ cfg, set, notify }: SectionProps) {
   const { t } = useTranslation()
+  const dialogs = useDialogs()
   const [revealed, setRevealed] = useState<Record<string, boolean>>({})
 
   const providers = cfg.providers ?? {}
@@ -22,23 +24,32 @@ export default function ProvidersSection({ cfg, set, notify }: SectionProps) {
   const setProvider = (name: string, patch: Partial<ProviderMeta>) =>
     set({ providers: { ...providers, [name]: { ...providers[name], ...patch } } })
 
-  const addProvider = () => {
-    const name = prompt(t('config.providers.promptName'))?.trim()
+  const addProvider = async () => {
+    const name = await dialogs.prompt({
+      title: t('config.providers.add'),
+      message: t('config.providers.promptName'),
+      label: t('config.providers.promptLabel'),
+      placeholder: 'openrouter',
+      mono: true,
+      // Validated in the dialog rather than reported afterwards, so the name is corrected in
+      // the field it was typed into instead of the dialog closing on a rejected value.
+      validate: (v) => (providers[v] ? t('config.providers.alreadyExists', { name: v }) : null),
+    })
     if (!name) return
-    if (providers[name]) {
-      notify('error', t('config.providers.alreadyExists', { name }))
-      return
-    }
     set({ providers: { ...providers, [name]: { ...BLANK_PROVIDER } } })
   }
 
-  const renameProvider = (oldName: string) => {
-    const name = prompt(t('config.providers.promptRename'), oldName)?.trim()
+  const renameProvider = async (oldName: string) => {
+    const name = await dialogs.prompt({
+      title: t('config.providers.rename'),
+      message: t('config.providers.promptRename'),
+      label: t('config.providers.promptLabel'),
+      defaultValue: oldName,
+      mono: true,
+      validate: (v) =>
+        v !== oldName && providers[v] ? t('config.providers.alreadyExists', { name: v }) : null,
+    })
     if (!name || name === oldName) return
-    if (providers[name]) {
-      notify('error', t('config.providers.alreadyExists', { name }))
-      return
-    }
     const next = Object.fromEntries(
       Object.entries(providers).map(([k, v]) => [k === oldName ? name : k, v]),
     )

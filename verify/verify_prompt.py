@@ -46,6 +46,9 @@ def section(title):
 BASE_RAW = load_raw()
 ORIGINAL_AI = copy.deepcopy(dict(BASE_RAW.get("ai_router") or {}))
 HAD_PROMPT = "decision_prompt" in ORIGINAL_AI
+# Section 4 switches to the `ai` strategy so the decision model actually runs; captured here so the
+# finally block restores whatever the deployment was on rather than a hardcoded value.
+ORIGINAL_STRATEGY = BASE_RAW.get("strategy")
 
 # ── 1. Rendering logic (offline) ──────────────────────────────────────
 section("Rendering logic")
@@ -223,50 +226,57 @@ try:
         "the other fields in the same section survived (the whole section is written back)",
     )
 
-    strategy = load_raw().get("strategy")
-    if strategy != "ai":
-        print(f"[SKIP] strategy={strategy}, skipping the real request (AI routing is not enabled)")
+    # The strategy is arranged for rather than skipped around. Whether the custom prompt actually
+    # reaches the decision model is the one thing in this file that cannot be inferred from the
+    # preview endpoint, so making it conditional on how the deployment happens to be configured
+    # meant it went unchecked exactly when the router is in its default `rule-then-ai` mode -- and
+    # the prompt below matches a keyword rule there, so no decision call is made at all.
+    doc = client.get("/v1/config").json()
+    doc["strategy"] = "ai"
+    client.put("/v1/config", json=doc).raise_for_status()
+
+    r = client.post(
+        "/v1/chat/completions",
+        # Chinese on purpose: this text has to hit the rule keywords in the live config.yaml.
+        json={"messages": [{"role": "user", "content": "帮我重构这个模块的架构"}],
+              "max_tokens": 40},
+    )
+    r.raise_for_status()
+    trace = client.get(f"/v1/traces/{r.headers['x-trace-id']}").json()
+    analysis = trace["routing"]["analysis"]
+    check(analysis.get("type") == "ai", "the decision model ran", analysis.get("type"))
+    check(
+        analysis.get("decision_system", "").startswith("You are a model router"),
+        "the trace recorded the custom system prompt actually sent",
+    )
+    check(
+        "VERIFY-PROMPT-MARKER" in analysis.get("decision_system", ""),
+        "the custom prompt (marker included) really reached the decision model",
+    )
+    check(
+        CATALOG_PLACEHOLDER not in analysis.get("decision_system", ""),
+        "the placeholder in the sent content was replaced by the real catalog",
+    )
+    for name in load_raw().get("models", {}):
+        if not analysis.get("decision_system", "").count(f"- {name}:"):
+            check(False, f"the catalog is missing model {name}")
+            break
     else:
-        r = client.post(
-            "/v1/chat/completions",
-            # Chinese on purpose: this text has to hit the rule keywords in the live config.yaml.
-            json={"messages": [{"role": "user", "content": "帮我重构这个模块的架构"}],
-                  "max_tokens": 40},
-        )
-        r.raise_for_status()
-        trace = client.get(f"/v1/traces/{r.headers['x-trace-id']}").json()
-        analysis = trace["routing"]["analysis"]
-        check(
-            analysis.get("decision_system", "").startswith("You are a model router"),
-            "the trace recorded the custom system prompt actually sent",
-        )
-        check(
-            "VERIFY-PROMPT-MARKER" in analysis.get("decision_system", ""),
-            "the custom prompt (marker included) really reached the decision model",
-        )
-        check(
-            CATALOG_PLACEHOLDER not in analysis.get("decision_system", ""),
-            "the placeholder in the sent content was replaced by the real catalog",
-        )
-        for name in load_raw().get("models", {}):
-            if not analysis.get("decision_system", "").count(f"- {name}:"):
-                check(False, f"the catalog is missing model {name}")
-                break
-        else:
-            check(True, "every configured model appears in the catalog")
-        print(f"       routed={r.headers['x-routed-model']} "
-              f"reason={r.headers['x-router-reason']} "
-              f"rationale={analysis.get('rationale')!r}")
+        check(True, "every configured model appears in the catalog")
+    print(f"       routed={r.headers['x-routed-model']} "
+          f"reason={r.headers['x-router-reason']} "
+          f"rationale={analysis.get('rationale')!r}")
 finally:
     restore = dict(ORIGINAL_AI)
     if not HAD_PROMPT:
         restore.pop("decision_prompt", None)
-    resp = client.put("/v1/config", json={"ai_router": restore})
+    resp = client.put("/v1/config", json={"ai_router": restore, "strategy": ORIGINAL_STRATEGY})
     after = dict(load_raw().get("ai_router") or {})
     print(
         f"\nai_router restored (HTTP {resp.status_code}): "
         f"decision_prompt {'present' if 'decision_prompt' in after else 'absent'}, "
-        f"identical to the pre-run state={after == ORIGINAL_AI}"
+        f"identical to the pre-run state={after == ORIGINAL_AI}, "
+        f"strategy={load_raw().get('strategy')!r}"
     )
 
 print(f"\n{ok} passed, {fail} failed")

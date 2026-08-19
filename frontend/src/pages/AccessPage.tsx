@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { NavLink, useParams } from 'react-router-dom'
 import { getConfig, putAuthConfig, type AuthConfig } from '../api'
+import { useDialogs } from '../components/Dialog'
 import AdminsSection from './access/AdminsSection'
 import KeyPolicySection from './access/KeyPolicySection'
 import LocalAdminSection from './access/LocalAdminSection'
@@ -67,6 +68,7 @@ const DEFAULT_SECTION: SectionKey = 'policy'
  */
 export default function AccessPage() {
   const { t } = useTranslation()
+  const dialogs = useDialogs()
   const [saved, setSaved] = useState<AuthConfig | null>(null)
   const [auth, setAuth] = useState<AuthConfig | null>(null)
   // From the URL, so /access/policy is a real address (see ConfigPage for the same pattern).
@@ -138,8 +140,17 @@ export default function AccessPage() {
     }
   }
 
-  const discard = () => {
-    if (dirty && !confirm(t('common.confirmDiscard'))) return
+  const discard = async () => {
+    if (
+      dirty &&
+      !(await dialogs.confirm({
+        title: t('common.discardChanges'),
+        message: t('common.confirmDiscard'),
+        confirmLabel: t('common.discardChanges'),
+        danger: true,
+      }))
+    )
+      return
     void load(t('common.reloadedFromFile'))
   }
 

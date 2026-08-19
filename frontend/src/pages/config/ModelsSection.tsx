@@ -1,11 +1,13 @@
 import { Trans, useTranslation } from 'react-i18next'
 import type { ModelMeta } from '../../api'
+import { useDialogs } from '../../components/Dialog'
 import type { SectionProps } from './types'
 
 /** Model catalog: the names exposed to clients, the connection each is bound to, and the
  *  descriptions the AI decision model reads. */
 export default function ModelsSection({ cfg, set, notify, goto }: SectionProps) {
   const { t } = useTranslation()
+  const dialogs = useDialogs()
   const providerNames = Object.keys(cfg.providers ?? {})
   const modelNames = Object.keys(cfg.models)
 
@@ -22,22 +24,47 @@ export default function ModelsSection({ cfg, set, notify, goto }: SectionProps) 
     set({ models })
   }
 
-  const addModel = () => {
-    const name = prompt(t('config.models.promptName'))?.trim()
+  const addModel = async () => {
+    const name = await dialogs.prompt({
+      title: t('config.models.add'),
+      message: t('config.models.promptName'),
+      label: t('config.models.promptLabel'),
+      placeholder: 'gpt-4.1-mini',
+      mono: true,
+      validate: (v) => (cfg.models[v] ? t('config.models.alreadyExists', { name: v }) : null),
+    })
     if (!name) return
-    if (cfg.models[name]) {
-      notify('error', t('config.models.alreadyExists', { name }))
-      return
-    }
     set({ models: { ...cfg.models, [name]: { description: '' } } })
   }
 
   const removeModel = (name: string) => {
     const affected = cfg.rules.filter((r) => r.model === name)
     const { [name]: _omit, ...rest } = cfg.models
-    set({ models: rest, rules: cfg.rules.filter((r) => r.model !== name) })
-    if (affected.length) {
-      notify('ok', t('config.models.removedWithRules', { name, count: affected.length }))
+    // Model groups are pruned in the same patch. The backend rejects a group naming a model that
+    // is not in the catalog, so leaving the name behind would make the config unsavable -- and a
+    // group that appears to grant a model it cannot is worse than one that lost an entry.
+    const groups = cfg.model_groups
+    const affectedGroups = Object.entries(groups ?? {}).filter(([, ms]) => ms.includes(name))
+    set({
+      models: rest,
+      rules: cfg.rules.filter((r) => r.model !== name),
+      ...(affectedGroups.length
+        ? {
+            model_groups: Object.fromEntries(
+              Object.entries(groups ?? {}).map(([g, ms]) => [g, ms.filter((m) => m !== name)]),
+            ),
+          }
+        : {}),
+    })
+    if (affected.length || affectedGroups.length) {
+      notify(
+        'ok',
+        t('config.models.removedWithRefs', {
+          name,
+          rules: affected.length,
+          groups: affectedGroups.length,
+        }),
+      )
     }
   }
 

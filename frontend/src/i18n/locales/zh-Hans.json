@@ -37,6 +37,12 @@
     "status": "状态",
     "yes": "是"
   },
+  "dialog": {
+    "cancel": "取消",
+    "confirm": "确认",
+    "ok": "确定",
+    "valueRequired": "请输入内容"
+  },
   "nav": {
     "group": {
       "overview": "概览",
@@ -47,6 +53,11 @@
       "label": "使用详情",
       "title": "使用详情",
       "subtitle": "请求数、token 消耗与延迟分布"
+    },
+    "models": {
+      "label": "可用模型",
+      "title": "可用模型",
+      "subtitle": "你可以调用的模型，以及每个模型是由哪条策略授予的"
     },
     "keys": {
       "label": "API 密钥",
@@ -68,10 +79,114 @@
       "title": "路由配置",
       "subtitle": "后端连接、模型目录、路由策略与规则路由"
     },
+    "policy": {
+      "label": "模型策略",
+      "title": "模型策略",
+      "subtitle": "模型组，以及每个用户、团队和组织获得的模型组——即调用方可以请求哪些模型"
+    },
     "access": {
       "label": "访问控制",
       "title": "访问控制",
       "subtitle": "管理员与登录范围、GitHub OAuth 应用，以及按 Enterprise / Team / Organization 控制谁能创建 API 密钥"
+    }
+  },
+  "policy": {
+    "title": "模型策略",
+    "enabled": "已生效",
+    "disabled": "未启用",
+    "toggle": "限制每个调用方可以使用哪些模型",
+    "enabledNote": "已生效。每个调用方的清单是授予他的所有模型组的<strong>并集</strong>，因此没有顺序或优先级需要配置。管理员不受限制：这是一种分发控制，而不是权限边界。<strong>完全没有任何绑定</strong>的调用方仍然不受限制，因此在填好下面的表格之前打开开关不会把任何人锁在外面。",
+    "disabledNote": "未启用。所有已登录用户和所有 API key 都可以调用模型目录中的全部模型。在你为下面某个对象绑定模型组之前，打开开关不会有任何变化。",
+    "defaultGroup": "登录用户的默认模型组",
+    "defaultGroupHint": "全新账号默认获得的模型组",
+    "noDefaultGroup": "无默认模型组",
+    "groupOption_other": "{{name}}（{{count}} 个模型）",
+    "defaultGroupNote": "每个登录的用户都从这个组开始。把它指向一个<strong>空组</strong>，新账号在被显式授予之前就什么都没有；保持“无默认模型组”，则没有其他绑定的账号反而是不受限制的。",
+    "groupsTitle": "模型组",
+    "groupCount_other": "{{count}} 个组",
+    "addGroup": "+ 新建模型组",
+    "groupsLead": "模型组是一份可复用的模型清单，直接从模型目录中勾选。模型组<strong>与范围无关</strong>——同一个组可以同时授予用户、团队和组织。<strong>空组是合法的</strong>：这正是表达“该范围什么都不授予”的方式。",
+    "noModels": "模型目录为空，没有可勾选的内容。请先在“模型目录”中注册模型。",
+    "noGroups": "还没有模型组。先新建一个，然后勾选它应该授予的模型。",
+    "memberCount_other": "{{count}} 个模型",
+    "emptyGroup": "空组",
+    "isDefaultGroup": "默认模型组",
+    "boundCount_other": "{{count}} 处绑定",
+    "selectAll": "全选",
+    "selectNone": "全不选",
+    "rename": "重命名",
+    "emptyGroupNote": "这个组<strong>不授予任何模型</strong>。所有授权都为空的调用方会被 403 拒绝，而这正是“新账号在被分配之前什么都没有”所需要的。",
+    "promptGroupName": "新模型组的名称（例如 starter）：",
+    "addGroupTitle": "新建模型组",
+    "groupNameLabel": "组名称",
+    "promptRenameGroup": "重命名模型组（所有绑定会自动改指到新名称）：",
+    "renameGroupTitle": "重命名模型组",
+    "groupExists": "模型组“{{name}}”已存在",
+    "confirmDeleteBoundTitle": "删除模型组",
+    "confirmDeleteBound_other": "模型组“{{name}}”仍被 {{count}} 处绑定引用，这些绑定将被清除。确定删除吗？",
+    "usersTitle": "已登录过的用户",
+    "userCount_other": "{{count}} 位用户",
+    "usersLead": "所有至少登录过一次本控制台的用户，按最近活动排序。在某一行选择模型组即可绑定到该账号——这就是<strong>用户</strong>范围，保存后生效。",
+    "noUsers": "还没有人登录过。有人登录后这份列表会自动填充。",
+    "noBinding": "不绑定",
+    "bindingExists": "“{{name}}”已经绑定过了",
+    "bindingCount_other": "{{count}} 处绑定",
+    "kind": {
+      "github": "GitHub",
+      "local": "本地"
+    },
+    "table": {
+      "login": "登录名",
+      "kind": "登录方式",
+      "firstSeen": "首次登录",
+      "lastSeen": "最近登录",
+      "signIns": "登录次数",
+      "group": "模型组",
+      "enterprise": "企业",
+      "keyPolicy": "密钥策略"
+    },
+    "teams": {
+      "title": "团队",
+      "addTitle": "新建团队绑定",
+      "lead": "键的格式为 <code>enterprise-slug/team-id</code>，这是本地 GitHub 缓存解析团队所需的形式。配置了企业管理员令牌后，可以在<strong>访问控制 → Key 策略</strong>中查到团队的数字 id。",
+      "noneDiscovered": "未发现任何企业团队。请前往“访问控制 → 密钥策略”刷新结构。",
+      "search": "筛选团队…",
+      "key": "企业 / 团队 id",
+      "prompt": "团队键，格式为 <企业 slug>/<团队 id>，例如 your-enterprise/14501973：",
+      "badKey": "“{{name}}”不是合法的团队键——请写成 <企业 slug>/<团队 id>"
+    },
+    "organizations": {
+      "title": "组织",
+      "addTitle": "新建组织绑定",
+      "lead": "键为<strong>组织登录名</strong>，与 GitHub URL 中出现的完全一致。成员身份优先由本地 GitHub 缓存回答，缓存不可用时才发起实时调用。",
+      "noneDiscovered": "未发现任何组织。请前往“访问控制 → 密钥策略”刷新结构。",
+      "search": "筛选组织…",
+      "key": "组织登录名",
+      "prompt": "组织登录名，例如 your-org："
+    },
+    "bindings": {
+      "addManually": "+ 手动输入",
+      "loading": "正在读取企业结构…",
+      "discoverFailed": "获取失败",
+      "noStructure": "暂无可选结构",
+      "needToken": "在“访问控制 → 密钥策略”中配置<strong>企业管理员令牌</strong>，团队与组织便会列在这里供选择。在此之前仍可手动输入键值。",
+      "noGroupsYet": "还没有模型组。请先在上面新建一个，再在这里授予。",
+      "noMatch": "没有匹配“{{query}}”的项。请清除筛选条件，或手动输入标识。",
+      "hidden": "显示 {{total}} 项中的 {{shown}} 项 —— 已绑定和可绑定的范围优先。",
+      "showAll": "显示全部 {{total}} 项",
+      "partialBadge": "列表不完整",
+      "partial": "GitHub 仅返回了 {{total}} 个组织中的 {{listed}} 个，因此此列表不完整。筛选只能查找已返回的内容；未列出的组织仍可手动输入。",
+      "gateOnBadge": "已受限",
+      "gateOn": "创建 API 密钥<strong>受到限制</strong>，因此只有其成员可以创建密钥的范围才能被授予模型组——没有密钥就无法访问路由，对他们授权也不会带来任何效果。",
+      "gateOffBadge": "未受限",
+      "gateOff": "创建 API 密钥<strong>对所有可登录用户开放</strong>，因此所有已发现的范围都可以被授予模型组。限制密钥创建请前往“访问控制 → 密钥策略”。",
+      "mayCreateKeys": "可创建密钥",
+      "mayNotCreateKeys": "不可创建密钥",
+      "entOff": "该企业在密钥策略中已关闭，其成员均不可创建 API 密钥。",
+      "orgNotAllowed": "按照密钥策略，该组织不允许创建 API 密钥。",
+      "teamNotAllowed": "按照密钥策略，该团队不允许创建 API 密钥。",
+      "orphan": "未发现",
+      "orphanHint": "已在 config.yaml 中绑定，但不在已发现的结构里——可能是手动输入的，或来自当前令牌已无法读取的企业。该绑定依然生效。"
     }
   },
   "shell": {
@@ -170,6 +285,45 @@
       "day_other": "{{date}}：{{count}} 次请求 · {{tokens}} token · {{errors}} 次失败"
     }
   },
+  "models": {
+    "title": "生效的模型策略",
+    "count_other": "{{count}} 个模型",
+    "unrestricted": "完整目录",
+    "restricted": "受限清单",
+    "listTitle": "你可以调用的模型",
+    "reason": {
+      "policy-disabled": "本路由器未启用模型策略，因此<strong>模型目录中的全部模型</strong>对你可用。",
+      "administrator": "你是<strong>管理员</strong>。模型策略是一种分发控制，而不是权限边界，因此对你不生效，整个目录保持可用。",
+      "no-binding": "模型策略已启用，但<strong>没有任何绑定指向你的账号</strong>：既没有默认模型组，也没有覆盖到你的团队或组织授权。未绑定的账号按不受限处理，而不是被锁定，因此完整目录可用。",
+      "union": "你的清单是所有授予你的模型组的<strong>并集</strong>，来源包括你的账号、你的团队和你的组织。授权只会增加模型，永远不会减少。",
+      "empty-group": "授予你的每个模型组都是<strong>空组</strong>，因此你当前没有任何可用模型。在管理员为你的账号、团队或组织绑定一个非空模型组之前，请求都会以 <code>403</code> 被拒绝。"
+    },
+    "blockedBadge": "无可用模型",
+    "blockedNote": "请让管理员在<strong>路由配置 → 模型策略</strong>中为你授予一个模型组。在此之前，所有经过路由的请求都会被拒绝。",
+    "emptyCatalog": "模型目录为空。需要管理员先注册至少一个模型。",
+    "defaultBadge": "默认",
+    "reasoningBadge": "推理",
+    "generalPurpose": "通用",
+    "sourceTitle": "你的清单来自哪里",
+    "grantCount_other": "{{count}} 条授权",
+    "sourceLead": "这里只列出<strong>真正对你生效</strong>的授权。你不属于的团队和组织不会在此暴露。",
+    "grantsNothing": "（空组）",
+    "scope": {
+      "default": "默认模型组",
+      "user": "账号",
+      "team": "团队",
+      "organization": "组织"
+    },
+    "table": {
+      "model": "模型",
+      "traits": "特性",
+      "description": "说明",
+      "scope": "范围",
+      "name": "名称",
+      "group": "模型组",
+      "grants": "授予的模型"
+    }
+  },
   "keys": {
     "created": {
       "title": "密钥已创建",
@@ -209,7 +363,8 @@
       "disabled": "已停用",
       "enable": "启用",
       "disable": "停用",
-      "confirmDelete": "删除密钥「{{name}}」？使用它的客户端会立即失效。"
+      "confirmDelete": "删除密钥「{{name}}」？使用它的客户端会立即失效。",
+      "confirmDeleteTitle": "删除 API 密钥"
     },
     "copyFailed": "无法写入剪贴板。浏览器只在 HTTPS（或 localhost）下允许此操作——请点击「显示」后手动复制。",
     "access": {
@@ -451,9 +606,12 @@
       "one": "删除这条链路",
       "filtered": "删除筛选出的链路",
       "confirmOne": "删除链路 {{id}}？此操作不可撤销。",
+      "confirmOneTitle": "删除链路",
       "confirmMany": "删除全部 {{count}} 条符合 {{criteria}} 的链路？此操作不可撤销。",
+      "confirmManyTitle": "删除筛选出的链路",
       "criteriaDate": "日期 {{date}}",
       "criteriaUser": "用户 {{user}}",
+      "doneTitle": "已删除链路",
       "done_other": "已删除 {{count}} 条链路"
     },
     "json": {
@@ -532,6 +690,14 @@
   "config": {
     "loading": "加载配置中…",
     "saved": "已保存并热更新：config.yaml 已写回（注释保留），连接凭据即时生效",
+    "step": "第 {{n}} / {{total}} 步 · {{label}}",
+    "nextStep": "下一步：{{label}} →",
+    "guide": {
+      "providers": "从这里开始。<strong>后端连接</strong>就是一个后端地址加它的密钥——Azure AI Foundry，或任何兼容 OpenAI 的端点。模型目录中的每个模型都通过其中之一提供服务，因此在保存至少一个连接之前，本页其余部分都无法生效。",
+      "models": "每一条都是客户端可以请求的模型名称，并绑定到为它提供服务的连接。<strong>描述</strong>不是装饰：AI 路由在选择时读取的正是它，描述含糊，路由也会含糊。",
+      "strategy": "如何选出实际服务的模型：按<strong>规则</strong>、按 <strong>AI</strong> 决策，或 <code>rule-then-ai</code>——先走规则，只有未命中的请求才会产生一次决策调用。",
+      "rules": "关键词与长度规则，<strong>按顺序</strong>匹配，首个命中生效。仅在策略使用规则时才会用到。"
+    },
     "section": {
       "providers": {
         "label": "后端连接",
@@ -558,6 +724,7 @@
       "empty": "还没有连接。添加一个后才能绑定模型。",
       "promptName": "新连接的名称（models 通过该名字引用，例如 openrouter）：",
       "promptRename": "重命名连接：",
+      "promptLabel": "连接名称",
       "alreadyExists": "连接「{{name}}」已存在",
       "stillReferenced": "连接「{{name}}」仍被模型 {{models}} 引用，请先在「模型目录」里改绑",
       "isDefaultConnection": "连接「{{name}}」是默认连接，请先把默认切到其他连接",
@@ -584,8 +751,9 @@
       "lead": "这里的名字就是客户端在请求里可以填的模型名。描述会作为候选目录发给 AI 决策器，写清「适合什么任务」能显著提升路由准确度。连接在<providersLink>后端连接</providersLink>里维护。",
       "empty": "还没有模型。至少添加一个并设为默认模型。",
       "promptName": "新模型在本路由器中暴露的名称：",
+      "promptLabel": "模型名称",
       "alreadyExists": "模型「{{name}}」已存在",
-      "removedWithRules_other": "已删除模型「{{name}}」，同时移除了引用它的 {{count}} 条规则",
+      "removedWithRefs": "已删除模型“{{name}}”。移除的规则：{{rules}} 条。更新的模型组：{{groups}} 个。",
       "defaultBadge": "默认",
       "reasoningBadge": "推理系",
       "connectionMissing": "— 连接不存在",

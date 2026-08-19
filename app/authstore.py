@@ -1,9 +1,15 @@
-"""JSON-file persistence for sign-in sessions and API keys.
+"""JSON-file persistence for sign-in sessions, API keys, and who has ever signed in.
 
 data/auth_sessions.json  sessions (survive a restart; expired entries are pruned on read)
 data/api_keys.json       API keys -- both the sha256 hash (what lookup compares) and the
                          plaintext (so an owner can read their own key back later). The
                          plaintext is handed out only to the key's owner; see public_key().
+data/known_users.json    one durable entry per login that has ever signed in, with first and
+                         last sign-in and a count. Sessions cannot answer "who has used this
+                         deployment": they are purged the moment they expire, so a user who
+                         signed in last week leaves no trace in them at all. The model policy
+                         needs that list -- an admin has to be able to bind a group to a user
+                         without first asking them to spell their login.
 
 Modelled on OctoFinance's services/auth_store.py: no database, JSON on disk plus an
 in-memory cache, and multiple workers only need to share the same data/ directory.
@@ -66,7 +72,9 @@ class AuthStore:
     def __init__(self, data_dir: Path):
         self.sessions_path = data_dir / "auth_sessions.json"
         self.keys_path = data_dir / "api_keys.json"
+        self.users_path = data_dir / "known_users.json"
         self._lock = threading.Lock()
+        self._users_lock = threading.Lock()
         self._sessions: dict[str, dict] = _read_json(self.sessions_path, {})
         self._keys: dict[str, dict] = _read_json(self.keys_path, {})
         self._sessions_mtime = _mtime(self.sessions_path)
@@ -124,6 +132,11 @@ class AuthStore:
                 "expires_at": _now() + ttl_seconds,
             }
             self._save_sessions()
+        # Recorded here rather than at each call site: there are two ways to open a session
+        # (GitHub OAuth and the local administrator) and a third would be easy to add without
+        # remembering the registry. A failure to record must not fail the sign-in, so
+        # record_sign_in swallows its own IO errors.
+        self.record_sign_in(user)
         return sid
 
     def get_session(self, sid: str | None) -> dict | None:
@@ -191,6 +204,50 @@ class AuthStore:
                 changed = True
             if changed:
                 self._save_sessions()
+
+    # -- Known users ----------------------------------------------------------
+    # A separate file and a separate lock from the session table. The two have opposite
+    # lifetimes -- a session is transient and pruned, this is append-only history -- and keeping
+    # history in the sessions file would have made _purge_expired delete it.
+    def record_sign_in(self, user: dict) -> None:
+        """Note that `user` signed in: first_seen, last_seen, and a sign-in count.
+
+        Never raises. Being unable to write the registry is not a reason to refuse a sign-in,
+        and there is no caller in a position to do anything useful with the error.
+        """
+        login = str(user.get("login") or "").strip()
+        if not login:
+            return
+        try:
+            with self._users_lock:
+                data = _read_json(self.users_path, {})
+                entry = data.get(login.lower()) or {}
+                now = _now()
+                data[login.lower()] = {
+                    "login": login,
+                    "name": user.get("name") or entry.get("name") or login,
+                    "avatar_url": user.get("avatar_url") or entry.get("avatar_url"),
+                    # Which door they came through, so the admin list can distinguish the local
+                    # administrator from a GitHub user of the same name.
+                    "kind": "local" if user.get("local_admin") else "github",
+                    "first_seen": entry.get("first_seen") or now,
+                    "last_seen": now,
+                    "sign_ins": int(entry.get("sign_ins") or 0) + 1,
+                }
+                _write_json(self.users_path, data)
+        except Exception as e:  # noqa: BLE001 see the docstring
+            import logging
+
+            logging.getLogger("mr").warning("could not record the sign-in of %s: %s", login, e)
+
+    def list_known_users(self) -> list[dict]:
+        """Every login that has ever signed in, most recent first.
+
+        Read straight from disk each time: this feeds an admin page rather than a request path,
+        and a cache would only add a way for one worker's list to lag another's.
+        """
+        users = [u for u in _read_json(self.users_path, {}).values() if isinstance(u, dict)]
+        return sorted(users, key=lambda u: u.get("last_seen") or 0, reverse=True)
 
     # -- API keys -------------------------------------------------------------
     def create_api_key(self, user_login: str, name: str) -> tuple[dict, str]:

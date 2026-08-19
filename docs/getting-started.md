@@ -97,6 +97,6 @@ optional: a router that cannot reach github.com keeps routing, the last known an
 the header simply shows no chip. `POST /v1/release/check` forces a check immediately and is
 restricted to administrators, since it makes an outbound request.
 
-A pre-release tag compares on its numeric part alone, so `v0.0.3-rc1` reads as newer than `v0.0.2`
-while `v0.0.2-rc1` does not read as newer than `v0.0.2`. A tag that cannot be parsed is never
+A pre-release tag compares on its numeric part alone, so `v1.0.1-rc1` reads as newer than `v1.0.0`
+while `v1.0.0-rc1` does not read as newer than `v1.0.0`. A tag that cannot be parsed is never
 treated as an update.

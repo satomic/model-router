@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router-dom'
+import { useDialogs } from '../components/Dialog'
 import JsonView from '../components/JsonView'
 import {
   deleteTrace,
@@ -428,6 +429,7 @@ function Splitter({ onDrag }: { onDrag: (clientX: number) => void }) {
  *  why "not found" is a rendered state and not merely a swallowed error. */
 export default function TracesPage({ user }: { user: SessionUser }) {
   const { t } = useTranslation()
+  const dialogs = useDialogs()
   const { traceId } = useParams()
   const navigate = useNavigate()
   const [list, setList] = useState<TraceSummary[]>([])
@@ -505,7 +507,13 @@ export default function TracesPage({ user }: { user: SessionUser }) {
   }
 
   async function removeOne(id: string) {
-    if (!window.confirm(t('traces.delete.confirmOne', { id }))) return
+    const yes = await dialogs.confirm({
+      title: t('traces.delete.confirmOneTitle'),
+      message: t('traces.delete.confirmOne', { id }),
+      confirmLabel: t('common.delete'),
+      danger: true,
+    })
+    if (!yes) return
     try {
       await deleteTrace(id)
       // The detail pane would otherwise keep showing a trace that no longer exists.
@@ -521,13 +529,22 @@ export default function TracesPage({ user }: { user: SessionUser }) {
       applied.date && t('traces.delete.criteriaDate', { date: applied.date }),
       applied.userId && t('traces.delete.criteriaUser', { user: applied.userId }),
     ].filter(Boolean).join(', ')
-    if (!window.confirm(t('traces.delete.confirmMany', { count: total, criteria }))) return
+    const yes = await dialogs.confirm({
+      title: t('traces.delete.confirmManyTitle'),
+      message: t('traces.delete.confirmMany', { count: total, criteria }),
+      confirmLabel: t('traces.delete.filtered'),
+      danger: true,
+    })
+    if (!yes) return
     try {
       const { deleted } = await deleteTraces({ date: applied.date, userId: applied.userId })
       if (traceId) navigate('/traces')
       load(0, false)
       setError('')
-      window.alert(t('traces.delete.done', { count: deleted }))
+      await dialogs.alert({
+        title: t('traces.delete.doneTitle'),
+        message: t('traces.delete.done', { count: deleted }),
+      })
     } catch (e) {
       setError(String(e))
     }

@@ -37,6 +37,12 @@
     "status": "상태",
     "yes": "예"
   },
+  "dialog": {
+    "cancel": "취소",
+    "confirm": "확인",
+    "ok": "확인",
+    "valueRequired": "값을 입력하세요"
+  },
   "nav": {
     "group": {
       "overview": "개요",
@@ -47,6 +53,11 @@
       "label": "사용 현황",
       "title": "사용 현황",
       "subtitle": "요청 수, 토큰 소비량, 지연 시간 분포"
+    },
+    "models": {
+      "label": "사용 가능한 모델",
+      "title": "사용 가능한 모델",
+      "subtitle": "호출할 수 있는 모델과 각 모델이 어떤 정책 부여로 사용 가능해졌는지"
     },
     "keys": {
       "label": "API 키",
@@ -68,10 +79,114 @@
       "title": "라우팅 설정",
       "subtitle": "백엔드 연결, 모델 카탈로그, 라우팅 전략, 규칙 라우팅"
     },
+    "policy": {
+      "label": "모델 정책",
+      "title": "모델 정책",
+      "subtitle": "모델 그룹과 각 사용자·팀·조직에 부여되는 그룹 — 호출자가 요청할 수 있는 모델의 범위"
+    },
     "access": {
       "label": "액세스 제어",
       "title": "액세스 제어",
       "subtitle": "관리자와 로그인 범위, GitHub OAuth 앱, 그리고 Enterprise / Team / Organization 단위로 누가 API 키를 만들 수 있는지 제어"
+    }
+  },
+  "policy": {
+    "title": "모델 정책",
+    "enabled": "적용 중",
+    "disabled": "꺼짐",
+    "toggle": "호출자별로 사용할 수 있는 모델을 제한",
+    "enabledNote": "적용 중입니다. 각 호출자의 목록은 그에게 부여된 모델 그룹의 <strong>합집합</strong>이므로 순서나 우선순위를 설정할 필요가 없습니다. 관리자는 예외입니다. 이것은 권한 경계가 아니라 배포 제어이기 때문입니다. <strong>아무것도 연결되지 않은</strong> 호출자는 계속 무제한이므로, 아래 표를 채우기 전에 이 스위치를 켜도 누군가를 잠가버릴 일은 없습니다.",
+    "disabledNote": "꺼져 있습니다. 로그인한 모든 사용자와 모든 API 키가 카탈로그의 모든 모델을 호출할 수 있습니다. 아래에서 누군가에게 모델 그룹을 연결하기 전까지는 이 스위치를 켜도 달라지는 것이 없습니다.",
+    "defaultGroup": "로그인 사용자의 기본 모델 그룹",
+    "defaultGroupHint": "새 계정이 처음 받는 그룹",
+    "noDefaultGroup": "기본 모델 그룹 없음",
+    "groupOption_other": "{{name}}(모델 {{count}}개)",
+    "defaultGroupNote": "로그인하는 모든 사람이 이 그룹에서 시작합니다. <strong>빈 그룹</strong>을 지정하면 새 계정은 명시적으로 부여받을 때까지 아무것도 갖지 못합니다. \"기본 모델 그룹 없음\"으로 두면 다른 연결이 없는 계정은 오히려 무제한이 됩니다.",
+    "groupsTitle": "모델 그룹",
+    "groupCount_other": "그룹 {{count}}개",
+    "addGroup": "+ 그룹 추가",
+    "groupsLead": "그룹은 재사용할 수 있는 모델 목록이며, 모델 카탈로그에서 바로 체크해 만듭니다. 그룹은 <strong>범위와 무관</strong>하므로 같은 그룹을 사용자·팀·조직에 동시에 부여할 수 있습니다. <strong>빈 그룹도 정당합니다</strong>. \"이 범위는 아무것도 부여하지 않는다\"를 표현하는 방법입니다.",
+    "noModels": "모델 카탈로그가 비어 있어 체크할 대상이 없습니다. 먼저 \"모델 카탈로그\"에서 모델을 등록하세요.",
+    "noGroups": "아직 그룹이 없습니다. 하나 추가한 뒤 부여할 모델을 체크하세요.",
+    "memberCount_other": "모델 {{count}}개",
+    "emptyGroup": "빈 그룹",
+    "isDefaultGroup": "기본 그룹",
+    "boundCount_other": "연결 {{count}}건",
+    "selectAll": "전체 선택",
+    "selectNone": "선택 해제",
+    "rename": "이름 변경",
+    "emptyGroupNote": "이 그룹은 <strong>모델을 부여하지 않습니다</strong>. 부여가 모두 빈 호출자는 403으로 거부되며, \"새 계정은 배정받기 전까지 아무것도 쓸 수 없다\"에 필요한 것이 바로 이것입니다.",
+    "promptGroupName": "새 모델 그룹의 이름(예: starter):",
+    "addGroupTitle": "새 모델 그룹",
+    "groupNameLabel": "그룹 이름",
+    "promptRenameGroup": "모델 그룹 이름을 변경합니다(모든 연결이 자동으로 새 이름을 가리킵니다):",
+    "renameGroupTitle": "모델 그룹 이름 변경",
+    "groupExists": "모델 그룹 \"{{name}}\"이(가) 이미 있습니다",
+    "confirmDeleteBoundTitle": "모델 그룹 삭제",
+    "confirmDeleteBound_other": "모델 그룹 \"{{name}}\"은(는) 아직 연결 {{count}}건에서 참조되며, 해당 연결은 해제됩니다. 삭제할까요?",
+    "usersTitle": "로그인한 적이 있는 사용자",
+    "userCount_other": "사용자 {{count}}명",
+    "usersLead": "이 콘솔에 한 번 이상 로그인한 모든 사용자를 최근 활동 순으로 표시합니다. 행에서 그룹을 고르면 해당 계정에 연결됩니다. 이것이 <strong>사용자</strong> 범위이며 저장하면 적용됩니다.",
+    "noUsers": "아직 아무도 로그인하지 않았습니다. 로그인이 발생하면 이 목록은 자동으로 채워집니다.",
+    "noBinding": "연결 없음",
+    "bindingExists": "\"{{name}}\"은(는) 이미 연결되어 있습니다",
+    "bindingCount_other": "연결 {{count}}건",
+    "kind": {
+      "github": "GitHub",
+      "local": "로컬"
+    },
+    "table": {
+      "login": "로그인 이름",
+      "kind": "로그인 방식",
+      "firstSeen": "최초 로그인",
+      "lastSeen": "최근 로그인",
+      "signIns": "로그인 횟수",
+      "group": "모델 그룹",
+      "enterprise": "엔터프라이즈",
+      "keyPolicy": "키 정책"
+    },
+    "teams": {
+      "title": "팀",
+      "addTitle": "새 팀 연결",
+      "lead": "키 형식은 <code>enterprise-slug/team-id</code>이며, 로컬 GitHub 캐시가 팀을 해석하는 데 필요한 형태입니다. Enterprise 관리자 토큰을 설정하면 <strong>액세스 제어 → 키 정책</strong>에서 숫자 팀 id를 확인할 수 있습니다.",
+      "noneDiscovered": "엔터프라이즈 팀을 찾지 못했습니다. ‘액세스 제어 → 키 정책’에서 구조를 새로 고치세요.",
+      "search": "팀 필터…",
+      "key": "Enterprise / 팀 id",
+      "prompt": "팀 키. <enterprise slug>/<team id> 형식으로 입력합니다. 예: your-enterprise/14501973",
+      "badKey": "\"{{name}}\"은(는) 올바른 팀 키가 아닙니다. <enterprise slug>/<team id> 형식으로 입력하세요"
+    },
+    "organizations": {
+      "title": "조직",
+      "addTitle": "새 조직 연결",
+      "lead": "키는 <strong>조직 로그인 이름</strong>이며 GitHub URL에 나타나는 그대로 씁니다. 멤버십은 가능하면 로컬 GitHub 캐시가 답하고, 그렇지 않을 때만 실시간 호출을 합니다.",
+      "noneDiscovered": "조직을 찾지 못했습니다. ‘액세스 제어 → 키 정책’에서 구조를 새로 고치세요.",
+      "search": "조직 필터…",
+      "key": "조직 로그인 이름",
+      "prompt": "조직 로그인 이름. 예: your-org"
+    },
+    "bindings": {
+      "addManually": "+ 직접 입력",
+      "loading": "엔터프라이즈 구조를 읽는 중…",
+      "discoverFailed": "가져오기 실패",
+      "noStructure": "선택할 구조가 없습니다",
+      "needToken": "‘액세스 제어 → 키 정책’에서 <strong>엔터프라이즈 관리자 토큰</strong>을 설정하면 팀과 조직이 여기에 나열됩니다. 그전에도 키를 직접 입력할 수 있습니다.",
+      "noGroupsYet": "아직 모델 그룹이 없습니다. 위에서 만든 다음 여기서 부여하세요.",
+      "noMatch": "“{{query}}”와 일치하는 항목이 없습니다. 필터를 지우거나 키를 직접 입력하세요.",
+      "hidden": "{{total}}개 중 {{shown}}개 표시 — 이미 연결된 범위와 연결 가능한 범위가 먼저 표시됩니다.",
+      "showAll": "전체 {{total}}개 표시",
+      "partialBadge": "일부 목록",
+      "partial": "GitHub가 조직 {{total}}개 중 {{listed}}개만 반환했으므로 이 목록은 불완전합니다. 필터는 반환된 항목만 검색합니다. 목록에 없는 조직은 직접 입력할 수 있습니다.",
+      "gateOnBadge": "제한됨",
+      "gateOn": "API 키 생성이 <strong>제한되어</strong> 있으므로, 키를 만들 수 있는 구성원이 있는 범위에만 그룹을 부여할 수 있습니다 — 키가 없으면 라우터에 도달하지 못하므로 부여해도 아무 효과가 없습니다.",
+      "gateOffBadge": "제한 없음",
+      "gateOff": "API 키 생성이 <strong>로그인할 수 있는 모든 사용자에게 열려</strong> 있으므로, 발견된 모든 범위에 그룹을 부여할 수 있습니다. 키 생성을 제한하려면 ‘액세스 제어 → 키 정책’으로 이동하세요.",
+      "mayCreateKeys": "키 생성 가능",
+      "mayNotCreateKeys": "키 생성 불가",
+      "entOff": "이 엔터프라이즈는 키 정책에서 꺼져 있어 구성원 누구도 API 키를 만들 수 없습니다.",
+      "orgNotAllowed": "키 정책에 따라 이 조직은 API 키를 만들 수 없습니다.",
+      "teamNotAllowed": "키 정책에 따라 이 팀은 API 키를 만들 수 없습니다.",
+      "orphan": "미발견",
+      "orphanHint": "config.yaml에는 연결되어 있으나 발견된 구조에는 없습니다(직접 입력했거나, 현재 토큰으로는 읽을 수 없는 엔터프라이즈). 설정 자체는 계속 적용됩니다."
     }
   },
   "shell": {
@@ -170,6 +285,45 @@
       "day_other": "{{date}}: 요청 {{count}}건 · 토큰 {{tokens}} · 실패 {{errors}}건"
     }
   },
+  "models": {
+    "title": "적용 중인 모델 정책",
+    "count_other": "모델 {{count}}개",
+    "unrestricted": "전체 카탈로그",
+    "restricted": "선별된 목록",
+    "listTitle": "호출할 수 있는 모델",
+    "reason": {
+      "policy-disabled": "이 라우터에는 모델 정책이 적용되어 있지 않으므로 <strong>카탈로그의 모든 모델</strong>을 사용할 수 있습니다.",
+      "administrator": "당신은 <strong>관리자</strong>입니다. 모델 정책은 권한 경계가 아니라 배포 제어이므로 관리자에게는 적용되지 않고 전체 카탈로그가 그대로 열려 있습니다.",
+      "no-binding": "모델 정책은 켜져 있지만 <strong>당신의 계정에 연결된 설정이 없습니다</strong>. 기본 모델 그룹도 없고, 당신에게 닿는 팀·조직 부여도 없습니다. 연결이 없는 계정은 차단이 아니라 무제한으로 처리되므로 전체 카탈로그를 사용할 수 있습니다.",
+      "union": "당신의 목록은 계정·팀·조직을 통해 부여된 모든 모델 그룹의 <strong>합집합</strong>입니다. 부여는 모델을 더할 수만 있고 결코 빼지 않습니다.",
+      "empty-group": "당신에게 부여된 모델 그룹이 모두 <strong>빈 그룹</strong>이라 현재 사용할 수 있는 모델이 없습니다. 관리자가 계정·팀·조직 중 하나에 비어 있지 않은 모델 그룹을 연결할 때까지 요청은 <code>403</code>으로 거부됩니다."
+    },
+    "blockedBadge": "사용 가능한 모델 없음",
+    "blockedNote": "관리자에게 <strong>라우팅 구성 → 모델 정책</strong>에서 모델 그룹을 부여해 달라고 요청하세요. 그때까지 라우팅되는 모든 요청은 거부됩니다.",
+    "emptyCatalog": "모델 카탈로그가 비어 있습니다. 관리자가 먼저 모델을 하나 이상 등록해야 합니다.",
+    "defaultBadge": "기본",
+    "reasoningBadge": "추론",
+    "generalPurpose": "범용",
+    "sourceTitle": "이 목록의 출처",
+    "grantCount_other": "부여 {{count}}건",
+    "sourceLead": "<strong>실제로 당신에게 적용된</strong> 부여만 표시됩니다. 소속되지 않은 팀과 조직은 여기에 노출되지 않습니다.",
+    "grantsNothing": "(빈 그룹)",
+    "scope": {
+      "default": "기본 모델 그룹",
+      "user": "계정",
+      "team": "팀",
+      "organization": "조직"
+    },
+    "table": {
+      "model": "모델",
+      "traits": "특성",
+      "description": "설명",
+      "scope": "범위",
+      "name": "이름",
+      "group": "모델 그룹",
+      "grants": "부여하는 모델"
+    }
+  },
   "keys": {
     "created": {
       "title": "키를 만들었습니다",
@@ -209,7 +363,8 @@
       "disabled": "사용 중지됨",
       "enable": "사용",
       "disable": "사용 중지",
-      "confirmDelete": "키 「{{name}}」을 삭제할까요? 이 키를 쓰는 클라이언트는 즉시 동작하지 않습니다."
+      "confirmDelete": "키 「{{name}}」을 삭제할까요? 이 키를 쓰는 클라이언트는 즉시 동작하지 않습니다.",
+      "confirmDeleteTitle": "API 키 삭제"
     },
     "copyFailed": "클립보드에 복사할 수 없습니다. 브라우저는 HTTPS(또는 localhost)에서만 이 동작을 허용합니다 — 「표시」를 누른 뒤 직접 복사하세요.",
     "access": {
@@ -451,9 +606,12 @@
       "one": "이 추적 기록 삭제",
       "filtered": "필터된 추적 기록 삭제",
       "confirmOne": "추적 기록 {{id}}을 삭제할까요? 되돌릴 수 없습니다.",
+      "confirmOneTitle": "추적 기록 삭제",
       "confirmMany": "{{criteria}}에 해당하는 추적 기록 {{count}}건을 모두 삭제할까요? 되돌릴 수 없습니다.",
+      "confirmManyTitle": "필터된 추적 기록 삭제",
       "criteriaDate": "날짜 {{date}}",
       "criteriaUser": "사용자 {{user}}",
+      "doneTitle": "추적 기록 삭제 완료",
       "done_other": "추적 기록 {{count}}건을 삭제했습니다"
     },
     "json": {
@@ -532,6 +690,14 @@
   "config": {
     "loading": "설정을 불러오는 중…",
     "saved": "저장하고 즉시 적용했습니다: config.yaml을 다시 기록했고(주석 유지) 연결 자격 증명이 바로 적용되었습니다",
+    "step": "{{total}}단계 중 {{n}}단계 · {{label}}",
+    "nextStep": "다음: {{label}} →",
+    "guide": {
+      "providers": "여기서 시작합니다. <strong>백엔드 연결</strong>은 하나의 백엔드 주소와 그 키입니다(Azure AI Foundry 또는 OpenAI 호환 엔드포인트). 모델 카탈로그의 모든 모델은 이 중 하나를 통해 제공되므로, 연결을 최소 하나 저장하기 전에는 이 페이지의 다른 설정이 동작하지 않습니다.",
+      "models": "각 항목은 클라이언트가 요청할 수 있는 모델 이름이며, 이를 제공하는 연결에 연결됩니다. <strong>설명</strong>은 장식이 아닙니다. AI 라우터가 선택할 때 읽는 것이 바로 이 문장이므로, 모호한 설명은 모호한 라우팅으로 이어집니다.",
+      "strategy": "실제로 사용할 모델을 정하는 방식: <strong>규칙</strong>, <strong>AI</strong> 판단, 또는 <code>rule-then-ai</code> — 규칙을 먼저 보고, 일치하지 않은 요청만 판단 호출을 소모합니다.",
+      "rules": "키워드와 길이 규칙을 <strong>순서대로</strong> 검사하며 첫 일치가 적용됩니다. 규칙을 사용하는 전략에서만 사용됩니다."
+    },
     "section": {
       "providers": {
         "label": "백엔드 연결",
@@ -558,6 +724,7 @@
       "empty": "아직 연결이 없습니다. 하나 추가한 뒤에 모델을 묶을 수 있습니다.",
       "promptName": "새 연결의 이름(models가 이 이름으로 참조합니다. 예: openrouter):",
       "promptRename": "연결 이름 바꾸기:",
+      "promptLabel": "연결 이름",
       "alreadyExists": "연결 「{{name}}」이 이미 있습니다",
       "stillReferenced": "연결 「{{name}}」은 아직 모델 {{models}}에서 참조하고 있습니다. 먼저 「모델 카탈로그」에서 연결을 바꾸세요",
       "isDefaultConnection": "연결 「{{name}}」은 기본 연결입니다. 먼저 기본을 다른 연결로 바꾸세요",
@@ -584,8 +751,9 @@
       "lead": "여기의 이름이 클라이언트가 요청에 적을 수 있는 모델 이름입니다. 설명은 후보 카탈로그로 AI 결정 모델에 전달되므로, 「어떤 작업에 적합한지」를 분명히 쓰면 라우팅 정확도가 크게 올라갑니다. 연결은 <providersLink>백엔드 연결</providersLink>에서 관리합니다.",
       "empty": "아직 모델이 없습니다. 최소 하나를 추가하고 기본 모델로 설정하세요.",
       "promptName": "이 새 모델을 라우터에서 노출할 이름:",
+      "promptLabel": "모델 이름",
       "alreadyExists": "모델 「{{name}}」이 이미 있습니다",
-      "removedWithRules_other": "모델 「{{name}}」을 삭제하고, 이를 참조하던 규칙 {{count}}개도 함께 제거했습니다",
+      "removedWithRefs": "모델 \"{{name}}\"을(를) 삭제했습니다. 제거된 규칙: {{rules}}건. 갱신된 모델 그룹: {{groups}}건.",
       "defaultBadge": "기본",
       "reasoningBadge": "추론형",
       "connectionMissing": "— 연결이 없습니다",

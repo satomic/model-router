@@ -100,6 +100,17 @@ print("GET /v1/config with no session -> 401 OK")
 
 # 5. AI routing + trace completeness
 section("AI routing trace")
+# The strategy is arranged for rather than assumed. This section asserts an `ai` analysis with a
+# rationale, which only the `ai` strategy produces at the top level -- under `rule-then-ai` the
+# same analysis is nested under an `ai` key, and under `rule` there is none at all. Reading the
+# live value and restoring it at the end of section 8 also stops this script from rewriting the
+# operator's configured strategy, which a hardcoded restore did.
+saved_strategy = client.get("/v1/config").json()["strategy"]
+if saved_strategy != "ai":
+    doc = client.get("/v1/config").json()
+    doc["strategy"] = "ai"
+    client.put("/v1/config", json=doc).raise_for_status()
+    print(f"strategy switched from {saved_strategy!r} to 'ai' for this section")
 r = client.post(
     "/v1/chat/completions",
     json={"messages": [{"role": "user", "content": "hello there"}], "max_tokens": 30},
@@ -184,8 +195,9 @@ steps = t4["routing"]["analysis"]["evaluated"]
 assert any(s["matched"] for s in steps), "no rule was recorded as matching"
 for s in steps:
     print(" ", "✓" if s["matched"] else "·", s["rule"], "->", s.get("matched_keyword", s.get("check", "")))
-saved["strategy"] = "ai"
-client.put("/v1/config", json=saved)
+saved["strategy"] = saved_strategy
+client.put("/v1/config", json=saved).raise_for_status()
+print(f"strategy restored to {saved_strategy!r}")
 
 # 9. Trace listing + on-disk persistence
 section("Trace listing and persistence")

@@ -38,6 +38,12 @@
     "status": "Status",
     "yes": "Yes"
   },
+  "dialog": {
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "ok": "OK",
+    "valueRequired": "Enter a value"
+  },
   "nav": {
     "group": {
       "overview": "Overview",
@@ -48,6 +54,11 @@
       "label": "Usage",
       "title": "Usage",
       "subtitle": "Request counts, token consumption and latency distribution"
+    },
+    "models": {
+      "label": "Available models",
+      "title": "Available models",
+      "subtitle": "The models you may call, and which policy grant made each one available"
     },
     "keys": {
       "label": "API keys",
@@ -69,10 +80,121 @@
       "title": "Routing configuration",
       "subtitle": "Backend connections, model catalog, routing strategy and rule routing"
     },
+    "policy": {
+      "label": "Model policy",
+      "title": "Model policy",
+      "subtitle": "Model groups, and which group each user, team and organization is granted — the models a caller may ask for"
+    },
     "access": {
       "label": "Access control",
       "title": "Access control",
       "subtitle": "Administrators and sign-in scope, the GitHub OAuth app, and who may create API keys — by Enterprise / Team / Organization"
+    }
+  },
+  "policy": {
+    "title": "Model policy",
+    "enabled": "in force",
+    "disabled": "off",
+    "toggle": "Restrict which models each caller may use",
+    "enabledNote": "In force. Every caller's list is the <strong>union</strong> of the groups granted to them, so there is no ordering or precedence to configure. Administrators are exempt: this is a distribution control, not a privilege boundary. A caller with <strong>nothing bound at all</strong> stays unrestricted, so switching this on before filling in the tables below cannot lock anyone out.",
+    "disabledNote": "Off. Every signed-in user and every API key may call every model in the catalog. Turning this on changes nothing until you bind a group to someone below.",
+    "defaultGroup": "Default group for signed-in users",
+    "defaultGroupHint": "what a brand-new account gets",
+    "noDefaultGroup": "No default group",
+    "groupOption_one": "{{name}} ({{count}} model)",
+    "groupOption_other": "{{name}} ({{count}} models)",
+    "defaultGroupNote": "Everyone who signs in starts from this group. Point it at an <strong>empty group</strong> to give new accounts nothing until they are granted something explicitly; leave it at \"No default group\" and an otherwise-unbound account stays unrestricted instead.",
+    "groupsTitle": "Model groups",
+    "groupCount_one": "{{count}} group",
+    "groupCount_other": "{{count}} groups",
+    "addGroup": "+ Add group",
+    "groupsLead": "A group is a reusable list of models, ticked straight off the model catalog. Groups are <strong>independent of scope</strong> — the same group can be granted to a user, a team and an organization. An <strong>empty group is legal</strong>: it is how you say \"this scope grants nothing\".",
+    "noModels": "The model catalog is empty, so there is nothing to tick. Register models under Model catalog first.",
+    "noGroups": "No groups yet. Add one, then tick the models it should grant.",
+    "memberCount_one": "{{count}} model",
+    "memberCount_other": "{{count}} models",
+    "emptyGroup": "empty",
+    "isDefaultGroup": "default group",
+    "boundCount_one": "{{count}} binding",
+    "boundCount_other": "{{count}} bindings",
+    "selectAll": "All",
+    "selectNone": "None",
+    "rename": "Rename",
+    "emptyGroupNote": "This group grants <strong>no models</strong>. A caller whose every grant is empty is refused with a 403, which is exactly what \"a new account gets nothing until it is assigned something\" needs.",
+    "promptGroupName": "Name of the new model group (e.g. starter):",
+    "addGroupTitle": "New model group",
+    "groupNameLabel": "Group name",
+    "promptRenameGroup": "Rename the model group (every binding is repointed automatically):",
+    "renameGroupTitle": "Rename model group",
+    "groupExists": "The model group \"{{name}}\" already exists",
+    "confirmDeleteBoundTitle": "Delete model group",
+    "confirmDeleteBound_one": "The model group \"{{name}}\" is still used by {{count}} binding, which will be cleared. Delete it?",
+    "confirmDeleteBound_other": "The model group \"{{name}}\" is still used by {{count}} bindings, which will be cleared. Delete it?",
+    "usersTitle": "Users who have signed in",
+    "userCount_one": "{{count}} user",
+    "userCount_other": "{{count}} users",
+    "usersLead": "Everyone who has signed in to this console at least once, most recent activity first. Pick a group on a row to bind it to that account — that is the <strong>user</strong> scope, and it takes effect on save.",
+    "noUsers": "Nobody has signed in yet. This list fills itself in as people sign in.",
+    "noBinding": "No group",
+    "bindingExists": "\"{{name}}\" is already bound",
+    "bindingCount_one": "{{count}} binding",
+    "bindingCount_other": "{{count}} bindings",
+    "kind": {
+      "github": "GitHub",
+      "local": "Local"
+    },
+    "table": {
+      "login": "Login",
+      "kind": "Sign-in",
+      "firstSeen": "First seen",
+      "lastSeen": "Last seen",
+      "signIns": "Sign-ins",
+      "group": "Model group",
+      "enterprise": "Enterprise",
+      "keyPolicy": "Key policy"
+    },
+    "teams": {
+      "title": "Teams",
+      "addTitle": "New team binding",
+      "lead": "Keyed <code>enterprise-slug/team-id</code>, the form the local GitHub cache needs to resolve a team. The numeric team ids are listed under <strong>Access control → Key policy</strong> once an enterprise administrator token is configured.",
+      "noneDiscovered": "No enterprise teams were discovered. Refresh the structure under Access control → Key policy.",
+      "search": "Filter teams…",
+      "key": "Enterprise / team id",
+      "prompt": "Team key, written as <enterprise slug>/<team id>, e.g. your-enterprise/14501973:",
+      "badKey": "\"{{name}}\" is not a valid team key — write it as <enterprise slug>/<team id>"
+    },
+    "organizations": {
+      "title": "Organizations",
+      "addTitle": "New organization binding",
+      "lead": "Keyed by <strong>organization login</strong>, exactly as it appears in a GitHub URL. Membership is answered from the local GitHub cache where it can be, and by a live call otherwise.",
+      "noneDiscovered": "No organizations were discovered. Refresh the structure under Access control → Key policy.",
+      "search": "Filter organizations…",
+      "key": "Organization login",
+      "prompt": "Organization login, e.g. your-org:"
+    },
+    "bindings": {
+      "addManually": "+ Enter one manually",
+      "loading": "Reading the enterprise structure…",
+      "discoverFailed": "discovery failed",
+      "noStructure": "no structure to pick from",
+      "needToken": "Configure an <strong>enterprise administrator token</strong> under Access control → Key policy and the teams and organizations will be listed here to pick from. Until then a key can still be entered by hand.",
+      "noGroupsYet": "No model groups yet. Add one above, then grant it here.",
+      "noMatch": "Nothing matches “{{query}}”. Clear the filter, or enter the key by hand.",
+      "hidden": "Showing {{shown}} of {{total}} — bound and bindable scopes first.",
+      "showAll": "Show all {{total}}",
+      "partialBadge": "partial list",
+      "partial": "GitHub returned {{listed}} of {{total}} organizations, so this list is incomplete. Search finds only what was returned; an organization that is missing can still be entered by hand.",
+      "gateOnBadge": "gated",
+      "gateOn": "Creating an API key is <strong>restricted</strong>, so only the scopes whose members may create one can be granted a group — without a key nobody reaches the router, and a grant to them would give nothing.",
+      "gateOffBadge": "not gated",
+      "gateOff": "Creating an API key is <strong>open to everyone who can sign in</strong>, so every discovered scope can be granted a group. Restricting key creation is done under Access control → Key policy.",
+      "mayCreateKeys": "may create keys",
+      "mayNotCreateKeys": "no keys",
+      "entOff": "This enterprise is switched off in the key policy, so none of its members may create an API key.",
+      "orgNotAllowed": "This organization is not allowed to create API keys under the key policy.",
+      "teamNotAllowed": "This team is not allowed to create API keys under the key policy.",
+      "orphan": "not discovered",
+      "orphanHint": "Bound in config.yaml but absent from the discovered structure — entered by hand, or from an enterprise this token can no longer read. Still enforced."
     }
   },
   "shell": {
@@ -175,6 +297,47 @@
       "day_other": "{{date}}: {{count}} requests · {{tokens}} tokens · {{errors}} failures"
     }
   },
+  "models": {
+    "title": "Effective model policy",
+    "count_one": "{{count}} model",
+    "count_other": "{{count}} models",
+    "unrestricted": "full catalog",
+    "restricted": "curated list",
+    "listTitle": "Models you can call",
+    "reason": {
+      "policy-disabled": "No model policy is in force on this router, so <strong>every model in the catalog</strong> is available to you.",
+      "administrator": "You are an <strong>administrator</strong>. A model policy is a distribution control rather than a privilege boundary, so it does not apply to you and the whole catalog stays available.",
+      "no-binding": "The model policy is switched on, but <strong>nothing is bound to your account</strong> — no default group, and no team or organization grant that reaches you. An unbound account is left unrestricted rather than locked out, so the full catalog is available.",
+      "union": "Your list is the <strong>union</strong> of every model group granted to you, through your account, your teams and your organizations. A grant can only ever add models, never take them away.",
+      "empty-group": "Every group granted to you is <strong>empty</strong>, so you currently have no models at all. Requests are refused with a <code>403</code> until an administrator binds a non-empty group to your account, a team or an organization."
+    },
+    "blockedBadge": "no models",
+    "blockedNote": "Ask an administrator to grant you a model group under <strong>Routing configuration → Model policy</strong>. Until then every routed request is refused.",
+    "emptyCatalog": "The model catalog is empty. An administrator has to register at least one model first.",
+    "defaultBadge": "default",
+    "reasoningBadge": "reasoning",
+    "generalPurpose": "general purpose",
+    "sourceTitle": "Where your list comes from",
+    "grantCount_one": "{{count}} grant",
+    "grantCount_other": "{{count}} grants",
+    "sourceLead": "Only the grants that <strong>actually applied to you</strong> are listed. The teams and organizations you are not in are never disclosed here.",
+    "grantsNothing": "(empty group)",
+    "scope": {
+      "default": "Default group",
+      "user": "Account",
+      "team": "Team",
+      "organization": "Organization"
+    },
+    "table": {
+      "model": "Model",
+      "traits": "Traits",
+      "description": "Description",
+      "scope": "Scope",
+      "name": "Name",
+      "group": "Model group",
+      "grants": "Models it grants"
+    }
+  },
   "keys": {
     "created": {
       "title": "Key created",
@@ -214,7 +377,8 @@
       "disabled": "Disabled",
       "enable": "Enable",
       "disable": "Disable",
-      "confirmDelete": "Delete the key \"{{name}}\"? Any client using it stops working immediately."
+      "confirmDelete": "Delete the key \"{{name}}\"? Any client using it stops working immediately.",
+      "confirmDeleteTitle": "Delete API key"
     },
     "copyFailed": "Could not copy to the clipboard. The browser only allows this over HTTPS (or on localhost) — use Show and copy the value by hand.",
     "access": {
@@ -462,9 +626,12 @@
       "one": "Delete this trace",
       "filtered": "Delete the filtered traces",
       "confirmOne": "Delete the trace {{id}}? This cannot be undone.",
+      "confirmOneTitle": "Delete trace",
       "confirmMany": "Delete all {{count}} traces matching {{criteria}}? This cannot be undone.",
+      "confirmManyTitle": "Delete filtered traces",
       "criteriaDate": "date {{date}}",
       "criteriaUser": "user {{user}}",
+      "doneTitle": "Traces deleted",
       "done_one": "{{count}} trace deleted",
       "done_other": "{{count}} traces deleted"
     },
@@ -549,6 +716,14 @@
   "config": {
     "loading": "Loading the configuration…",
     "saved": "Saved and applied: config.yaml was written back (comments preserved) and the connection credentials took effect immediately",
+    "step": "Step {{n}} of {{total}} · {{label}}",
+    "nextStep": "Next: {{label}} →",
+    "guide": {
+      "providers": "Start here. A <strong>connection</strong> is one backend address and its key — Azure AI Foundry, or any OpenAI-compatible endpoint. Every model in the catalog is served through one of them, so nothing else on this page works until at least one is saved.",
+      "models": "Each entry is a model name clients may ask for, bound to the connection that serves it. The <strong>description</strong> is not decoration: it is what the AI router reads when choosing, so a vague one produces vague routing.",
+      "strategy": "How the served model is chosen: by <strong>rules</strong>, by an <strong>AI</strong> decision, or <code>rule-then-ai</code> — rules first, and only an unmatched request costs a decision call.",
+      "rules": "Keyword and length rules, matched <strong>in order</strong>, first hit wins. Only reached when the strategy uses rules."
+    },
     "section": {
       "providers": {
         "label": "Backend connections",
@@ -576,6 +751,7 @@
       "empty": "No connections yet. Add one before binding models to it.",
       "promptName": "Name of the new connection (models reference it by this name, e.g. openrouter):",
       "promptRename": "Rename the connection:",
+      "promptLabel": "Connection name",
       "alreadyExists": "The connection \"{{name}}\" already exists",
       "stillReferenced": "The connection \"{{name}}\" is still referenced by the model(s) {{models}} — rebind them under Model catalog first",
       "isDefaultConnection": "The connection \"{{name}}\" is the default connection — point the default at another connection first",
@@ -604,9 +780,9 @@
       "lead": "The names here are the model names a client may send in a request. The descriptions are handed to the AI decision model as the candidate catalog, so spelling out \"what kind of task this suits\" improves routing accuracy noticeably. Connections are maintained under <providersLink>Backend connections</providersLink>.",
       "empty": "No models yet. Add at least one and mark it as the default model.",
       "promptName": "The name this new model is exposed under in the router:",
+      "promptLabel": "Model name",
       "alreadyExists": "The model \"{{name}}\" already exists",
-      "removedWithRules_one": "Deleted the model \"{{name}}\" along with {{count}} rule that referenced it",
-      "removedWithRules_other": "Deleted the model \"{{name}}\" along with {{count}} rules that referenced it",
+      "removedWithRefs": "Deleted the model \"{{name}}\". Rules removed: {{rules}}. Model groups updated: {{groups}}.",
       "defaultBadge": "default",
       "reasoningBadge": "reasoning",
       "connectionMissing": "— connection missing",

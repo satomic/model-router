@@ -56,6 +56,9 @@ from `127.0.0.1`, which is why a container uses the local administrator instead.
   the owner of the API key and cannot be forged by the client.
 - **Gates who may create a key** on GitHub Enterprise / organization / Enterprise Team membership,
   answered from a local cache where it can be trusted.
+- **Curates the model list per user, team and organization.** Named model groups are granted per
+  scope and resolve as a union, and every user has a page showing exactly what they may call and
+  which grant made it available.
 - **Records the full chain** — request, routing decision, backend call, response, and per-turn tool
   calls — readable in the console as a collapsible JSON tree.
 
@@ -70,6 +73,7 @@ from `127.0.0.1`, which is why a container uses the local administrator instead.
 | [Router logic](docs/router-logic.md) | the request flow, interaction stickiness, rule and AI routing, the editable decision prompt |
 | [Configuration](docs/configuration.md) | `config.yaml`, the console's configuration pages, hot reload |
 | [Access control](docs/access-control.md) | the key-creation policy and the local GitHub structure/member cache |
+| [Model policy](docs/model-policy.md) | model groups, and which models each user / team / organization may use |
 | [API](docs/api.md) | every endpoint |
 | [Full-chain logging](docs/traces.md) | the trace format, turns, and how the listing stays cheap at scale |
 | [Verification scripts](docs/verification.md) | the `verify/` suite and the frontend gates |

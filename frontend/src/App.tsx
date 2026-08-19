@@ -16,12 +16,22 @@ import ChangePasswordPage from './pages/ChangePasswordPage'
 import ConfigPage from './pages/ConfigPage'
 import KeysPage from './pages/KeysPage'
 import LoginPage from './pages/LoginPage'
+import ModelsPage from './pages/ModelsPage'
 import PlaygroundPage from './pages/PlaygroundPage'
+import PolicyPage from './pages/PolicyPage'
 import SetupPage from './pages/SetupPage'
 import TracesPage from './pages/TracesPage'
 import UsagePage from './pages/UsagePage'
 
-type Page = 'usage' | 'keys' | 'traces' | 'config' | 'access' | 'playground'
+type Page =
+  | 'usage'
+  | 'models'
+  | 'keys'
+  | 'traces'
+  | 'config'
+  | 'access'
+  | 'policy'
+  | 'playground'
 type Theme = 'dark' | 'light'
 
 /** The page '/' lands on. Also the fallback used while <Navigate> is settling. */
@@ -40,10 +50,17 @@ const NAV: {
   admin?: boolean
 }[] = [
   { key: 'usage', icon: '▤', group: 'overview' },
+  // Deliberately not admin-gated: the whole point of the model policy is that a regular user can
+  // see their own curated list without asking an administrator what they were granted.
+  { key: 'models', icon: '◈', group: 'overview' },
   { key: 'keys', icon: '⚿', group: 'overview' },
   { key: 'traces', icon: '☰', group: 'monitor' },
   { key: 'playground', icon: '▷', group: 'monitor' },
   { key: 'config', icon: '⚙', group: 'manage', admin: true },
+  // A first-level page rather than a Routing configuration tab: it answers "which models may this
+  // caller ask for", which is a different question from "which model serves this request", on
+  // different config keys.
+  { key: 'policy', icon: '◧', group: 'manage', admin: true },
   { key: 'access', icon: '⛨', group: 'manage', admin: true },
 ]
 
@@ -198,6 +215,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Navigate to={`/${HOME}`} replace />} />
         <Route path="/usage" element={<UsagePage user={user} />} />
+        <Route path="/models" element={<ModelsPage />} />
         <Route path="/keys" element={<KeysPage user={user} />} />
         {/* Both trace routes render the same element, so opening and closing a detail view is a
             plain navigation rather than a remount. */}
@@ -211,6 +229,7 @@ export default function App() {
         {/* A :section change does not remount ConfigPage, so an unsaved draft survives a
             sub-page switch -- which nested <Outlet> routes would not give for free. */}
         <Route path="/config/:section" element={admin(<ConfigPage />)} />
+        <Route path="/policy" element={admin(<PolicyPage />)} />
         <Route path="/access" element={admin(<Navigate to="/access/policy" replace />)} />
         <Route path="/access/:section" element={admin(<AccessPage />)} />
         <Route path="*" element={<NotFound />} />

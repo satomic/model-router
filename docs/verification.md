@@ -24,6 +24,12 @@ python verify/verify_combined.py         # the rule-then-ai strategy: a matched 
                                          # no decision call, an unmatched request reaches the decision
                                          # model (switches strategy and disables stickiness for the
                                          # run, then restores both)
+python verify/verify_modelpolicy.py      # the model policy: filtered /v1/models, the 403 on an empty
+                                         # effective set, a rule and an AI decision confined to the
+                                         # permitted catalog, a dropped stale sticky binding, the
+                                         # administrator exemption, and validation refusals
+                                         # (temporarily rewrites model_groups / model_policy and
+                                         # restores them)
 python verify/verify_localadmin.py       # the local super administrator: sign-in, the forced
                                          # password change, salted-scrypt storage, renaming,
                                          # disabling (temporarily rewrites auth.local_admin in

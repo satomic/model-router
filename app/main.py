@@ -31,7 +31,7 @@ from fastapi.responses import (
 )
 
 from . import auth as authlib
-from . import ghadmin, ghcache, keypolicy, localadmin, release
+from . import ghadmin, ghcache, keypolicy, localadmin, modelpolicy, release
 from .version import ISSUES_URL, RELEASES_URL, REPO_URL, VERSION
 from .authstore import AuthStore
 from .config import (
@@ -172,8 +172,19 @@ def _api_key(request: Request) -> dict:
     return authlib.require_api_key(request, authstore)
 
 
+def _is_admin_login(login: str) -> bool:
+    """Whether this login is an administrator, from either identity source.
+
+    An API key record carries no admin flag -- it names its owner and nothing else -- so a call
+    authenticated by a key has to ask the configuration, which is also what makes an admin list
+    edit take effect on the very next request rather than when the key is next recreated.
+    """
+    return cfg.is_admin_login(login) or cfg.is_local_admin_login(login)
+
+
 async def _decide_model(
-    prompt: str, session_id: str | None, interaction_id: str | None = None
+    prompt: str, session_id: str | None, interaction_id: str | None = None,
+    allowed: list[str] | None = None,
 ) -> tuple[str, str, float, dict]:
     """Return (model, reason, decision_ms, analysis). Includes session-sticky logic.
 
@@ -181,14 +192,34 @@ async def _decide_model(
     the model constant across the tool-call loop of a single user question, which is what
     stops one question being routed N times. `session_id` is the broader, opt-in one: it
     holds a model across a whole conversation.
+
+    `allowed` is the caller's effective model set from the model policy, or None when they are
+    unrestricted. It narrows the catalog every strategy sees (see RouterConfig.restricted_to), so
+    a model the caller may not use is unreachable through rules, through the decision model, and
+    through the default-model substitution alike -- rather than being caught by a check that each
+    of those three paths would have to remember to make.
     """
     t0 = time.perf_counter()
+    # The narrowed view is what every branch below reads. `cfg` itself is untouched: it is module
+    # state shared by every concurrent request, so a per-caller restriction may never be written
+    # into it.
+    view = cfg if allowed is None else cfg.restricted_to(allowed)
+
     if cfg.sticky:
         for key, kind in ((interaction_id, "interaction"), (session_id, "session")):
             if not key:
                 continue
             cached = sessions.get(_bind_key(kind, key))
             if not cached:
+                continue
+            if cached not in view.models:
+                # The binding predates a policy change, or two callers with different effective
+                # sets share a session id. Either way a stale binding must not resurrect a model
+                # this caller may no longer use, so the decision is made again.
+                logger.info(
+                    "sticky %s binding to %s dropped: not in the caller's effective model set",
+                    kind, cached,
+                )
                 continue
             analysis = {
                 # The console renders both kinds the same way -- a note saying the decision was
@@ -202,11 +233,14 @@ async def _decide_model(
             return cached, reason, (time.perf_counter() - t0) * 1000, analysis
 
     if cfg.strategy == "ai":
-        model, reason, analysis = await route_by_ai(prompt, cfg, pool)
+        model, reason, analysis = await route_by_ai(prompt, view, pool)
     elif cfg.strategy == "rule-then-ai":
-        model, reason, analysis = await route_combined(prompt, cfg, pool)
+        model, reason, analysis = await route_combined(prompt, view, pool)
     else:
-        model, reason, analysis = route_by_rules(prompt, cfg)
+        model, reason, analysis = route_by_rules(prompt, view)
+
+    if allowed is not None:
+        analysis["policy_models"] = list(view.models)
 
     if cfg.sticky:
         if interaction_id:
@@ -323,8 +357,19 @@ async def chat_completions(
 
     prompt = extract_user_prompt(messages)
     interaction_id = _interaction_id(request)
+    # The caller's effective model set, resolved before anything routes. An empty list is a
+    # configured outcome rather than an error -- an operator can bind a scope to an empty group,
+    # which is how "this user gets nothing yet" is expressed -- so it is refused here with the
+    # reason, instead of being handed to a router that has no model to pick.
+    allowed = await modelpolicy.allowed_models(cfg, user_id, _is_admin_login(user_id))
+    if allowed is not None and not allowed:
+        raise HTTPException(
+            status_code=403,
+            detail="no models are available to you under the current model policy; "
+                   "ask an administrator to assign a model group",
+        )
     model, reason, decision_ms, analysis = await _decide_model(
-        prompt, x_session_id, interaction_id
+        prompt, x_session_id, interaction_id, allowed
     )
     resolved = cfg.resolve_model(model)
 
@@ -532,12 +577,18 @@ async def _call_via_responses_api(
 
 @app.get("/v1/models")
 async def list_models(request: Request):
-    _api_key(request)
+    key = _api_key(request)
+    # Filtered by the model policy, because this endpoint is what a client's model picker is
+    # populated from: listing a model the very next request would refuse is worse than not
+    # listing it. An empty list is a legitimate answer -- see the 403 in chat_completions.
+    login = key["user_login"]
+    allowed = await modelpolicy.allowed_models(cfg, login, _is_admin_login(login))
+    models = cfg.models if allowed is None else cfg.restricted_to(allowed).models
     return {
         "object": "list",
         "data": [
             {"id": name, "object": "model", "description": meta.get("description", "")}
-            for name, meta in cfg.models.items()
+            for name, meta in models.items()
         ],
     }
 
@@ -895,6 +946,69 @@ async def access_cache_refresh(request: Request):
     return await ghcache.refresh(cfg)
 
 
+# -- Model policy -------------------------------------------------------------
+@app.get("/v1/models/available")
+async def my_available_models(request: Request):
+    """A signed-in user asks which models they may use, and why.
+
+    Session-authenticated rather than key-authenticated, because this feeds the console's own
+    "Available models" page. It is the same resolution the API path applies -- one call into
+    app/modelpolicy -- so the page cannot drift from what a request would actually be allowed.
+
+    `contributions` names only the grants that applied. Listing the teams and organizations the
+    caller is *not* in would publish the policy tables to everybody who can sign in.
+    """
+    user = _user(request)
+    verdict = await modelpolicy.evaluate(cfg, user["login"], bool(user["is_admin"]))
+    return {
+        "login": user["login"],
+        "is_admin": bool(user["is_admin"]),
+        **verdict,
+        # The metadata the page renders next to each name. Taken from the catalog rather than
+        # duplicated into the group, so a description edit shows up here without touching groups.
+        "catalog": {
+            name: {
+                "description": (cfg.models.get(name) or {}).get("description", ""),
+                "reasoning": bool((cfg.models.get(name) or {}).get("reasoning")),
+                "default": bool((cfg.models.get(name) or {}).get("default")),
+            }
+            for name in verdict["models"]
+        },
+        "default_model": (
+            cfg.default_model if cfg.models and cfg.default_model in verdict["models"] else
+            (verdict["models"][0] if verdict["models"] else None)
+        ),
+    }
+
+
+@app.get("/v1/access/users")
+async def list_signed_in_users(request: Request):
+    """Administrators only: every login that has ever signed in.
+
+    Read from data/known_users.json rather than from the session table -- sessions are purged
+    when they expire, so they can only ever answer "who is signed in right now", which is not
+    the question. This is what makes assigning a model group to a user possible without asking
+    them to spell their GitHub login.
+    """
+    _admin(request)
+    users = authstore.list_known_users()
+    # The group each user currently resolves to by binding, so the admin table can show it
+    # without a second round trip per row. Bindings are read straight from the policy: doing a
+    # full modelpolicy.evaluate() per user would mean a GitHub membership check per row.
+    bindings = {
+        str(k).strip().lower(): v
+        for k, v in ((cfg.model_policy.get("users") or {}).items())
+    }
+    return {
+        "users": [
+            {**u, "model_group": bindings.get(str(u.get("login", "")).lower()) or ""}
+            for u in users
+        ],
+        "default_group": cfg.default_group,
+        "policy_enabled": cfg.model_policy_enabled,
+    }
+
+
 # -- Usage statistics ---------------------------------------------------------
 @app.get("/v1/usage")
 async def usage(request: Request, days: int = 7, user_id: str | None = None):
@@ -1116,11 +1230,16 @@ async def put_config(request: Request):
         raise HTTPException(status_code=422, detail=errors)
     old_ttl, old_max = cfg.session_ttl, cfg.max_sessions
     old_policy = cfg.key_policy
+    old_model_policy = (cfg.model_policy, cfg.model_groups)
     cfg = save_raw(updates)
     if (cfg.session_ttl, cfg.max_sessions) != (old_ttl, old_max):
         sessions = SessionStore(cfg.session_ttl, cfg.max_sessions)
     # A provider's endpoint/key may have changed, so drop the old clients
     await pool.invalidate()
+    if (cfg.model_policy, cfg.model_groups) != old_model_policy:
+        # Effective model sets are memoised for a minute; an admin who just edited a group
+        # expects the change to be live when they check, not on the next tick.
+        modelpolicy.invalidate()
     if cfg.key_policy != old_policy:
         # The token or the allow list changed, so cached decisions are no longer trustworthy.
         # The on-disk cache has to go too: a new token can see a different set of members, so

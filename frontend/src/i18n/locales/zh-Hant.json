@@ -37,6 +37,12 @@
     "status": "狀態",
     "yes": "是"
   },
+  "dialog": {
+    "cancel": "取消",
+    "confirm": "確認",
+    "ok": "確定",
+    "valueRequired": "請輸入內容"
+  },
   "nav": {
     "group": {
       "overview": "總覽",
@@ -47,6 +53,11 @@
       "label": "使用詳情",
       "title": "使用詳情",
       "subtitle": "請求數、token 消耗與延遲分布"
+    },
+    "models": {
+      "label": "可用模型",
+      "title": "可用模型",
+      "subtitle": "你可以呼叫的模型，以及每個模型是由哪條策略授予的"
     },
     "keys": {
       "label": "API 金鑰",
@@ -68,10 +79,114 @@
       "title": "路由設定",
       "subtitle": "後端連線、模型目錄、路由策略與規則路由"
     },
+    "policy": {
+      "label": "模型策略",
+      "title": "模型策略",
+      "subtitle": "模型組，以及每個使用者、團隊與組織取得的模型組——也就是呼叫方可以請求哪些模型"
+    },
     "access": {
       "label": "存取控制",
       "title": "存取控制",
       "subtitle": "管理員與登入範圍、GitHub OAuth 應用程式，以及依 Enterprise / Team / Organization 控制誰能建立 API 金鑰"
+    }
+  },
+  "policy": {
+    "title": "模型策略",
+    "enabled": "已生效",
+    "disabled": "未啟用",
+    "toggle": "限制每個呼叫方可以使用哪些模型",
+    "enabledNote": "已生效。每個呼叫方的清單是授予他的所有模型組的<strong>聯集</strong>，因此沒有順序或優先級需要設定。管理員不受限制：這是一種分發控制，而不是權限邊界。<strong>完全沒有任何繫結</strong>的呼叫方仍然不受限制，因此在填好下面的表格之前打開開關不會把任何人鎖在外面。",
+    "disabledNote": "未啟用。所有已登入使用者和所有 API key 都可以呼叫模型目錄中的全部模型。在你為下面某個對象繫結模型組之前，打開開關不會有任何變化。",
+    "defaultGroup": "登入使用者的預設模型組",
+    "defaultGroupHint": "全新帳號預設取得的模型組",
+    "noDefaultGroup": "無預設模型組",
+    "groupOption_other": "{{name}}（{{count}} 個模型）",
+    "defaultGroupNote": "每個登入的使用者都從這個組開始。把它指向一個<strong>空組</strong>，新帳號在被明確授予之前就什麼都沒有；保持「無預設模型組」，則沒有其他繫結的帳號反而是不受限制的。",
+    "groupsTitle": "模型組",
+    "groupCount_other": "{{count}} 個組",
+    "addGroup": "+ 新增模型組",
+    "groupsLead": "模型組是一份可重複使用的模型清單，直接從模型目錄中勾選。模型組<strong>與範圍無關</strong>——同一個組可以同時授予使用者、團隊和組織。<strong>空組是合法的</strong>：這正是表達「該範圍什麼都不授予」的方式。",
+    "noModels": "模型目錄為空，沒有可勾選的內容。請先在「模型目錄」中註冊模型。",
+    "noGroups": "還沒有模型組。先新增一個，然後勾選它應該授予的模型。",
+    "memberCount_other": "{{count}} 個模型",
+    "emptyGroup": "空組",
+    "isDefaultGroup": "預設模型組",
+    "boundCount_other": "{{count}} 處繫結",
+    "selectAll": "全選",
+    "selectNone": "全不選",
+    "rename": "重新命名",
+    "emptyGroupNote": "這個組<strong>不授予任何模型</strong>。所有授權都為空的呼叫方會被 403 拒絕，而這正是「新帳號在被指派之前什麼都沒有」所需要的。",
+    "promptGroupName": "新模型組的名稱（例如 starter）：",
+    "addGroupTitle": "新增模型組",
+    "groupNameLabel": "組名稱",
+    "promptRenameGroup": "重新命名模型組（所有繫結會自動改指到新名稱）：",
+    "renameGroupTitle": "重新命名模型組",
+    "groupExists": "模型組「{{name}}」已存在",
+    "confirmDeleteBoundTitle": "刪除模型組",
+    "confirmDeleteBound_other": "模型組「{{name}}」仍被 {{count}} 處繫結引用，這些繫結將被清除。確定刪除嗎？",
+    "usersTitle": "已登入過的使用者",
+    "userCount_other": "{{count}} 位使用者",
+    "usersLead": "所有至少登入過一次本控制台的使用者，按最近活動排序。在某一列選擇模型組即可繫結到該帳號——這就是<strong>使用者</strong>範圍，儲存後生效。",
+    "noUsers": "還沒有人登入過。有人登入後這份列表會自動填入。",
+    "noBinding": "不繫結",
+    "bindingExists": "「{{name}}」已經繫結過了",
+    "bindingCount_other": "{{count}} 處繫結",
+    "kind": {
+      "github": "GitHub",
+      "local": "本機"
+    },
+    "table": {
+      "login": "登入名",
+      "kind": "登入方式",
+      "firstSeen": "首次登入",
+      "lastSeen": "最近登入",
+      "signIns": "登入次數",
+      "group": "模型組",
+      "enterprise": "企業",
+      "keyPolicy": "金鑰策略"
+    },
+    "teams": {
+      "title": "團隊",
+      "addTitle": "新增團隊繫結",
+      "lead": "鍵的格式為 <code>enterprise-slug/team-id</code>，這是本機 GitHub 快取解析團隊所需的形式。設定了企業管理員權杖後，可以在<strong>存取控制 → Key 策略</strong>中查到團隊的數字 id。",
+      "noneDiscovered": "未發現任何企業團隊。請前往「存取控制 → 金鑰策略」重新整理結構。",
+      "search": "篩選團隊…",
+      "key": "企業 / 團隊 id",
+      "prompt": "團隊鍵，格式為 <企業 slug>/<團隊 id>，例如 your-enterprise/14501973：",
+      "badKey": "「{{name}}」不是合法的團隊鍵——請寫成 <企業 slug>/<團隊 id>"
+    },
+    "organizations": {
+      "title": "組織",
+      "addTitle": "新增組織繫結",
+      "lead": "鍵為<strong>組織登入名</strong>，與 GitHub URL 中出現的完全一致。成員身分優先由本機 GitHub 快取回答，快取不可用時才發起即時呼叫。",
+      "noneDiscovered": "未發現任何組織。請前往「存取控制 → 金鑰策略」重新整理結構。",
+      "search": "篩選組織…",
+      "key": "組織登入名",
+      "prompt": "組織登入名，例如 your-org："
+    },
+    "bindings": {
+      "addManually": "+ 手動輸入",
+      "loading": "正在讀取企業結構…",
+      "discoverFailed": "取得失敗",
+      "noStructure": "暫無可選結構",
+      "needToken": "在「存取控制 → 金鑰策略」中設定<strong>企業管理員權杖</strong>，團隊與組織便會列在這裡供選擇。在此之前仍可手動輸入鍵值。",
+      "noGroupsYet": "還沒有模型組。請先在上面新增一個，再在這裡授予。",
+      "noMatch": "沒有符合「{{query}}」的項目。請清除篩選條件，或手動輸入識別碼。",
+      "hidden": "顯示 {{total}} 項中的 {{shown}} 項 —— 已繫結與可繫結的範圍優先。",
+      "showAll": "顯示全部 {{total}} 項",
+      "partialBadge": "清單不完整",
+      "partial": "GitHub 僅回傳了 {{total}} 個組織中的 {{listed}} 個，因此此清單不完整。篩選只能找到已回傳的內容；未列出的組織仍可手動輸入。",
+      "gateOnBadge": "已受限",
+      "gateOn": "建立 API 金鑰<strong>受到限制</strong>，因此只有其成員可以建立金鑰的範圍才能被授予模型組——沒有金鑰就無法存取路由，對他們授權也不會帶來任何效果。",
+      "gateOffBadge": "未受限",
+      "gateOff": "建立 API 金鑰<strong>對所有可登入的使用者開放</strong>，因此所有已發現的範圍都可以被授予模型組。若要限制金鑰建立，請前往「存取控制 → 金鑰策略」。",
+      "mayCreateKeys": "可建立金鑰",
+      "mayNotCreateKeys": "不可建立金鑰",
+      "entOff": "該企業在金鑰策略中已關閉，其成員皆不可建立 API 金鑰。",
+      "orgNotAllowed": "依金鑰策略，該組織不允許建立 API 金鑰。",
+      "teamNotAllowed": "依金鑰策略，該團隊不允許建立 API 金鑰。",
+      "orphan": "未發現",
+      "orphanHint": "已在 config.yaml 中繫結，但不在已發現的結構裡——可能是手動輸入的，或來自目前權杖已無法讀取的企業。該繫結依然生效。"
     }
   },
   "shell": {
@@ -170,6 +285,45 @@
       "day_other": "{{date}}：{{count}} 次請求 · {{tokens}} token · {{errors}} 次失敗"
     }
   },
+  "models": {
+    "title": "生效的模型策略",
+    "count_other": "{{count}} 個模型",
+    "unrestricted": "完整目錄",
+    "restricted": "受限清單",
+    "listTitle": "你可以呼叫的模型",
+    "reason": {
+      "policy-disabled": "本路由器未啟用模型策略，因此<strong>模型目錄中的全部模型</strong>對你可用。",
+      "administrator": "你是<strong>管理員</strong>。模型策略是一種分發控制，而不是權限邊界，因此對你不生效，整個目錄保持可用。",
+      "no-binding": "模型策略已啟用，但<strong>沒有任何繫結指向你的帳號</strong>：既沒有預設模型組，也沒有涵蓋到你的團隊或組織授權。未繫結的帳號按不受限處理，而不是被鎖定，因此完整目錄可用。",
+      "union": "你的清單是所有授予你的模型組的<strong>聯集</strong>，來源包括你的帳號、你的團隊和你的組織。授權只會增加模型，永遠不會減少。",
+      "empty-group": "授予你的每個模型組都是<strong>空組</strong>，因此你目前沒有任何可用模型。在管理員為你的帳號、團隊或組織繫結一個非空模型組之前，請求都會以 <code>403</code> 被拒絕。"
+    },
+    "blockedBadge": "無可用模型",
+    "blockedNote": "請讓管理員在<strong>路由設定 → 模型策略</strong>中為你授予一個模型組。在此之前，所有經過路由的請求都會被拒絕。",
+    "emptyCatalog": "模型目錄為空。需要管理員先註冊至少一個模型。",
+    "defaultBadge": "預設",
+    "reasoningBadge": "推理",
+    "generalPurpose": "通用",
+    "sourceTitle": "你的清單來自哪裡",
+    "grantCount_other": "{{count}} 條授權",
+    "sourceLead": "這裡只列出<strong>真正對你生效</strong>的授權。你不屬於的團隊和組織不會在此揭露。",
+    "grantsNothing": "（空組）",
+    "scope": {
+      "default": "預設模型組",
+      "user": "帳號",
+      "team": "團隊",
+      "organization": "組織"
+    },
+    "table": {
+      "model": "模型",
+      "traits": "特性",
+      "description": "說明",
+      "scope": "範圍",
+      "name": "名稱",
+      "group": "模型組",
+      "grants": "授予的模型"
+    }
+  },
   "keys": {
     "created": {
       "title": "金鑰已建立",
@@ -209,7 +363,8 @@
       "disabled": "已停用",
       "enable": "啟用",
       "disable": "停用",
-      "confirmDelete": "刪除金鑰「{{name}}」？使用它的用戶端會立即失效。"
+      "confirmDelete": "刪除金鑰「{{name}}」？使用它的用戶端會立即失效。",
+      "confirmDeleteTitle": "刪除 API 金鑰"
     },
     "copyFailed": "無法寫入剪貼簿。瀏覽器只在 HTTPS（或 localhost）下允許此操作——請點選「顯示」後手動複製。",
     "access": {
@@ -451,9 +606,12 @@
       "one": "刪除這筆鏈路",
       "filtered": "刪除篩選出的鏈路",
       "confirmOne": "刪除鏈路 {{id}}？此操作無法復原。",
+      "confirmOneTitle": "刪除鏈路",
       "confirmMany": "刪除全部 {{count}} 筆符合 {{criteria}} 的鏈路？此操作無法復原。",
+      "confirmManyTitle": "刪除篩選出的鏈路",
       "criteriaDate": "日期 {{date}}",
       "criteriaUser": "使用者 {{user}}",
+      "doneTitle": "已刪除鏈路",
       "done_other": "已刪除 {{count}} 筆鏈路"
     },
     "json": {
@@ -532,6 +690,14 @@
   "config": {
     "loading": "載入設定中…",
     "saved": "已儲存並熱更新：config.yaml 已寫回（註解保留），連線憑證即時生效",
+    "step": "第 {{n}} / {{total}} 步 · {{label}}",
+    "nextStep": "下一步：{{label}} →",
+    "guide": {
+      "providers": "從這裡開始。<strong>後端連線</strong>就是一個後端位址加上它的金鑰——Azure AI Foundry，或任何相容 OpenAI 的端點。模型目錄中的每個模型都透過其中之一提供服務，因此在儲存至少一個連線之前，本頁其餘部分都無法生效。",
+      "models": "每一筆都是用戶端可以請求的模型名稱，並繫結到為它提供服務的連線。<strong>描述</strong>不是裝飾：AI 路由在選擇時讀取的正是它，描述含糊，路由也會含糊。",
+      "strategy": "如何選出實際服務的模型：依<strong>規則</strong>、依 <strong>AI</strong> 決策，或 <code>rule-then-ai</code>——先走規則，只有未命中的請求才會產生一次決策呼叫。",
+      "rules": "關鍵字與長度規則，<strong>依順序</strong>比對，第一個命中生效。僅在策略使用規則時才會用到。"
+    },
     "section": {
       "providers": {
         "label": "後端連線",
@@ -558,6 +724,7 @@
       "empty": "還沒有連線。新增一個後才能綁定模型。",
       "promptName": "新連線的名稱（models 透過該名稱引用，例如 openrouter）：",
       "promptRename": "重新命名連線：",
+      "promptLabel": "連線名稱",
       "alreadyExists": "連線「{{name}}」已存在",
       "stillReferenced": "連線「{{name}}」仍被模型 {{models}} 引用，請先在「模型目錄」裡改綁",
       "isDefaultConnection": "連線「{{name}}」是預設連線，請先把預設切到其他連線",
@@ -584,8 +751,9 @@
       "lead": "這裡的名稱就是用戶端在請求裡可以填的模型名稱。描述會作為候選目錄傳給 AI 決策器，寫清「適合什麼任務」能顯著提升路由準確度。連線在<providersLink>後端連線</providersLink>裡維護。",
       "empty": "還沒有模型。至少新增一個並設為預設模型。",
       "promptName": "新模型在本路由器中公開的名稱：",
+      "promptLabel": "模型名稱",
       "alreadyExists": "模型「{{name}}」已存在",
-      "removedWithRules_other": "已刪除模型「{{name}}」，同時移除了引用它的 {{count}} 條規則",
+      "removedWithRefs": "已刪除模型「{{name}}」。移除的規則：{{rules}} 條。更新的模型組：{{groups}} 個。",
       "defaultBadge": "預設",
       "reasoningBadge": "推理系",
       "connectionMissing": "— 連線不存在",
