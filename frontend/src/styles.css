@@ -425,6 +425,10 @@ a.icon-btn {
   width: 100%;
 }
 .split-drag > .panel { min-width: 0; }
+/* The traces table's columns are fixed-width, so it has a minimum size the split can go below.
+   It scrolls inside this wrapper rather than overflowing the panel -- the filter bar and the
+   footer stay put, which a scrollbar on the panel itself would not allow. */
+.table-scroll { overflow-x: auto; }
 .split-pane { min-width: 0; padding-left: 10px; }
 .splitter {
   /* Full-height hit area with a hairline down the middle: 6px is comfortable to grab, while a

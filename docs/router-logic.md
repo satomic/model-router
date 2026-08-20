@@ -1,5 +1,9 @@
 # Router logic
 
+This is the step-by-step walkthrough of the request path. For the wider picture — the components,
+the persistent state, and each routing strategy drawn as a decision tree — see
+[Architecture and data flow](architecture.md).
+
 Every request that reaches `chat_completions` in [app/main.py](../app/main.py) is handled in this
 order:
 

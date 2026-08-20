@@ -66,6 +66,8 @@ from `127.0.0.1`, which is why a container uses the local administrator instead.
 
 | Document | Contents |
 |---|---|
+| [Operations guide](docs/user-guide.md) | **the console, screen by screen**: what an administrator configures, then what a standard user does |
+| [Architecture and data flow](docs/architecture.md) | **start here** — diagrams of the components, the request path, and every routing strategy |
 | [Docker deployment](docs/docker.md) | **the recommended path** — the image, port mapping, the data volume, upgrades, reverse proxies |
 | [Getting started](docs/getting-started.md) | running from source, frontend development, console languages |
 | [Sign-in and authentication](docs/authentication.md) | the GitHub OAuth App, API keys, the local super administrator, the permission matrix |

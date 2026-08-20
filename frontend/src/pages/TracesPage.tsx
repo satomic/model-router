@@ -656,6 +656,10 @@ export default function TracesPage({ user }: { user: SessionUser }) {
               : t('traces.list.empty')}
         </div>
       ) : (
+        /* The columns have fixed widths, so a narrow split cannot shrink the table below their
+           sum. Without a scroll container of its own it would paint outside the panel and show
+           through the gaps between the detail pane's cards. */
+        <div className="table-scroll">
         <table>
           {/* Widths are content width plus the 24px of cell padding: 60px for an 8-character
               mono timestamp leaves 36px, which ellipsises every row to "09:0…". Prompt takes
@@ -726,6 +730,7 @@ export default function TracesPage({ user }: { user: SessionUser }) {
             ))}
           </tbody>
         </table>
+        </div>
       )}
 
       {list.length > 0 && (
