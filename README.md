@@ -1,10 +1,6 @@
 # Model Router
 
-An OpenAI-compatible model router: it accepts `/v1/chat/completions` requests and routes them to a
-suitable backend model, either by rules or by an AI decision (gpt-4.1). The backend is not limited to
-Azure AI Foundry — any OpenAI-compatible address and key can be configured, and each model can be
-bound to a different connection. It ships with an Azure-portal-styled React console: GitHub sign-in,
-API key management, usage statistics, full-chain traces, and configuration management.
+A model router (AI routing gateway): it accepts requests and routes them to a suitable backend model, either by rules or by an AI decision. The backend is not limited to Azure AI Foundry, and each model can be bound to a different connection. It ships with an Azure-portal-styled React console: GitHub sign-in, API key management, usage statistics, full-chain traces, and configuration management.
 
 ## Quick start (Docker)
 
