@@ -1,5 +1,7 @@
 # Operations guide
 
+**English** · [简体中文](user-guide-cn.md)
+
 A walkthrough of the console for the two people who use it: the **administrator** who sets the
 router up and keeps it running, and the **standard user** who signs in, gets a key and points a
 client at it. Every screenshot below is the real console, taken at version 1.0.0 with the language
