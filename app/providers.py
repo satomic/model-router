@@ -1,15 +1,21 @@
-"""Pool of OpenAI clients, reused per provider.
+"""Pool of upstream clients, reused per provider.
 
 Each model can bind its own provider (endpoint + key + protocol type), so the client
 can no longer be a singleton. Clients are cached by
 (base_url, api_key, api_type, api_version, kind); after a hot configuration reload,
 invalidate() closes the old connections.
+
+Three client shapes come out of here: AsyncAzureOpenAI, AsyncOpenAI, and the hand-rolled
+AnthropicClient. They are pooled together rather than in separate registries because the
+lifecycle is identical -- created on first use, closed on a config reload -- and every one of
+them exposes close().
 """
 import asyncio
 import logging
 
 from openai import AsyncAzureOpenAI, AsyncOpenAI
 
+from .anthropicapi import AnthropicClient
 from .config import Provider
 
 logger = logging.getLogger("mr")
@@ -20,16 +26,22 @@ _MAX_RETRIES = 1
 
 class ClientPool:
     def __init__(self) -> None:
-        self._clients: dict[tuple, AsyncOpenAI | AsyncAzureOpenAI] = {}
+        self._clients: dict[tuple, AsyncOpenAI | AsyncAzureOpenAI | AnthropicClient] = {}
         self._lock = asyncio.Lock()
 
-    def _build(self, provider: Provider, kind: str) -> AsyncOpenAI | AsyncAzureOpenAI:
+    def _build(
+        self, provider: Provider, kind: str
+    ) -> AsyncOpenAI | AsyncAzureOpenAI | AnthropicClient:
         if not provider.base_url:
             raise ValueError(
                 f"provider {provider.name!r} has no base_url; set it on the "
                 "\"Backend connections\" page"
             )
         base = provider.base_url.rstrip("/")
+        if provider.api_type == "anthropic":
+            # api_version carries the anthropic-version header for this connection type; see
+            # Provider.__init__ for why it does not inherit the Azure default.
+            return AnthropicClient(base, provider.api_key, provider.api_version)
         if provider.api_type == "azure":
             if kind == "responses":
                 # Some models (e.g. o3-pro) only support the Responses API, which lives
@@ -57,7 +69,11 @@ class ClientPool:
         )
 
     async def get(self, provider: Provider, kind: str = "chat"):
-        """Get (or create) the client for this provider. kind is one of {chat, responses}."""
+        """Get (or create) the client for this provider. kind is one of {chat, responses}.
+
+        An Anthropic connection ignores kind: the Messages API is one endpoint, and there is
+        no Responses-API equivalent to separate out.
+        """
         key = (*provider.cache_key, kind)
         client = self._clients.get(key)
         if client is not None:

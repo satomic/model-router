@@ -150,6 +150,7 @@
       "addTitle": "新增團隊繫結",
       "lead": "鍵的格式為 <code>enterprise-slug/team-id</code>，這是本機 GitHub 快取解析團隊所需的形式。設定了企業管理員權杖後，可以在<strong>存取控制 → Key 策略</strong>中查到團隊的數字 id。",
       "noneDiscovered": "未發現任何企業團隊。請前往「存取控制 → 金鑰策略」重新整理結構。",
+      "noneAllowed": "依金鑰策略，沒有任何企業團隊被允許建立 API 金鑰，因此沒有可授予模型組的對象。請在「存取控制 → 金鑰策略」中開放，或手動輸入繫結。",
       "search": "篩選團隊…",
       "key": "企業 / 團隊 id",
       "prompt": "團隊鍵，格式為 <企業 slug>/<團隊 id>，例如 your-enterprise/14501973：",
@@ -160,6 +161,7 @@
       "addTitle": "新增組織繫結",
       "lead": "鍵為<strong>組織登入名</strong>，與 GitHub URL 中出現的完全一致。成員身分優先由本機 GitHub 快取回答，快取不可用時才發起即時呼叫。",
       "noneDiscovered": "未發現任何組織。請前往「存取控制 → 金鑰策略」重新整理結構。",
+      "noneAllowed": "依金鑰策略，沒有任何組織被允許建立 API 金鑰，因此沒有可授予模型組的對象。請在「存取控制 → 金鑰策略」中開放，或手動輸入繫結。",
       "search": "篩選組織…",
       "key": "組織登入名",
       "prompt": "組織登入名，例如 your-org："
@@ -177,9 +179,11 @@
       "partialBadge": "清單不完整",
       "partial": "GitHub 僅回傳了 {{total}} 個組織中的 {{listed}} 個，因此此清單不完整。篩選只能找到已回傳的內容；未列出的組織仍可手動輸入。",
       "gateOnBadge": "已受限",
-      "gateOn": "建立 API 金鑰<strong>受到限制</strong>，因此只有其成員可以建立金鑰的範圍才能被授予模型組——沒有金鑰就無法存取路由，對他們授權也不會帶來任何效果。",
+      "gateOn": "建立 API 金鑰<strong>受到限制</strong>，因此此表只列出在「存取控制 → 金鑰策略」中被允許的範圍。其他範圍的成員無法建立金鑰，也就無法存取路由，在此為其授予模型組不會有任何效果。",
       "gateOffBadge": "未受限",
       "gateOff": "建立 API 金鑰<strong>對所有可登入的使用者開放</strong>，因此所有已發現的範圍都可以被授予模型組。若要限制金鑰建立，請前往「存取控制 → 金鑰策略」。",
+      "excludedBadge": "已依策略篩選",
+      "excluded": "未列出：已發現的 {{total}} 個範圍中有 {{hidden}} 個未被金鑰策略允許。若要在此繫結，請先在「存取控制 → 金鑰策略」中開放。",
       "mayCreateKeys": "可建立金鑰",
       "mayNotCreateKeys": "不可建立金鑰",
       "entOff": "該企業在金鑰策略中已關閉，其成員皆不可建立 API 金鑰。",
@@ -328,11 +332,26 @@
     "created": {
       "title": "金鑰已建立",
       "readyBadge": "可立即使用",
-      "note": "現在就複製到你的用戶端設定中；之後也可以隨時在下方的金鑰清單中檢視——這個金鑰對你始終可見。",
+      "note": "現在就複製到你的用戶端設定中；之後也可以隨時在下方的金鑰清單中檢視——這個金鑰對你始終可見。"
+    },
+    "cli": {
+      "show": "使用範例",
+      "close": "收起範例",
+      "rowTitle": "{{name}} 的命令列用法",
       "byokTitle": "在 GitHub Copilot 中透過 BYOK 使用",
+      "protocolHint": "同一組密鑰支援兩種協定，路由器會自動轉換",
+      "protocol": {
+        "openai": "OpenAI 相容",
+        "anthropic": "Anthropic 相容"
+      },
       "modelHint": "任意在「路由設定」中登記的模型名稱",
       "curlComment": "命令列驗證",
-      "attribution": "所有用這個金鑰發出的請求都會歸屬到 <code>{{login}}</code>，trace 中的 <code>user_id</code> 即該 GitHub 帳號。"
+      "modelIgnored": "model 欄位會被忽略：模型由路由器決定，並記錄在呼叫軌跡中",
+      "copyCommand": "複製指令",
+      "attribution": "所有用這個金鑰發出的請求都會歸屬到 <code>{{login}}</code>，trace 中的 <code>user_id</code> 即該 GitHub 帳號。",
+      "placeholderBadge": "佔位符",
+      "unavailableNote": "這個金鑰的明文沒有以可讀形式保存，因此範例中以 <code>{{placeholder}}</code> 佔位。請填入建立時保存下來的值，或重新建立一個可讀的金鑰。",
+      "otherUserNote": "這個金鑰屬於 <code>{{login}}</code>，其值只會顯示給擁有者，因此範例中以 <code>{{placeholder}}</code> 佔位。"
     },
     "create": {
       "title": "新建金鑰",
@@ -364,7 +383,8 @@
       "enable": "啟用",
       "disable": "停用",
       "confirmDelete": "刪除金鑰「{{name}}」？使用它的用戶端會立即失效。",
-      "confirmDeleteTitle": "刪除 API 金鑰"
+      "confirmDeleteTitle": "刪除 API 金鑰",
+      "scope": "範圍"
     },
     "copyFailed": "無法寫入剪貼簿。瀏覽器只在 HTTPS（或 localhost）下允許此操作——請點選「顯示」後手動複製。",
     "access": {
@@ -401,6 +421,36 @@
       "scannedTruncated": "（探測 {{count}} 個，已截斷）",
       "undecidable": "無法判定",
       "undecidableHint": "GitHub 未能給出答案，以未通過處理"
+    },
+    "scope": {
+      "title": "範圍",
+      "hint": "此密鑰可存取的範圍，且不會超過你本人的可用範圍，只能縮小",
+      "kind": {
+        "all": "你的全部模型",
+        "api_types": "依介面類型",
+        "models": "指定模型"
+      },
+      "kindHint": {
+        "all": "模型政策允許你使用的全部模型",
+        "api_types": "所選介面類型下的全部模型，日後新增的模型也自動包含",
+        "models": "從你自己的可用清單中逐一勾選"
+      },
+      "typeCovers_other": "涵蓋你的 {{count}} 個模型",
+      "typeCoversNone": "你的模型中尚無此介面類型",
+      "pickAType": "請至少選擇一種介面類型。",
+      "pickAModel": "請至少選擇一個模型。",
+      "noModels": "目前沒有可供你使用的模型。",
+      "selectAll": "全選",
+      "clear": "清除",
+      "edit": "範圍",
+      "close": "收合",
+      "editTitle": "{{name}} 的範圍",
+      "save": "儲存範圍",
+      "cancel": "取消",
+      "summary": {
+        "all": "全部模型",
+        "models_other": "{{count}} 個模型"
+      }
     }
   },
   "access": {
@@ -693,7 +743,7 @@
     "step": "第 {{n}} / {{total}} 步 · {{label}}",
     "nextStep": "下一步：{{label}} →",
     "guide": {
-      "providers": "從這裡開始。<strong>後端連線</strong>就是一個後端位址加上它的金鑰——Azure AI Foundry，或任何相容 OpenAI 的端點。模型目錄中的每個模型都透過其中之一提供服務，因此在儲存至少一個連線之前，本頁其餘部分都無法生效。",
+      "providers": "從這裡開始。一個<strong>後端連線</strong>就是一個後端位址加上它的密鑰：可以是 Azure AI Foundry，也可以是 OpenAI 相容或 Anthropic 相容的服務位址。模型目錄中的每個模型都透過其中之一提供服務，因此在儲存至少一個連線之前，本頁其他部分都無法生效。",
       "models": "每一筆都是用戶端可以請求的模型名稱，並繫結到為它提供服務的連線。<strong>描述</strong>不是裝飾：AI 路由在選擇時讀取的正是它，描述含糊，路由也會含糊。",
       "strategy": "如何選出實際服務的模型：依<strong>規則</strong>、依 <strong>AI</strong> 決策，或 <code>rule-then-ai</code>——先走規則，只有未命中的請求才會產生一次決策呼叫。",
       "rules": "關鍵字與長度規則，<strong>依順序</strong>比對，第一個命中生效。僅在策略使用規則時才會用到。"
@@ -720,7 +770,7 @@
       "title": "後端連線（Providers）",
       "count_other": "{{count}} 個",
       "add": "+ 新增連線",
-      "lead": "每個連線是一組「網址 + 金鑰」。模型預設繼承標記為「預設」的連線，也可以各自綁定不同連線——既可以是不同環境的 Azure AI Foundry，也可以是任何 OpenAI 相容服務。金鑰保存在伺服器端 <code>config.yaml</code>（該檔案已被 <code>.gitignore</code> 忽略）。",
+      "lead": "一個後端連線就是一組「位址 + 密鑰」。模型預設繼承標記為 default 的連線，也可以各自綁定自己的連線：可以是另一個環境中的 Azure AI Foundry，也可以是 OpenAI 相容或 Anthropic 相容的服務。密鑰儲存在伺服器上的 <code>config.yaml</code> 中（該檔案已被 <code>.gitignore</code> 忽略）。",
       "empty": "還沒有連線。新增一個後才能綁定模型。",
       "promptName": "新連線的名稱（models 透過該名稱引用，例如 openrouter）：",
       "promptRename": "重新命名連線：",
@@ -735,14 +785,28 @@
       "setDefault": "設為預設",
       "rename": "重新命名",
       "baseUrl": "網址（base_url）",
-      "baseUrlHint": "Azure 填 https://xxx.openai.azure.com/；OpenAI 相容填到 /v1",
+      "baseUrlHint": {
+        "azure": "資源根位址，例如 https://xxx.openai.azure.com/",
+        "openai": "需要一直寫到 /v1",
+        "anthropic": "提供 /v1/messages 的主機位址"
+      },
       "apiKey": "金鑰（api_key）",
       "apiKeyHint": "儲存後寫入 config.yaml",
       "apiKeyPlaceholder": "留空則回落到 .env 的 AZURE_OPENAI_API_KEY",
       "apiType": "介面類型（api_type）",
-      "apiTypeAzureOption": "azure — Azure OpenAI / AI Foundry",
-      "apiTypeOpenAIOption": "openai — OpenAI 相容服務",
-      "apiVersionHint": "僅 azure 需要"
+      "apiVersionHint": "僅 azure 需要",
+      "typeAnthropic": "Anthropic 相容",
+      "apiTypeOption": {
+        "azure": "azure · Azure OpenAI / AI Foundry",
+        "openai": "openai · OpenAI 相容服務",
+        "anthropic": "anthropic · Anthropic 相容服務（Messages API）"
+      },
+      "anthropicVersionHint": "作為 anthropic-version 標頭送出，留空則使用 2023-06-01",
+      "baseUrlPlaceholder": {
+        "azure": "https://your-resource.openai.azure.com/",
+        "openai": "https://api.example.com/v1",
+        "anthropic": "https://api.anthropic.com"
+      }
     },
     "models": {
       "title": "模型目錄",

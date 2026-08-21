@@ -152,10 +152,17 @@ export interface ModelMeta {
   model_name?: string
 }
 
+/** The connection types a provider can declare, in the order the console offers them. */
+export const API_TYPES = ['azure', 'openai', 'anthropic'] as const
+export type ApiType = (typeof API_TYPES)[number]
+
 export interface ProviderMeta {
   base_url?: string
   api_key?: string
-  api_type?: 'azure' | 'openai'
+  /** Which protocol the connection speaks. azure and openai are both OpenAI chat
+   *  completions and differ only in how the URL and key are assembled; anthropic is the
+   *  Messages protocol, which the router translates for. */
+  api_type?: ApiType
   api_version?: string
 }
 
@@ -275,6 +282,13 @@ export interface AuthStatus {
   local_admin_username: string
 }
 
+/** What one key may reach, inside what its owner may reach. 'all' is the default; the other
+ *  two subtract, never add (see app/keyscope.py). */
+export type KeyScope =
+  | { kind: 'all' }
+  | { kind: 'api_types'; api_types: ApiType[] }
+  | { kind: 'models'; models: string[] }
+
 export interface ApiKey {
   id: string
   name: string
@@ -288,6 +302,9 @@ export interface ApiKey {
    *  listing never carries it -- and absent on keys created before they became viewable, of
    *  which only the hash was ever stored. */
   key?: string
+  /** Absent on keys created before scopes existed, which are unrestricted; treat a missing
+   *  value as { kind: 'all' }. */
+  scope?: KeyScope
 }
 
 export interface UsageReport {
@@ -549,12 +566,21 @@ export async function getKeys(all = false): Promise<ApiKey[]> {
   return json<ApiKey[]>(`/v1/keys${all ? '?all=1' : ''}`)
 }
 
-export async function createKey(name: string): Promise<ApiKey> {
-  return json<ApiKey>('/v1/keys', jsonBody('POST', { name }))
+export async function createKey(name: string, scope?: KeyScope): Promise<ApiKey> {
+  return json<ApiKey>('/v1/keys', jsonBody('POST', { name, scope }))
+}
+
+/** Field-wise patch: the server applies only the keys present, so changing a scope cannot
+ *  disturb the disabled flag and the reverse. */
+export async function patchKey(
+  id: string,
+  patch: { name?: string; disabled?: boolean; scope?: KeyScope },
+): Promise<ApiKey> {
+  return json<ApiKey>(`/v1/keys/${id}`, jsonBody('PATCH', patch))
 }
 
 export async function setKeyDisabled(id: string, disabled: boolean): Promise<ApiKey> {
-  return json<ApiKey>(`/v1/keys/${id}`, jsonBody('PATCH', { disabled }))
+  return patchKey(id, { disabled })
 }
 
 export async function deleteKey(id: string): Promise<void> {
@@ -715,7 +741,12 @@ export interface AvailableModels {
   contributions: PolicyContribution[]
   /** policy-disabled | administrator | no-binding | union | empty-group */
   reason: string
-  catalog: Record<string, { description: string; reasoning: boolean; default: boolean }>
+  /** api_type is the connection type behind each model, which the key scope editor needs to
+   *  say what "every model of this type" covers; empty when the connection is gone. */
+  catalog: Record<
+    string,
+    { description: string; reasoning: boolean; default: boolean; api_type: string }
+  >
   /** Which model an unrouted request would land on, already narrowed to what the caller may use. */
   default_model: string | null
 }

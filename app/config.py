@@ -136,7 +136,14 @@ def ensure_config_file() -> bool:
     return True
 
 DEFAULT_PROVIDER_NAME = "foundry"
-_API_TYPES = ("azure", "openai")
+# The wire protocol a connection speaks. "azure" and "openai" are both the OpenAI chat
+# completions protocol and differ only in how the URL and the key are assembled; "anthropic"
+# is the Anthropic Messages protocol, which is a different request and response shape
+# altogether -- see app/wire.py for the translation.
+_API_TYPES = ("azure", "openai", "anthropic")
+# Sent as the `anthropic-version` header. A connection may override it through api_version,
+# which for an Anthropic connection means that header rather than Azure's ?api-version=.
+ANTHROPIC_VERSION = "2023-06-01"
 
 # The scopes a model policy can bind a model group to, in the order the resolver reports them.
 # "user" is the most specific and "organization" the least, but the order carries no precedence:
@@ -172,11 +179,27 @@ class Provider:
         self.base_url: str = (raw.get("base_url") or "").strip()
         self.api_key: str = (raw.get("api_key") or "").strip()
         self.api_type: str = raw.get("api_type") or "azure"
-        self.api_version: str = raw.get("api_version") or ENV_API_VERSION
+        # For an Anthropic connection this is the `anthropic-version` header, so it must not
+        # inherit the Azure default: an Azure api-version string in that header is rejected
+        # upstream.
+        self.api_version: str = raw.get("api_version") or (
+            ANTHROPIC_VERSION if self.api_type == "anthropic" else ENV_API_VERSION
+        )
 
     @property
     def cache_key(self) -> tuple:
         return (self.base_url, self.api_key, self.api_type, self.api_version)
+
+    @property
+    def protocol(self) -> str:
+        """Which wire protocol this connection speaks: "anthropic" or "openai".
+
+        Everything above this line treats azure and openai as one protocol, because they are:
+        the difference is confined to how providers.py builds the client. The protocol is what
+        decides whether a request needs translating, so it is asked for by name rather than
+        re-derived from api_type at each call site.
+        """
+        return "anthropic" if self.api_type == "anthropic" else "openai"
 
     def public_dict(self) -> dict:
         """Representation without the plaintext key, for trace records."""
@@ -461,7 +484,8 @@ def validate_raw(raw: dict) -> list[str]:
                 api_type = meta.get("api_type") or "azure"
                 if api_type not in _API_TYPES:
                     errors.append(
-                        f"provider {name!r}: api_type must be 'azure' or 'openai'"
+                        f"provider {name!r}: api_type must be one of "
+                        + ", ".join(repr(t) for t in _API_TYPES)
                     )
             default_provider = raw.get("default_provider")
             if default_provider and default_provider not in providers:

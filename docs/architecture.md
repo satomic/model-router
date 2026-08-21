@@ -17,20 +17,23 @@ this document is the map, that one is the walkthrough.
 
 ## 1. The system at a glance
 
-One FastAPI process. It serves the built React console from `/`, an OpenAI-compatible API under
-`/v1`, and keeps every byte of its own state in a single `data/` directory. Nothing else is
-required to run it: no database, no cache server, no queue.
+One FastAPI process. It serves the built React console from `/`, an API under `/v1` that speaks
+both the OpenAI chat-completions protocol and the Anthropic Messages protocol, and keeps every byte
+of its own state in a single `data/` directory. Nothing else is required to run it: no database, no
+cache server, no queue.
 
 ```mermaid
 flowchart LR
     subgraph clients["Clients"]
         copilot["GitHub Copilot BYOK<br/>and any OpenAI-compatible client"]
+        anth["Claude Code<br/>and any Anthropic-compatible client"]
         console["Administrators and users<br/>in a browser"]
     end
 
     subgraph process["Model Router process (FastAPI, app/)"]
         spa["React console served from /<br/>frontend/dist"]
-        api["OpenAI-compatible API<br/>/v1/chat/completions, /v1/models"]
+        api["Dual-protocol API<br/>/v1/chat/completions, /v1/messages, /v1/models"]
+        conv["wire.py<br/>OpenAI to Messages and back,<br/>streaming included"]
         mgmt["Management API<br/>/v1/config, /v1/keys, /v1/traces, /v1/usage"]
 
         subgraph decide["Decision layer"]
@@ -58,13 +61,16 @@ flowchart LR
 
     subgraph upstream["External services"]
         foundry["Azure AI Foundry<br/>and any OpenAI-compatible endpoint"]
+        claude["Anthropic, Databricks Claude,<br/>and any Messages-API endpoint"]
         github["github.com<br/>OAuth, REST, GraphQL, releases"]
     end
 
     copilot -->|"Bearer mr_..."| api
+    anth -->|"x-api-key: mr_..."| api
     console -->|"mr_session cookie"| spa
     console --> mgmt
 
+    api --> conv
     api --> keys
     api --> mpol
     api --> router
@@ -87,7 +93,9 @@ flowchart LR
     cfgmod --> files
     tracemod --> files
     rel --> files
+    conv --> pool
     pool --> foundry
+    pool --> claude
 ```
 
 Two properties of this shape are deliberate:
@@ -96,6 +104,10 @@ Two properties of this shape are deliberate:
   `(base_url, api_key, api_type, api_version, kind)`, so one router can serve models that live on
   different endpoints with different keys, and the AI decision model can have a connection of its
   own. See [Backend connections](providers.md).
+- **The client protocol and the backend protocol are independent.** Everything between the two edges
+  works in one canonical form, OpenAI chat completions, and `wire.py` converts at the edges only. So
+  an Anthropic-style client can be answered by an Azure deployment and an OpenAI-style client by a
+  Claude endpoint, and a new routing feature is written once rather than twice.
 - **GitHub is never on the critical path of a model call when it can be avoided.**
   `ghcache.py` answers membership questions from a locally cached member list and only falls
   through to a live probe when that list is missing, stale or truncated. See
@@ -103,14 +115,16 @@ Two properties of this shape are deliberate:
 
 ## 2. The request path
 
-What one `POST /v1/chat/completions` does, in order. `interaction-sticky` and `session-sticky` are
-the two paths that skip the routing decision entirely.
+What one call does, in order. Both entry points funnel into the same path, so this sequence
+describes `POST /v1/messages` too; only the two conversion steps differ.
+`interaction-sticky` and `session-sticky` are the two paths that skip the routing decision entirely.
 
 ```mermaid
 sequenceDiagram
     autonumber
     participant C as Client
-    participant API as chat_completions<br/>(main.py)
+    participant API as chat_completions /<br/>anthropic_messages (main.py)
+    participant W as wire.py
     participant Auth as authstore.py
     participant MP as modelpolicy.py
     participant S as sessions.py
@@ -120,7 +134,11 @@ sequenceDiagram
     participant U as Upstream model
     participant T as traces.py
 
-    C->>API: POST /v1/chat/completions<br/>Authorization: Bearer mr_...
+    C->>API: POST /v1/chat/completions (Bearer mr_...)<br/>or POST /v1/messages (x-api-key: mr_...)
+    opt the request arrived on /v1/messages
+        API->>W: anthropic_request_to_openai(body)
+        Note over W: converted to the canonical form,<br/>so everything below is protocol-agnostic
+    end
     API->>Auth: look up the API key
     Auth-->>API: the key's owner, or 401
     Note over API: user_id is the key owner.<br/>Copilot BYOK sends no identity,<br/>so it cannot be forged by the client.
@@ -151,14 +169,22 @@ sequenceDiagram
 
     API->>API: resolve the provider, adapt the parameters<br/>reasoning models: max_completion_tokens, no sampling
     API->>P: client for the model's provider
-    alt api = responses
+    alt the provider is anthropic
+        API->>W: openai_request_to_anthropic
+        P->>U: Messages API call, streamed or not
+        U-->>P: a Messages response
+        P->>W: anthropic_response_to_openai
+    else api = responses
         P->>U: Responses API call
         U-->>P: a response, converted back to the chat.completion shape
     else api = chat
         P->>U: Chat Completions call, streamed or not
         U-->>P: the completion
     end
-    P-->>API: the upstream result
+    P-->>API: the upstream result, in the canonical form
+    opt the request arrived on /v1/messages
+        API->>W: convert the reply back to a Messages response
+    end
     API->>T: record this turn, folded into its interaction's record
     API-->>C: the completion, plus x-trace-id,<br/>x-routed-model, x-router-reason
 ```
@@ -250,7 +276,7 @@ A rule that matched on `min_prompt_chars` wins exactly as a keyword rule does. U
 `rule-then-ai` this matters: a rule is the operator stating an explicit intent, and an explicit
 intent is not handed to a classifier that cannot legitimately overrule it.
 
-What the decision model is and is not sent — the reason an AI decision stays cheap:
+What the decision model is and is not sent, which is the reason an AI decision stays cheap:
 
 ```mermaid
 flowchart LR
@@ -355,7 +381,7 @@ flowchart LR
     allow --> issued[("a key is issued<br/>api_keys.json")]
 ```
 
-The gate is **fail-closed** — withholding one key is better than issuing one wrongly — while the
+The gate is **fail-closed**, because withholding one key is better than issuing one wrongly, while the
 model policy of section 4 is fail-open per scope. The difference is deliberate: one is a privilege
 boundary, the other is a distribution control. That is also why "enabled but unable to verify"
 denies: a policy switched on must not leave the deployment less protected than switching it off.
@@ -377,7 +403,7 @@ flowchart LR
 
 A truncated or errored member list is never authoritative: "not in the pages I could read" is not
 "not a member", and treating it as one would deny legitimate users. Short negative TTLs are the
-other half of that — a user added to an organization gets in quickly instead of being re-probed on
+other half of that: a user added to an organization gets in quickly instead of being re-probed on
 every request until a full refresh happens.
 
 ## 6. Persistent state and background tasks
@@ -421,7 +447,7 @@ flowchart TB
     reload --> inmem
 ```
 
-Both loops are wrapped per iteration, so a GitHub outage cannot kill either task — a background
+Both loops are wrapped per iteration, so a GitHub outage cannot kill either task, and a background
 task that dies silently is worse than no background task, because the cache would simply stop
 ageing forward and nobody would be told. Neither is required for routing: a router that cannot
 reach github.com keeps serving requests, keeps the last cached answers, and shows no update chip.

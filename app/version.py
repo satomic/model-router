@@ -5,7 +5,7 @@ Kept in its own module so the version string has exactly one home: the console r
 constant in main.py would have made every one of those an import of the whole application.
 """
 
-VERSION = "1.0.0"
+VERSION = "1.1.0"
 
 REPO_URL = "https://github.com/satomic/model-router"
 ISSUES_URL = "https://github.com/satomic/model-router/issues/new"

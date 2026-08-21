@@ -30,9 +30,10 @@ interface Candidate {
  *
  *  The filter is the point rather than a nicety: a model group bound to a scope whose members
  *  cannot create a key grants nothing, because without a key they never reach
- *  /v1/chat/completions. Ineligible scopes are still **listed**, marked with the reason, instead of
- *  being hidden -- an administrator looking for a team that is not offered needs to see that it is
- *  the key policy withholding it, not a discovery failure.
+ *  /v1/chat/completions. So `eligible` is what decides whether the table offers a row at all; the
+ *  caller drops the ineligible ones and says how many it dropped. The reason is still recorded per
+ *  candidate, because a scope that is **already bound** survives that filter and has to explain
+ *  itself.
  *
  *  With the key policy switched off every discovered scope is eligible: the gate is open, so
  *  anybody who can sign in can create a key.
@@ -127,6 +128,19 @@ export default function ScopeBindings({
   )
   const known = new Set(all.map((c) => c.key))
 
+  // Only what the key policy allows is offered. An **already bound** scope stays in the table even
+  // once it has become ineligible: the backend still enforces that binding, and a row that vanishes
+  // from the page owning it leaves an administrator no way to clear it.
+  const offered = useMemo(
+    () => all.filter((c) => c.eligible || bindings[c.key]),
+    // Deliberately not keyed on `bindings`, for the same reason the sort below is not: rows must not
+    // appear and disappear under the cursor mid-edit. Nothing is missed by it either, since a row
+    // that can be newly bound was eligible already and is therefore in the list.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [all],
+  )
+  const excluded = all.length - offered.length
+
   // Ordered so the cap below never hides anything an administrator is looking for: what is already
   // bound first (those rows are the current configuration and must always be visible), then what
   // can be bound, then the rest. Within each band, alphabetical -- a discovery order nobody chose
@@ -134,13 +148,13 @@ export default function ScopeBindings({
   const needle = query.trim().toLowerCase()
   const candidates = useMemo(() => {
     const matched = needle
-      ? all.filter(
+      ? offered.filter(
           (c) =>
             c.key.toLowerCase().includes(needle) ||
             c.name.toLowerCase().includes(needle) ||
             c.enterprise.toLowerCase().includes(needle),
         )
-      : all
+      : offered
     const rank = (c: Candidate) => (bindings[c.key] ? 0 : c.eligible ? 1 : 2)
     return [...matched].sort(
       (a, b) => rank(a) - rank(b) || a.enterprise.localeCompare(b.enterprise) ||
@@ -149,7 +163,7 @@ export default function ScopeBindings({
     // `bindings` is read through the ranking, and a re-sort on every keystroke of a group select
     // would make rows jump under the cursor -- so the sort deliberately does not depend on it.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [all, needle])
+  }, [offered, needle])
 
   const shown = showAll ? candidates : candidates.slice(0, VISIBLE)
   const hidden = candidates.length - shown.length
@@ -218,7 +232,7 @@ export default function ScopeBindings({
         <span className="badge">{t('policy.bindingCount', { count: boundCount })}</span>
         <span className="spacer" />
         {/* Only once the list is long enough to need it: a search box over three rows is clutter. */}
-        {all.length > VISIBLE && (
+        {offered.length > VISIBLE && (
           <input
             type="text"
             className="head-search"
@@ -254,6 +268,13 @@ export default function ScopeBindings({
           )}
         </p>
 
+        {excluded > 0 && (
+          <p className="panel-note">
+            <span className="badge">{t('policy.bindings.excludedBadge')}</span>{' '}
+            {t('policy.bindings.excluded', { hidden: excluded, total: all.length })}
+          </p>
+        )}
+
         {partial && (
           <p className="panel-note">
             <span className="badge warn">{t('policy.bindings.partialBadge')}</span>{' '}
@@ -279,6 +300,8 @@ export default function ScopeBindings({
           <div className="empty">{t('policy.bindings.loading')}</div>
         ) : !all.length ? (
           <div className="empty">{t(`policy.${scope}.noneDiscovered`)}</div>
+        ) : !offered.length ? (
+          <div className="empty">{t(`policy.${scope}.noneAllowed`)}</div>
         ) : !candidates.length ? (
           /* A search that matched nothing is a different state from "nothing was discovered", and
              saying the latter here would send an administrator off to debug the token. */

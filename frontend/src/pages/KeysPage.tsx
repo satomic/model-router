@@ -1,16 +1,26 @@
-import { useCallback, useEffect, useState } from 'react'
+import { Fragment, useCallback, useEffect, useState } from 'react'
 import { Trans, useTranslation } from 'react-i18next'
 import {
   createKey,
   deleteKey,
+  getAvailableModels,
   getKeys,
   getMyAccess,
+  patchKey,
   setKeyDisabled,
   type AccessVerdict,
   type ApiKey,
+  type KeyScope,
   type SessionUser,
 } from '../api'
+import { copyText } from '../clipboard'
+import CliExamples from '../components/CliExamples'
 import { useDialogs } from '../components/Dialog'
+import ScopeEditor, {
+  scopeIsComplete,
+  sameScope,
+  type ScopeModel,
+} from '../components/ScopeEditor'
 import { formatDateTime } from '../i18n/format'
 
 /** Unix seconds -> a locale-formatted timestamp, or an em dash when never used. */
@@ -24,9 +34,10 @@ const mask = (prefix: string) => `${prefix}${'•'.repeat(12)}`
  * One clipboard helper for the whole page.
  *
  * `copiedId` rather than a boolean, so the confirmation appears on the row that was actually
- * copied. The Clipboard API rejects outright on a non-secure origin (plain http on anything
- * but localhost), which is a realistic way to run this console -- so the failure is surfaced
- * instead of leaving a button that silently does nothing.
+ * copied. The Clipboard API is absent on a non-secure origin (plain http on anything but
+ * localhost), which is a realistic way to run this console, so the actual copying goes through
+ * src/clipboard.ts and its textarea fallback, and a genuine refusal is surfaced instead of
+ * leaving a button that does nothing.
  */
 function useCopy(): {
   copiedId: string | null
@@ -45,10 +56,12 @@ function useCopy(): {
 
   const copy = (id: string, text: string) => {
     setCopyError('')
-    navigator.clipboard
-      ?.writeText(text)
-      .then(() => setCopiedId(id))
-      .catch(() => setCopyError(t('keys.copyFailed')))
+    // Through the shared helper rather than navigator.clipboard directly: that object does not
+    // exist at all on a non-secure origin, so reading .writeText off it threw inside this
+    // handler and the button did nothing, silently, with no error to show.
+    void copyText(text).then((ok) =>
+      ok ? setCopiedId(id) : setCopyError(t('keys.copyFailed')),
+    )
   }
   return { copiedId, copyError, copy }
 }
@@ -76,6 +89,20 @@ export default function KeysPage({ user }: { user: SessionUser }) {
   const [access, setAccess] = useState<AccessVerdict | null>(null)
   const [accessError, setAccessError] = useState('')
   const [showDetail, setShowDetail] = useState(false)
+  /** The scope the create form will apply. Defaults to unrestricted, which is what a key
+   *  created before scopes existed also means. */
+  const [scope, setScope] = useState<KeyScope>({ kind: 'all' })
+  /** The caller's own model list, for the "specific models" kind. Only the owner's models are
+   *  offered: a scope can never widen, so anything else would be a field that cannot work. */
+  const [myModels, setMyModels] = useState<ScopeModel[]>([])
+  /** Which row is being edited, and the draft for it. One at a time, so an edit cannot be
+   *  half-applied across two rows. */
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [draft, setDraft] = useState<KeyScope>({ kind: 'all' })
+  const [savingScope, setSavingScope] = useState(false)
+  /** Which row has its command-line examples open. Independent of `editingId`: reading the
+   *  snippet while narrowing the scope is a reasonable thing to be doing. */
+  const [examplesId, setExamplesId] = useState<string | null>(null)
 
   const load = useCallback(
     () =>
@@ -105,13 +132,26 @@ export default function KeysPage({ user }: { user: SessionUser }) {
     loadAccess()
   }, [loadAccess])
 
+  useEffect(() => {
+    // A failure here is deliberately not surfaced: the model list only feeds the optional
+    // "specific models" kind, and the two other kinds stay usable without it.
+    getAvailableModels()
+      .then((r) =>
+        setMyModels(
+          r.models.map((m) => ({ name: m, api_type: r.catalog[m]?.api_type ?? '' })),
+        ),
+      )
+      .catch(() => setMyModels([]))
+  }, [])
+
   const create = async () => {
     setBusy(true)
     setError('')
     try {
-      const created = await createKey(name.trim() || 'default')
+      const created = await createKey(name.trim() || 'default', scope)
       setFresh(created)
       setName('')
+      setScope({ kind: 'all' })
       await load()
     } catch (e) {
       setError(String(e))
@@ -123,7 +163,20 @@ export default function KeysPage({ user }: { user: SessionUser }) {
     }
   }
 
-  const origin = window.location.origin
+  const saveScope = async (id: string) => {
+    setSavingScope(true)
+    setError('')
+    try {
+      await patchKey(id, { scope: draft })
+      setEditingId(null)
+      await load()
+    } catch (e) {
+      setError(String(e))
+    } finally {
+      setSavingScope(false)
+    }
+  }
+
   /** The button is not disabled while the verdict is still loading: the backend enforces
    *  the rule anyway, so one slow request should not lock up the UI. */
   const blocked = access !== null && !access.allowed
@@ -160,23 +213,13 @@ export default function KeysPage({ user }: { user: SessionUser }) {
               </button>
             </div>
             <div style={{ marginTop: 14 }}>
-              <div className="field-name">{t('keys.created.byokTitle')}</div>
-              <pre className="code">{`Base URL : ${origin}/v1
-API Key  : ${fresh.key}
-Model    : ${t('keys.created.modelHint')}
-
-# ${t('keys.created.curlComment')}
-curl ${origin}/v1/chat/completions \\
-  -H "Authorization: Bearer ${fresh.key}" \\
-  -H "Content-Type: application/json" \\
-  -d '{"messages":[{"role":"user","content":"hello"}]}'`}</pre>
-              <p className="panel-note" style={{ marginTop: 10, marginBottom: 0 }}>
-                <Trans
-                  i18nKey="keys.created.attribution"
-                  values={{ login: fresh.user_login }}
-                  components={{ code: <code /> }}
-                />
-              </p>
+              <CliExamples
+                keyValue={fresh.key}
+                login={fresh.user_login}
+                copy={copy}
+                copiedId={copiedId}
+                copyId="cli-fresh"
+              />
             </div>
           </div>
         </div>
@@ -206,12 +249,20 @@ curl ${origin}/v1/chat/completions \\
               <button
                 className="btn"
                 onClick={create}
-                disabled={busy || blocked}
+                disabled={busy || blocked || !scopeIsComplete(scope)}
                 title={blocked ? access?.reason : undefined}
               >
                 {busy ? t('keys.create.creating') : t('keys.create.submit')}
               </button>
             </div>
+          </div>
+
+          <div className="field" style={{ marginTop: 14, marginBottom: 0 }}>
+            <span className="field-name">
+              {t('keys.scope.title')}
+              <span className="field-hint">{t('keys.scope.hint')}</span>
+            </span>
+            <ScopeEditor value={scope} onChange={setScope} models={myModels} disabled={blocked} />
           </div>
           {blocked && (
             <p className="panel-note" style={{ marginBottom: 0 }}>
@@ -249,19 +300,23 @@ curl ${origin}/v1/chat/completions \\
               {/* The Key column replaces the old Prefix one -- redundant once the key itself is
                   readable -- and is wider, because it carries text plus two buttons. */}
               <colgroup>
-                <col style={{ width: '17%' }} />
-                <col style={{ width: '28%' }} />
-                {showAll && <col style={{ width: '13%' }} />}
+                <col style={{ width: '12%' }} />
+                <col style={{ width: '22%' }} />
+                {showAll && <col style={{ width: '10%' }} />}
+                <col style={{ width: '10%' }} />
+                {/* Both timestamps render as a full local date and time, so 14% is the width at
+                    which they stop being cut off mid-value. */}
                 <col style={{ width: '14%' }} />
                 <col style={{ width: '14%' }} />
-                <col style={{ width: '7%' }} />
-                <col style={{ width: '15%' }} />
+                <col style={{ width: '5%' }} />
+                <col style={{ width: '23%' }} />
               </colgroup>
               <thead>
                 <tr>
                   <th>{t('keys.table.name')}</th>
                   <th>{t('keys.table.key')}</th>
                   {showAll && <th>{t('keys.table.owner')}</th>}
+                  <th>{t('keys.table.scope')}</th>
                   <th>{t('keys.table.created')}</th>
                   <th>{t('keys.table.lastUsed')}</th>
                   <th className="num">{t('keys.table.calls')}</th>
@@ -270,7 +325,8 @@ curl ${origin}/v1/chat/completions \\
               </thead>
               <tbody>
                 {keys.map((k) => (
-                  <tr key={k.id} style={{ cursor: 'default' }}>
+                  <Fragment key={k.id}>
+                  <tr style={{ cursor: 'default' }}>
                     <td className="truncate">
                       {k.name}
                       {k.disabled && (
@@ -314,10 +370,42 @@ curl ${origin}/v1/chat/completions \\
                       )}
                     </td>
                     {showAll && <td className="truncate">{k.user_login}</td>}
+                    <td>
+                      <ScopeSummary scope={k.scope} />
+                    </td>
                     <td className="mono nowrap">{fmt(k.created_at)}</td>
                     <td className="mono nowrap">{fmt(k.last_used_at)}</td>
                     <td className="num">{k.request_count}</td>
                     <td className="nowrap">
+                      {/* The scope is editable after the fact, on purpose: a key handed to a CI
+                          job is usually narrowed once its needs are known, not at the moment it
+                          is created. */}
+                      {/* Ahead of the scope button because it is the one a user reaches for
+                          repeatedly: the snippet is what turns a key in a table into a working
+                          client, and it was previously shown once and then lost. */}
+                      <button
+                        className="btn ghost sm"
+                        onClick={() => {
+                          // The snippet spells the key out, so the row it belongs to is unmasked
+                          // with it rather than left contradicting it -- and, since both states
+                          // hold one id, exactly one key is on screen either way.
+                          const open = examplesId === k.id
+                          setExamplesId(open ? null : k.id)
+                          setRevealedId(open ? null : k.id)
+                        }}
+                      >
+                        {examplesId === k.id ? t('keys.cli.close') : t('keys.cli.show')}
+                      </button>{' '}
+                      <button
+                        className="btn ghost sm"
+                        onClick={() => {
+                          if (editingId === k.id) return setEditingId(null)
+                          setDraft(k.scope ?? { kind: 'all' })
+                          setEditingId(k.id)
+                        }}
+                      >
+                        {editingId === k.id ? t('keys.scope.close') : t('keys.scope.edit')}
+                      </button>{' '}
                       <button
                         className="btn ghost sm"
                         onClick={() =>
@@ -343,6 +431,61 @@ curl ${origin}/v1/chat/completions \\
                       </button>
                     </td>
                   </tr>
+                  {examplesId === k.id && (
+                    <tr style={{ cursor: 'default' }}>
+                      <td colSpan={showAll ? 8 : 7} className="scope-row">
+                        <div className="field-name" style={{ marginBottom: 10 }}>
+                          {t('keys.cli.rowTitle', { name: k.name })}
+                        </div>
+                        <CliExamples
+                          keyValue={k.key ?? null}
+                          login={k.user_login}
+                          // Two quite different reasons for a missing value, and the fix differs:
+                          // another user's key is never shown here at all, whereas one's own key
+                          // can predate the stored plaintext and has to be recreated to be read.
+                          missing={showAll && k.user_login !== user.login ? 'otherUser' : 'unavailable'}
+                          copy={copy}
+                          copiedId={copiedId}
+                          copyId={`cli-${k.id}`}
+                        />
+                      </td>
+                    </tr>
+                  )}
+                  {editingId === k.id && (
+                    <tr style={{ cursor: 'default' }}>
+                      <td colSpan={showAll ? 8 : 7} className="scope-row">
+                        <div className="field-name">
+                          {t('keys.scope.editTitle', { name: k.name })}
+                          <span className="field-hint">{t('keys.scope.hint')}</span>
+                        </div>
+                        <ScopeEditor
+                          value={draft}
+                          onChange={setDraft}
+                          models={myModels}
+                          disabled={savingScope}
+                        />
+                        <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+                          <button
+                            className="btn sm"
+                            disabled={
+                              savingScope || !scopeIsComplete(draft) || sameScope(draft, k.scope)
+                            }
+                            onClick={() => void saveScope(k.id)}
+                          >
+                            {savingScope ? t('common.saving') : t('keys.scope.save')}
+                          </button>
+                          <button
+                            className="btn subtle sm"
+                            disabled={savingScope}
+                            onClick={() => setEditingId(null)}
+                          >
+                            {t('keys.scope.cancel')}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                  </Fragment>
                 ))}
               </tbody>
             </table>
@@ -350,6 +493,33 @@ curl ${origin}/v1/chat/completions \\
         </div>
       </div>
     </div>
+  )
+}
+
+/** The one-line form of a key's scope, for the list.
+ *
+ *  Unrestricted is stated rather than left blank: an empty cell reads as missing data, and
+ *  "this key can reach everything you can" is the single most important thing to be able to
+ *  see at a glance.
+ */
+function ScopeSummary({ scope }: { scope?: KeyScope }) {
+  const { t } = useTranslation()
+  const kind = scope?.kind ?? 'all'
+  if (kind === 'all') return <span className="dim">{t('keys.scope.summary.all')}</span>
+  if (scope && scope.kind === 'api_types') {
+    return (
+      <span className="scope-summary">
+        {scope.api_types.map((tp) => (
+          <span className="badge" key={tp}>{tp}</span>
+        ))}
+      </span>
+    )
+  }
+  const models = scope && scope.kind === 'models' ? scope.models : []
+  return (
+    <span className="scope-summary" title={models.join(', ')}>
+      <span className="badge">{t('keys.scope.summary.models', { count: models.length })}</span>
+    </span>
   )
 }
 

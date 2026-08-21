@@ -1339,6 +1339,52 @@ button.btn.destructive:hover { background: #8e2126; border-color: #8e2126; }
 :root[data-theme='dark'] button.btn.destructive { color: #2b0d10; }
 :root[data-theme='dark'] button.btn.destructive:hover { background: #f5868f; border-color: #f5868f; }
 
+/* -- API key scope editor -------------------------------------------------
+   The three kinds sit in a row on a wide screen and stack on a narrow one; the choices under
+   the selected kind are a scrolling column, because a catalog of thirty models must not push
+   the Create button off the panel. */
+.scope-editor { display: block; }
+.scope-kinds {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 22px;
+  padding: 2px 0 0;
+}
+.scope-kinds .check { align-items: flex-start; }
+/* The hint under each kind reads as a second line rather than trailing the label, so the three
+   options stay scannable by their names alone. */
+.scope-kinds .check .field-hint { display: block; margin: 2px 0 0; }
+.scope-choices {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 10px;
+  padding: 10px 12px;
+  max-height: 240px;
+  overflow-y: auto;
+  background: var(--bg-subtle);
+  border: 1px solid var(--line);
+  border-radius: 2px;
+}
+.scope-choices .check code { margin-right: 6px; }
+.scope-choices .badge { margin-left: 4px; }
+.scope-bulk { display: flex; gap: 14px; margin-bottom: 4px; }
+/* An incomplete selection is refused by the backend, so it is called out here before the
+   button is pressed rather than after. */
+.scope-warn { margin: 4px 0 0; color: var(--text-dim); }
+/* The inline editor row inside the key table: it spans every column, so it needs the panel's
+   own padding back. */
+td.scope-row {
+  padding: 14px 16px;
+  background: var(--bg-subtle);
+  white-space: normal;
+}
+.scope-summary { display: inline-flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+
+@media (max-width: 700px) {
+  .scope-kinds { flex-direction: column; gap: 10px; }
+}
+
 @media (max-width: 560px) {
   /* Stack the buttons full width on a phone, primary on top, and let the panel use the
      whole screen -- a 440px card in a 24px gutter has no room left at that width. */

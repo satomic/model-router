@@ -17,8 +17,8 @@
 
 ### 1.1 它做什么
 
-Model Router 接收兼容 OpenAI 协议的 `POST /v1/chat/completions` 请求，并把每一个请求转发给**合适
-的**后端模型，而不是固定的那一个。“合适”由你写的规则决定，或者由一个小的决策模型决定，或者两者共
+Model Router 同时接收兼容 OpenAI 协议的 `POST /v1/chat/completions` 请求和兼容 Anthropic 协议的
+`POST /v1/messages` 请求，并把每一个请求转发给**合适的**后端模型，而不是固定的那一个。“合适”由你写的规则决定，或者由一个小的决策模型决定，或者两者共
 同决定；每一次决策都被完整记录下来，事后可以查证。
 
 | 能力 | 在控制台中的位置 |
@@ -34,8 +34,8 @@ Model Router 接收兼容 OpenAI 协议的 `POST /v1/chat/completions` 请求，
 
 ### 1.2 工作原理
 
-只有一个进程。它在 `/` 提供控制台，在 `/v1` 下提供兼容 OpenAI 的 API，并把全部状态放在一个 `data/`
-目录里：没有数据库，没有缓存服务，没有队列。一个请求依次经过身份认证、模型策略、粘性绑定检查、路由
+只有一个进程。它在 `/` 提供控制台，在 `/v1` 下**同时**提供兼容 OpenAI 聊天补全协议和兼容 Anthropic
+Messages 协议的 API，并把全部状态放在一个 `data/` 目录里：没有数据库，没有缓存服务，没有队列。一个请求依次经过身份认证、模型策略、粘性绑定检查、路由
 策略、针对所选模型的参数适配、后端调用，最后写入调用链记录。
 
 架构图见 [Architecture and data flow](architecture.md)；请求路径的逐步说明见
@@ -46,7 +46,9 @@ Model Router 接收兼容 OpenAI 协议的 `POST /v1/chat/completions` 请求，
 
 | 概念 | 在这里的含义 |
 |---|---|
-| **连接**（connection / provider） | 一个后端地址加上它的密钥。模型绑定到连接上，所以一个路由器可以同时服务位于不同地址的模型。 |
+| **连接**（connection / provider） | 一个后端地址加上它的密钥，以及它使用的接口类型：Azure OpenAI、兼容 OpenAI 的服务，或兼容 Anthropic 的服务。模型绑定到连接上，所以一个路由器可以同时服务位于不同地址、使用不同协议的模型。 |
+| **协议转换**（protocol conversion） | 客户端使用的协议和后端使用的协议互不相干。OpenAI 风格的客户端可以由 Claude 端点来回答，Anthropic 风格的客户端也可以由 Azure 部署来回答；路由器负责转换请求和响应，流式也一样。 |
+| **密钥作用域**（key scope） | 单个 API 密钥能够触达的范围，且始终在其所有者本身被允许的范围之内。作用域只会收窄，不会放宽：可以是全部、指定接口类型下的全部模型，或一份明确的模型清单。 |
 | **模型目录**（model catalog） | 客户端允许在请求里写的模型名。每一项都带一段描述，AI 决策模型选型时读的就是这段描述。 |
 | **默认模型**（default model） | 没有规则命中时使用，AI 决策失败或超时时也使用。有且只有一个模型带 `default` 标记。 |
 | **交互**（interaction） | 一次用户提问。像 GitHub Copilot 这类智能体客户端会用一串 HTTP 请求来回答它，这些请求携带同一个 `x-interaction-id`。路由器为整串请求只决策一次，并把每一次调用折叠进同一条调用链记录。 |
@@ -115,17 +117,38 @@ Model Router 接收兼容 OpenAI 协议的 `POST /v1/chat/completions` 请求，
 
 1. 点 **+ Add connection**，给它起个名字（`foundry`、`stub`、`eu-west`；这个名字只用来把模型绑定到
    它上面）。
-2. **地址（base_url）**：Azure 用 `https://<资源名>.openai.azure.com/`；其他兼容 OpenAI 的服务要一直
-   写到 `/v1`，例如 `http://127.0.0.1:8899/v1`。
+2. **地址（base_url）**，按接口类型不同：
+   * `azure`：资源根地址 `https://<资源名>.openai.azure.com/`。
+   * `openai`：要一直写到 `/v1`，例如 `http://127.0.0.1:8899/v1`。
+   * `anthropic`：提供 `/v1/messages` 的主机地址，例如
+     `https://<工作区>.azuredatabricks.net/serving-endpoints/anthropic`。
 3. **密钥（api_key）**：保存时写入服务端的 `data/config.yaml`。用 **Show** 可以查看当前存的是什么。
-4. **接口类型（api_type）**：Azure OpenAI / AI Foundry 用 `azure`，其他一律 `openai`。
-   **api_version** 只对 Azure 有意义。
+   对 `anthropic` 连接来说，这个值就是该端点期望出现在 `x-api-key` 头里的内容。
+4. **接口类型（api_type）**：Azure OpenAI / AI Foundry 用 `azure`，其他兼容 OpenAI 的服务用 `openai`，
+   使用 Messages API 的服务用 `anthropic`（Anthropic 官方、Databricks 的 Claude serving endpoint，以及
+   暴露相同形状的 Bedrock 类网关）。旁边那个版本字段的含义会随类型变化：`azure` 下它是 `?api-version=`
+   查询参数（默认 `2024-12-01-preview`），`anthropic` 下它是 `anthropic-version` 请求头（默认
+   `2023-06-01`），`openai` 则完全没有版本。切换类型时这个字段会被特意清空，因为把 Azure 的版本字符串
+   当作 `anthropic-version` 发出去会被上游拒绝。
 5. 有一个连接带 `default` 标记；没有自己指定连接的模型会继承它。在另一行上点 **Set as default** 可
    以把默认挪过去。
 6. 点 **Save and apply**。面板上方的状态条会告诉你这个页面是 *In sync with config.yaml*（与配置文件
    一致）还是有未保存的改动，**Reload** 会丢弃草稿。
 
 保存会就地重载配置：路由器重建它的客户端池，所以改对的密钥在下一个请求就生效，不需要重启。
+
+**接口类型是后端的细节，不是对客户端的约定。** 调用方完全不需要与它保持一致。路由器在两种协议上都接收
+请求，并转换成所选模型的连接实际使用的那一种，四种组合都支持：
+
+| 客户端发出 | 后端连接 | 路由器的处理 |
+|---|---|---|
+| `POST /v1/chat/completions` | `azure` / `openai` | 直接透传 |
+| `POST /v1/chat/completions` | `anthropic` | 把请求转换为 Messages，再把回复转换回聊天补全 |
+| `POST /v1/messages` | `anthropic` | 直接透传 |
+| `POST /v1/messages` | `azure` / `openai` | 把请求转换为聊天补全，再把回复转换回 Messages 响应 |
+
+流式响应也是逐个事件同样转换的，所以流式客户端看到的始终是它自己协议的事件，不管背后是哪个后端在回答。
+每一轮调用链记录都会同时记下 `client_protocol` 和 `protocol` 两侧，事后就靠它们判断有没有发生转换。
 
 更多细节，包括非 Foundry 的情况：[Backend connections](providers.md)。
 
@@ -145,6 +168,8 @@ Model Router 接收兼容 OpenAI 协议的 `POST /v1/chat/completions` 请求，
 5. **默认模型（Default model）**：有且只有一个。没有规则命中时用它，AI 决策失败时也用它。
 6. **推理模型（Reasoning model）**：gpt-5.x / o3 系列要勾上。勾上之后路由器会发
    `max_completion_tokens` 而不是 `max_tokens`，并去掉 `temperature` 这类采样参数，因为这些模型不接受。
+   如果某个 Claude 模型所在的端点也不接受采样参数，同样要勾上：Databricks 的 Claude serving endpoint
+   会直接拒绝 `temperature`，不勾这一项的话，经过它的每一次调用都会以上游 400 失败。
 
 删除模型时也会收拾干净：控制台会报告有多少条规则和模型组引用过它并已被更新。
 
@@ -212,9 +237,14 @@ Model Router 接收兼容 OpenAI 协议的 `POST /v1/chat/completions` 请求，
 - 团队和组织来自 Access control 页面探测到的结构，所以你是从列表里选，而不是手打
   `enterprise-slug/team-id` 这种一个错字就静默匹配不到任何人的键。**+ Enter one manually** 是没有企
   业管理员令牌的部署的兜底方式。
-- **may create keys** / **no keys** 标记是密钥策略透出来的信息：把一个组授予给成员根本无法创建密钥
-  的作用域，等于什么也没授予，因为没有密钥他们永远到不了 `/v1/chat/completions`。不合格的作用域是列
-  出来而不是隐藏，这样你能看出是密钥策略把它们挡住了，而不是结构探测失败。
+- **只列出密钥策略允许的作用域。**把一个组授予给成员根本无法创建密钥的作用域，等于什么也没授予，因
+  为没有密钥他们永远到不了 `/v1/chat/completions`。所以两张表只提供 **Access control -> Key policy**
+  中放开的那些，其余一概不列。`filtered` 提示会说明在探测到的总数中过滤掉了多少个，这样某个组织找不
+  到时，页面上就有答案，不必去怀疑结构探测出了问题。要绑定未列出的作用域，先去访问控制里放开它。
+- **已经绑定**的作用域即使后来不再被密钥策略允许，也会继续列出，并标记为 `no keys`：这条绑定后端依然
+  在执行，就必须能在负责它的页面上被解除。
+- 两种空状态含义不同：*没有探测到任何作用域*指向企业管理员令牌或结构缓存，*没有任何被允许的作用域*
+  指向密钥策略。
 - 长列表可以搜索；当 GitHub 返回的组织数少于该企业实际拥有的数量时，会出现 `partial list` 标记。
 - **Save and apply** 提交，与配置页面上完全一致。
 
@@ -414,27 +444,54 @@ GitHub 会让你授权一次这个应用；之后你会落在自己的 Usage 页
 - **不允许创建**：同一个面板会解释为什么，而这段话就是你向管理员申请权限时应该原文引用的内容。在控制
   台里你做任何事都改不了它。
 
-创建密钥：起一个能让你想起它用在哪里的名字（`copilot-laptop`、`ci`），留空则叫 `default`，然后按
-**Create key**。
+创建密钥：起一个能让你想起它用在哪里的名字（`copilot-laptop`、`ci`），留空则叫 `default`，选择一个
+**作用域（Scope）**，然后按 **Create key**。
+
+作用域限定这一个密钥能触达的范围，并且**始终**在模型策略允许你使用的范围之内求交集。它只会收窄，不会放
+宽，所以作用域永远不可能成为绕过模型策略的途径：
+
+| 作用域 | 覆盖范围 |
+|---|---|
+| **你的全部模型** | 模型策略允许你使用的全部模型，这是默认值 |
+| **按连接类型** | 勾选的接口类型下的所有连接上的模型，**包括之后才加到这些连接上的模型** |
+| **指定模型** | 一份明确的清单，从你自己的可用模型中勾选 |
+
+“按连接类型”保存的是类型本身，而不是它此刻恰好匹配到的那些模型，所以每个类型只显示当前覆盖了你的多少个
+模型，而不会替你预先勾选。一个作用域为 `anthropic` 的密钥，下周新加的 Claude 模型它自动就能用，不需要任
+何人去改这个密钥。
 
 ![刚刚创建的密钥](images/23-user-key-created.png)
 
-密钥会完整显示一次，带一个 **Copy** 按钮和一段可直接用于 GitHub Copilot BYOK 的配置。用这个密钥发出
-的每一次调用都归属到你的登录名，所以请把它当作你自己的凭据：用它发出的任何内容都会以你的名字出现在调
-用链记录和用量统计里。
+密钥会完整显示一次，带一个 **Copy** 按钮和一段可直接用于 GitHub Copilot BYOK 的配置。这段配置提供两
+种协议：切换 **OpenAI-compatible** 或 **Anthropic-compatible**，环境变量和 `curl` 命令行会一起变，你可
+以直接粘贴客户端真正需要的那一种。**Copy command** 复制整段命令。用这个密钥发出的每一次调用都归属到你
+的登录名，所以请把它当作你自己的凭据：用它发出的任何内容都会以你的名字出现在调用链记录和用量统计里。
 
-**My keys** 表格列出每个密钥的创建时间、最近使用时间和调用次数，并且可以查看、复制、停用或删除。被停
-用的密钥会以 401 被拒绝，但并没有被删除；如果你怀疑某个密钥泄露了，先停用是正确的第一步。
+**My keys** 表格列出每个密钥的作用域、创建时间、最近使用时间和调用次数，并且可以查看、复制、停用或删
+除。点 **Scope** 会在行内打开同一个作用域编辑器，所以交给 CI 任务的密钥可以等它的实际需求明确之后再收
+窄，而不必在创建的那一刻就想清楚；改动在下一个请求就生效。被停用的密钥会以 401 被拒绝，但并没有被删
+除；如果你怀疑某个密钥泄露了，先停用是正确的第一步。
+
+每一行上的 **Usage example**（使用示例）可以把上面那段配置随时重新打开。那个面板只在创建之后出现一
+次，所以上个月创建的密钥后来就没有地方再告诉你 base URL、请求头的名字和 `curl` 命令行了；这一行里有，
+两种协议都有，密钥已经填好，**Copy command** 按钮也还在。打开它同时会把表格里这一行的密钥解除掩码，
+免得表格和示例对同一个密钥说着两套话；收起时重新掩码。有两种情况示例里放的是 `YOUR_API_KEY` 而不是真
+正的值，并且会说明是哪一种：一种是在路由器开始保存可读的密钥值之前创建的密钥，这时填入你自己保存下来
+的值，或者重新创建一个；另一种是管理员在 **All users** 视图下看到的别人的密钥，它的值只会展示给拥有者。
 
 ### 3.5 发送请求
 
-把任何兼容 OpenAI 的客户端指向路由器。三个字段：
+把任何兼容 OpenAI **或**兼容 Anthropic 的客户端指向路由器。两种方式都是三个字段：
 
-| 字段 | 值 |
-|---|---|
-| Base URL | `http://<主机>:8000/v1` |
-| API Key | 你的 `mr_…` 密钥 |
-| Model | Available models 页面里的任意一个模型名 |
+| 字段 | 兼容 OpenAI 的客户端 | 兼容 Anthropic 的客户端 |
+|---|---|---|
+| Base URL | `http://<主机>:8000/v1` | `http://<主机>:8000` |
+| API Key | 你的 `mr_…` 密钥，放在 `Authorization: Bearer` 里 | 你的 `mr_…` 密钥，放在 `x-api-key` 里 |
+| Model | Available models 页面里的任意一个模型名 | 同上，或者写 `auto` |
+
+同一个密钥两种协议都能用。你使用哪种协议，和你能调到哪些模型没有关系：路由器会做转换，所以 Anthropic 风
+格的客户端可以由 Azure 部署来回答，反过来也一样。`model` 字段是一个请求而不是一条指令，因为选哪个模型由
+路由策略决定，并且调用链记录会写清楚它选的是哪一个。
 
 **GitHub Copilot（BYOK）**：用上面三个值添加一个兼容 OpenAI 的 provider。Copilot 自己不发送任何用户
 身份，这正是为什么归属要取自密钥的所有者；它确实会发送 `x-interaction-id`，所以它的工具调用循环只被
@@ -443,11 +500,22 @@ GitHub 会让你授权一次这个应用；之后你会落在自己的 Usage 页
 **curl**：
 
 ```bash
+# 兼容 OpenAI
 curl http://127.0.0.1:8000/v1/chat/completions \
   -H "Authorization: Bearer mr_..." \
   -H "Content-Type: application/json" \
   -d '{"model":"gpt-4o","messages":[{"role":"user","content":"Refactor this module and explain the design"}]}'
+
+# 兼容 Anthropic
+curl http://127.0.0.1:8000/v1/messages \
+  -H "x-api-key: mr_..." \
+  -H "anthropic-version: 2023-06-01" \
+  -H "Content-Type: application/json" \
+  -d '{"model":"auto","max_tokens":256,"messages":[{"role":"user","content":"Refactor this module and explain the design"}]}'
 ```
+
+Anthropic 风格的客户端把 `ANTHROPIC_BASE_URL` 设为 `http://<主机>:8000`，`ANTHROPIC_AUTH_TOKEN` 设为你
+的 `mr_…` 密钥即可。
 
 响应头不用打开控制台就能说明发生了什么：`x-routed-model`、`x-router-reason`、
 `x-router-decision-ms`、`x-trace-id`，以及请求带了交互 id 时的 `x-router-interaction-id`。

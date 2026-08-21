@@ -158,6 +158,7 @@
       "addTitle": "New team binding",
       "lead": "Keyed <code>enterprise-slug/team-id</code>, the form the local GitHub cache needs to resolve a team. The numeric team ids are listed under <strong>Access control → Key policy</strong> once an enterprise administrator token is configured.",
       "noneDiscovered": "No enterprise teams were discovered. Refresh the structure under Access control → Key policy.",
+      "noneAllowed": "No enterprise team is allowed to create API keys under the key policy, so there is nothing to grant a group to. Allow one under Access control → Key policy, or enter a binding by hand.",
       "search": "Filter teams…",
       "key": "Enterprise / team id",
       "prompt": "Team key, written as <enterprise slug>/<team id>, e.g. your-enterprise/14501973:",
@@ -168,6 +169,7 @@
       "addTitle": "New organization binding",
       "lead": "Keyed by <strong>organization login</strong>, exactly as it appears in a GitHub URL. Membership is answered from the local GitHub cache where it can be, and by a live call otherwise.",
       "noneDiscovered": "No organizations were discovered. Refresh the structure under Access control → Key policy.",
+      "noneAllowed": "No organization is allowed to create API keys under the key policy, so there is nothing to grant a group to. Allow one under Access control → Key policy, or enter a binding by hand.",
       "search": "Filter organizations…",
       "key": "Organization login",
       "prompt": "Organization login, e.g. your-org:"
@@ -185,9 +187,11 @@
       "partialBadge": "partial list",
       "partial": "GitHub returned {{listed}} of {{total}} organizations, so this list is incomplete. Search finds only what was returned; an organization that is missing can still be entered by hand.",
       "gateOnBadge": "gated",
-      "gateOn": "Creating an API key is <strong>restricted</strong>, so only the scopes whose members may create one can be granted a group — without a key nobody reaches the router, and a grant to them would give nothing.",
+      "gateOn": "Creating an API key is <strong>restricted</strong>, so this table lists only the scopes allowed under Access control → Key policy. Members of any other scope cannot create a key, never reach the router, and would get nothing from a group granted here.",
       "gateOffBadge": "not gated",
       "gateOff": "Creating an API key is <strong>open to everyone who can sign in</strong>, so every discovered scope can be granted a group. Restricting key creation is done under Access control → Key policy.",
+      "excludedBadge": "filtered",
+      "excluded": "Not listed: {{hidden}} of the {{total}} discovered scopes, which the key policy does not allow. Allow one under Access control → Key policy to bind it here.",
       "mayCreateKeys": "may create keys",
       "mayNotCreateKeys": "no keys",
       "entOff": "This enterprise is switched off in the key policy, so none of its members may create an API key.",
@@ -342,11 +346,26 @@
     "created": {
       "title": "Key created",
       "readyBadge": "ready to use",
-      "note": "Copy it into your client configuration now, or read it back at any time from the key list below — the key stays visible to you.",
+      "note": "Copy it into your client configuration now, or read it back at any time from the key list below — the key stays visible to you."
+    },
+    "cli": {
+      "show": "Usage example",
+      "close": "Hide example",
+      "rowTitle": "Command-line usage for {{name}}",
       "byokTitle": "Use it in GitHub Copilot through BYOK",
+      "protocolHint": "one key, either protocol: the router converts between them",
+      "protocol": {
+        "openai": "OpenAI-compatible",
+        "anthropic": "Anthropic-compatible"
+      },
       "modelHint": "any model name registered under Routing configuration",
       "curlComment": "verify from the command line",
-      "attribution": "Every request made with this key is attributed to <code>{{login}}</code>, and the <code>user_id</code> in the trace is that GitHub account."
+      "modelIgnored": "the model field is ignored, because the router picks the model and the trace records which one",
+      "copyCommand": "Copy command",
+      "attribution": "Every request made with this key is attributed to <code>{{login}}</code>, and the <code>user_id</code> in the trace is that GitHub account.",
+      "placeholderBadge": "placeholder",
+      "unavailableNote": "This key's value is not stored in readable form, so the snippet shows <code>{{placeholder}}</code> where it belongs. Paste in the value you saved when the key was created, or create a new key to get a readable one.",
+      "otherUserNote": "This key belongs to <code>{{login}}</code> and its value is only ever shown to its owner, so the snippet shows <code>{{placeholder}}</code> where it belongs."
     },
     "create": {
       "title": "New key",
@@ -378,7 +397,8 @@
       "enable": "Enable",
       "disable": "Disable",
       "confirmDelete": "Delete the key \"{{name}}\"? Any client using it stops working immediately.",
-      "confirmDeleteTitle": "Delete API key"
+      "confirmDeleteTitle": "Delete API key",
+      "scope": "Scope"
     },
     "copyFailed": "Could not copy to the clipboard. The browser only allows this over HTTPS (or on localhost) — use Show and copy the value by hand.",
     "access": {
@@ -415,6 +435,38 @@
       "scannedTruncated": "(probed {{count}}, truncated)",
       "undecidable": "cannot determine",
       "undecidableHint": "GitHub gave no answer, treated as not a member"
+    },
+    "scope": {
+      "title": "Scope",
+      "hint": "what this key may reach, inside what you may reach; a scope only ever narrows",
+      "kind": {
+        "all": "All your models",
+        "api_types": "By connection type",
+        "models": "Specific models"
+      },
+      "kindHint": {
+        "all": "everything the model policy allows you",
+        "api_types": "every model on connections of the chosen types, including ones added later",
+        "models": "an explicit pick from your own list"
+      },
+      "typeCovers_one": "covers {{count}} of your models",
+      "typeCovers_other": "covers {{count}} of your models",
+      "typeCoversNone": "none of your models are on this type yet",
+      "pickAType": "Select at least one connection type.",
+      "pickAModel": "Select at least one model.",
+      "noModels": "No models are available to you yet.",
+      "selectAll": "Select all",
+      "clear": "Clear",
+      "edit": "Scope",
+      "close": "Close",
+      "editTitle": "Scope for {{name}}",
+      "save": "Save scope",
+      "cancel": "Cancel",
+      "summary": {
+        "all": "All your models",
+        "models_one": "{{count}} model",
+        "models_other": "{{count}} models"
+      }
     }
   },
   "access": {
@@ -719,7 +771,7 @@
     "step": "Step {{n}} of {{total}} · {{label}}",
     "nextStep": "Next: {{label}} →",
     "guide": {
-      "providers": "Start here. A <strong>connection</strong> is one backend address and its key — Azure AI Foundry, or any OpenAI-compatible endpoint. Every model in the catalog is served through one of them, so nothing else on this page works until at least one is saved.",
+      "providers": "Start here. A <strong>connection</strong> is one backend address and its key: Azure AI Foundry, an OpenAI-compatible endpoint, or an Anthropic-compatible endpoint. Every model in the catalog is served through one of them, so nothing else on this page works until at least one is saved.",
       "models": "Each entry is a model name clients may ask for, bound to the connection that serves it. The <strong>description</strong> is not decoration: it is what the AI router reads when choosing, so a vague one produces vague routing.",
       "strategy": "How the served model is chosen: by <strong>rules</strong>, by an <strong>AI</strong> decision, or <code>rule-then-ai</code> — rules first, and only an unmatched request costs a decision call.",
       "rules": "Keyword and length rules, matched <strong>in order</strong>, first hit wins. Only reached when the strategy uses rules."
@@ -747,7 +799,7 @@
       "count_one": "{{count}} connection",
       "count_other": "{{count}} connections",
       "add": "+ Add connection",
-      "lead": "A connection is one \"address + key\" pair. Models inherit the connection marked \"default\", or bind to one of their own — which can be Azure AI Foundry in a different environment, or any OpenAI-compatible service. Keys are stored in <code>config.yaml</code> on the server (that file is ignored by <code>.gitignore</code>).",
+      "lead": "A connection is one \"address + key\" pair. Models inherit the connection marked \"default\", or bind to one of their own: Azure AI Foundry in a different environment, an OpenAI-compatible service, or an Anthropic-compatible service. Keys are stored in <code>config.yaml</code> on the server (that file is ignored by <code>.gitignore</code>).",
       "empty": "No connections yet. Add one before binding models to it.",
       "promptName": "Name of the new connection (models reference it by this name, e.g. openrouter):",
       "promptRename": "Rename the connection:",
@@ -763,14 +815,28 @@
       "setDefault": "Set as default",
       "rename": "Rename",
       "baseUrl": "Address (base_url)",
-      "baseUrlHint": "for Azure use https://xxx.openai.azure.com/; for OpenAI-compatible go all the way to /v1",
+      "baseUrlHint": {
+        "azure": "the resource root, e.g. https://xxx.openai.azure.com/",
+        "openai": "all the way to /v1",
+        "anthropic": "the host that serves /v1/messages"
+      },
       "apiKey": "Key (api_key)",
       "apiKeyHint": "written to config.yaml on save",
       "apiKeyPlaceholder": "leave empty to fall back to AZURE_OPENAI_API_KEY from .env",
       "apiType": "Interface type (api_type)",
-      "apiTypeAzureOption": "azure — Azure OpenAI / AI Foundry",
-      "apiTypeOpenAIOption": "openai — OpenAI-compatible service",
-      "apiVersionHint": "only azure needs this"
+      "apiVersionHint": "only azure needs this",
+      "typeAnthropic": "Anthropic-compatible",
+      "apiTypeOption": {
+        "azure": "azure · Azure OpenAI / AI Foundry",
+        "openai": "openai · OpenAI-compatible service",
+        "anthropic": "anthropic · Anthropic-compatible service (Messages API)"
+      },
+      "anthropicVersionHint": "sent as the anthropic-version header; leave empty for 2023-06-01",
+      "baseUrlPlaceholder": {
+        "azure": "https://your-resource.openai.azure.com/",
+        "openai": "https://api.example.com/v1",
+        "anthropic": "https://api.anthropic.com"
+      }
     },
     "models": {
       "title": "Model catalog",

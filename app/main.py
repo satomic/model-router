@@ -31,7 +31,16 @@ from fastapi.responses import (
 )
 
 from . import auth as authlib
-from . import ghadmin, ghcache, keypolicy, localadmin, modelpolicy, release
+from . import (
+    ghadmin,
+    ghcache,
+    keypolicy,
+    keyscope,
+    localadmin,
+    modelpolicy,
+    release,
+    wire,
+)
 from .version import ISSUES_URL, RELEASES_URL, REPO_URL, VERSION
 from .authstore import AuthStore
 from .config import (
@@ -320,6 +329,11 @@ def _finalize_trace(
         "stream": request.get("stream"),
         "model": (trace.get("routing") or {}).get("model"),
         "deployment": (trace.get("backend") or {}).get("deployment"),
+        # Both protocols are recorded per turn rather than once per interaction: one chain
+        # can be answered by an Azure deployment on its first turn and a Claude endpoint on
+        # its second, and a turn that does not say which is which cannot explain itself.
+        "client_protocol": trace.get("client_protocol"),
+        "protocol": (trace.get("backend") or {}).get("protocol"),
         "status": status,
         "total_ms": trace["total_ms"],
         "response": response,
@@ -339,22 +353,64 @@ def _sanitized_headers(request: Request) -> dict:
     }
 
 
+# -- The two protocol entry points --------------------------------------------
+# A caller may speak either protocol and an upstream connection may speak either protocol, and
+# the two choices are independent: an Anthropic client can be answered by an Azure deployment
+# and an OpenAI client by a Claude endpoint. Rather than four pipelines, both entry points
+# convert to one canonical form -- an OpenAI chat-completions payload -- which is what routing,
+# the model policy and the trace record all already read. See app/wire.py.
+
+
 @app.post("/v1/chat/completions")
 async def chat_completions(
     request: Request,
     x_session_id: str | None = Header(default=None),
 ):
     key = _api_key(request)
+    t_start = time.perf_counter()
+    body = await request.json()
+    if not body.get("messages"):
+        raise HTTPException(status_code=400, detail="messages is required")
+    ctx = await _prepare_call(request, body, key, x_session_id, t_start, "openai")
+    return await _serve(ctx)
+
+
+@app.post("/v1/messages")
+async def anthropic_messages(
+    request: Request,
+    x_session_id: str | None = Header(default=None),
+):
+    """Anthropic Messages entry point, so a client configured with ANTHROPIC_BASE_URL pointing
+    at this router works unchanged.
+
+    Authenticated by the same mr_ key as /v1/chat/completions, accepted from either
+    `x-api-key` or `Authorization: Bearer` because the two ecosystems send different headers.
+    """
+    key = _api_key(request)
+    t_start = time.perf_counter()
+    raw = await request.json()
+    if not raw.get("messages"):
+        raise HTTPException(status_code=400, detail="messages is required")
+    body = wire.anthropic_request_to_openai(raw)
+    ctx = await _prepare_call(request, body, key, x_session_id, t_start, "anthropic")
+    return await _serve(ctx)
+
+
+async def _prepare_call(
+    request: Request, body: dict, key: dict, x_session_id: str | None,
+    t_start: float, client_protocol: str,
+) -> dict:
+    """Everything both entry points do before an upstream is touched: resolve what the caller
+    may use, route, build the trace, build the response headers.
+
+    Returns the context `_serve` needs. Split out rather than inlined twice because every line
+    of it -- the policy, the key scope, stickiness, the trace shape -- must behave identically
+    whichever protocol the caller spoke, and two copies would drift.
+    """
     # user_id comes from the API key's owner: Copilot BYOK never sends x-user-id, so it
     # used to be permanently null
     user_id = key["user_login"]
-
-    t_start = time.perf_counter()
-    body = await request.json()
-    messages = body.get("messages")
-    if not messages:
-        raise HTTPException(status_code=400, detail="messages is required")
-
+    messages = body.get("messages") or []
     prompt = extract_user_prompt(messages)
     interaction_id = _interaction_id(request)
     # The caller's effective model set, resolved before anything routes. An empty list is a
@@ -367,6 +423,17 @@ async def chat_completions(
             status_code=403,
             detail="no models are available to you under the current model policy; "
                    "ask an administrator to assign a model group",
+        )
+    # Then narrowed again by this key's own scope. Reported separately from the policy refusal
+    # above, because the two have different owners: the first needs an administrator, the
+    # second the user can fix themselves on the API keys page.
+    scope = key.get("scope")
+    allowed = keyscope.narrow(cfg, allowed, scope)
+    if allowed is not None and not allowed:
+        raise HTTPException(
+            status_code=403,
+            detail="this API key is scoped to models you cannot currently use; "
+                   f"widen its scope on the API keys page (scope: {keyscope.describe(scope)})",
         )
     model, reason, decision_ms, analysis = await _decide_model(
         prompt, x_session_id, interaction_id, allowed
@@ -387,6 +454,7 @@ async def chat_completions(
         "user_id": user_id,
         "api_key_id": key["id"],
         "api_key_name": key.get("name"),
+        "api_key_scope": keyscope.describe(scope),
         "session_id": x_session_id,
         # What makes this request part of a user interaction rather than an isolated call.
         # None for a client that sends no such header, in which case every request is its own
@@ -397,6 +465,10 @@ async def chat_completions(
         # loop as "agent"; recorded per turn so the chain shows which is which.
         "initiator": request.headers.get("x-initiator"),
         "client_ip": request.client.host if request.client else None,
+        # Which protocol the caller spoke. Worth recording even though the stored request is
+        # always canonical: "the answer came back in a shape my client could not read" is
+        # otherwise impossible to diagnose from a trace.
+        "client_protocol": client_protocol,
         "strategy": cfg.strategy,
         "sticky": cfg.sticky,
         "prompt_preview": prompt[:120],
@@ -415,6 +487,7 @@ async def chat_completions(
         "backend": {
             "deployment": resolved.upstream_model,
             "api": resolved.api,
+            "protocol": resolved.provider.protocol,
             "provider": resolved.provider.name,
             "base_url": resolved.provider.base_url,
             "api_type": resolved.provider.api_type,
@@ -428,10 +501,10 @@ async def chat_completions(
     # turn joins -- a per-request id would 404 on GET /v1/traces/<id>.
     traces.resolve_interaction(trace)
     logger.info(
-        "route id=%s user=%s session=%s interaction=%s model=%s provider=%s reason=%s "
-        "decision_ms=%.1f",
+        "route id=%s user=%s session=%s interaction=%s model=%s provider=%s protocol=%s->%s "
+        "reason=%s decision_ms=%.1f",
         trace["id"], user_id, x_session_id, interaction_id, model, resolved.provider.name,
-        reason, decision_ms,
+        client_protocol, resolved.provider.protocol, reason, decision_ms,
     )
 
     headers = {
@@ -443,76 +516,74 @@ async def chat_completions(
     if interaction_id:
         headers["x-router-interaction-id"] = interaction_id
 
+    return {
+        "model": model,
+        "resolved": resolved,
+        "payload": payload,
+        "trace": trace,
+        "headers": headers,
+        "t_start": t_start,
+        "client_protocol": client_protocol,
+    }
+
+
+async def _serve(ctx: dict):
+    """Call the upstream in its own protocol and answer in the caller's.
+
+    Four combinations reduce to two decisions taken independently: which upstream branch
+    produces the canonical result, and which renderer turns it into the caller's shape.
+    """
+    resolved = ctx["resolved"]
+    payload = ctx["payload"]
+    trace = ctx["trace"]
+    t_start = ctx["t_start"]
+    streaming = bool(payload.get("stream"))
+    chunks = None
+    completion = None
     try:
-        if resolved.api == "responses":
+        if resolved.provider.protocol == "anthropic":
+            client = await pool.get(resolved.provider, "chat")
+            body = wire.openai_request_to_anthropic(payload, resolved.upstream_model)
+            # What actually went on the wire, which for a converted request is not what the
+            # caller sent: a trace that showed only the caller's parameters could not explain
+            # a max_tokens the caller never set.
+            trace["backend"]["sent_params"] = {
+                k: v for k, v in body.items() if k not in ("messages", "system")
+            }
+            dropped = wire.anthropic_unsupported_params(payload)
+            if dropped:
+                trace["backend"]["dropped_params"] = dropped
+            if streaming:
+                chunks = await _open_anthropic_stream(client, body, ctx["model"])
+            else:
+                data = await client.create(body)
+                completion = wire.anthropic_response_to_openai(data, ctx["model"])
+        elif resolved.api == "responses":
             client = await pool.get(resolved.provider, "responses")
-            return await _call_via_responses_api(
-                client, resolved.upstream_model, payload, headers, trace, t_start,
+            completion = await _complete_via_responses_api(
+                client, resolved.upstream_model, payload
             )
+            if streaming:
+                chunks = _chunks_from_completion(completion)
+        else:
+            client = await pool.get(resolved.provider, "chat")
+            if streaming:
+                chunks = await _open_openai_stream(client, resolved.upstream_model, payload)
+            else:
+                resp = await client.chat.completions.create(
+                    model=resolved.upstream_model, **payload
+                )
+                completion = resp.model_dump()
 
-        client = await pool.get(resolved.provider, "chat")
-        if body.get("stream"):
-            stream = await client.chat.completions.create(
-                model=resolved.upstream_model, **payload
+        if streaming:
+            if ctx["client_protocol"] == "anthropic":
+                body_iter = _sse_anthropic(chunks, trace, t_start, ctx["model"])
+            else:
+                body_iter = _sse_openai(chunks, trace, t_start)
+            return StreamingResponse(
+                body_iter, media_type="text/event-stream", headers=ctx["headers"]
             )
-
-            async def sse():
-                parts: list[str] = []
-                finish = None
-                usage = None
-                # Tool calls stream in fragments too: the name arrives on the first delta for
-                # an index and the arguments accumulate over later ones, so they are assembled
-                # by index rather than taken from any single chunk.
-                calls: dict[int, dict] = {}
-                try:
-                    async for chunk in stream:
-                        if chunk.choices:
-                            delta = chunk.choices[0].delta
-                            if delta and delta.content:
-                                parts.append(delta.content)
-                            for tc in (delta.tool_calls or []) if delta else []:
-                                slot = calls.setdefault(
-                                    tc.index,
-                                    {"id": None, "type": "function",
-                                     "function": {"name": None, "arguments": ""}},
-                                )
-                                if tc.id:
-                                    slot["id"] = tc.id
-                                if tc.type:
-                                    slot["type"] = tc.type
-                                if tc.function and tc.function.name:
-                                    slot["function"]["name"] = tc.function.name
-                                if tc.function and tc.function.arguments:
-                                    slot["function"]["arguments"] += tc.function.arguments
-                            if chunk.choices[0].finish_reason:
-                                finish = chunk.choices[0].finish_reason
-                        if chunk.usage:
-                            usage = chunk.usage.model_dump()
-                        yield f"data: {chunk.model_dump_json()}\n\n"
-                    yield "data: [DONE]\n\n"
-                    _finalize_trace(
-                        trace, t_start, "ok",
-                        content="".join(parts), usage=usage, finish_reason=finish,
-                        tool_calls=[calls[i] for i in sorted(calls)] or None,
-                    )
-                except Exception as e:  # noqa: BLE001
-                    _finalize_trace(trace, t_start, "error", error=str(e))
-                    raise
-
-            return StreamingResponse(sse(), media_type="text/event-stream", headers=headers)
-
-        resp = await client.chat.completions.create(
-            model=resolved.upstream_model, **payload
-        )
-        choice = resp.choices[0]
-        _finalize_trace(
-            trace, t_start, "ok",
-            content=choice.message.content,
-            usage=resp.usage.model_dump() if resp.usage else None,
-            finish_reason=choice.finish_reason,
-            tool_calls=[tc.model_dump() for tc in (choice.message.tool_calls or [])] or None,
-        )
-        return JSONResponse(resp.model_dump(), headers=headers)
+        return _finish_and_render(completion, ctx)
     except HTTPException:
         raise
     except Exception as e:  # noqa: BLE001
@@ -520,15 +591,177 @@ async def chat_completions(
             _finalize_trace(trace, t_start, "error", error=str(e))
         logger.error(
             "backend call failed model=%s provider=%s: %s",
-            model, resolved.provider.name, e,
+            ctx["model"], resolved.provider.name, e,
         )
         raise HTTPException(status_code=502, detail=f"backend model call failed: {e}")
 
 
-async def _call_via_responses_api(
-    client, model: str, payload: dict, headers: dict,
-    trace: dict, t_start: float,
-):
+def _finish_and_render(completion: dict, ctx: dict):
+    """Record the turn, then answer in the caller's protocol."""
+    choice = (completion.get("choices") or [{}])[0]
+    message = choice.get("message") or {}
+    _finalize_trace(
+        ctx["trace"], ctx["t_start"], "ok",
+        content=message.get("content"),
+        usage=completion.get("usage"),
+        finish_reason=choice.get("finish_reason"),
+        tool_calls=message.get("tool_calls") or None,
+    )
+    if ctx["client_protocol"] == "anthropic":
+        return JSONResponse(
+            wire.openai_response_to_anthropic(completion, ctx["model"]),
+            headers=ctx["headers"],
+        )
+    return JSONResponse(completion, headers=ctx["headers"])
+
+
+class _StreamAccumulator:
+    """Rebuilds the whole answer from canonical chunks, for the trace record.
+
+    Tool calls stream in fragments: the name arrives on the first delta for an index and the
+    arguments accumulate over later ones, so they are assembled by index rather than taken
+    from any single chunk.
+    """
+
+    def __init__(self) -> None:
+        self.parts: list[str] = []
+        self.finish: str | None = None
+        self.usage: dict | None = None
+        self.calls: dict[int, dict] = {}
+
+    def feed(self, chunk: dict) -> None:
+        choice = (chunk.get("choices") or [None])[0]
+        if choice:
+            delta = choice.get("delta") or {}
+            if delta.get("content"):
+                self.parts.append(delta["content"])
+            for tc in delta.get("tool_calls") or []:
+                slot = self.calls.setdefault(
+                    int(tc.get("index") or 0),
+                    {"id": None, "type": "function",
+                     "function": {"name": None, "arguments": ""}},
+                )
+                if tc.get("id"):
+                    slot["id"] = tc["id"]
+                if tc.get("type"):
+                    slot["type"] = tc["type"]
+                fn = tc.get("function") or {}
+                if fn.get("name"):
+                    slot["function"]["name"] = fn["name"]
+                if fn.get("arguments"):
+                    slot["function"]["arguments"] += fn["arguments"]
+            if choice.get("finish_reason"):
+                self.finish = choice["finish_reason"]
+        if chunk.get("usage"):
+            self.usage = chunk["usage"]
+
+    def content(self) -> str:
+        return "".join(self.parts)
+
+    def tool_calls(self) -> list | None:
+        return [self.calls[i] for i in sorted(self.calls)] or None
+
+
+async def _open_openai_stream(client, model: str, payload: dict):
+    """Open an OpenAI-protocol stream and return an async generator of canonical chunks.
+
+    create() is awaited here rather than inside the generator so an upstream rejection (a bad
+    key, an unknown deployment) still becomes a 502 with a message, instead of a 200 whose
+    body dies on its first chunk.
+    """
+    stream = await client.chat.completions.create(model=model, **payload)
+
+    async def gen():
+        async for chunk in stream:
+            yield chunk.model_dump()
+
+    return gen()
+
+
+async def _open_anthropic_stream(client, body: dict, model: str):
+    """The same, for an Anthropic upstream: the first event is pulled here so an upstream
+    error is a 502 rather than a truncated stream."""
+    decoder = wire.AnthropicStreamDecoder(model)
+    events = client.stream(body)
+    try:
+        first = await events.__anext__()
+    except StopAsyncIteration:
+        first = None
+
+    async def gen():
+        if first is not None:
+            for chunk in decoder.feed(*first):
+                yield chunk
+        async for event, data in events:
+            for chunk in decoder.feed(event, data):
+                yield chunk
+
+    return gen()
+
+
+async def _chunks_from_completion(completion: dict):
+    """A one-chunk stream, for an upstream that cannot stream (the Responses API path)."""
+    choice = (completion.get("choices") or [{}])[0]
+    message = choice.get("message") or {}
+    yield {
+        "id": completion.get("id"),
+        "object": "chat.completion.chunk",
+        "created": completion.get("created"),
+        "model": completion.get("model"),
+        "choices": [{
+            "index": 0,
+            "delta": {"role": "assistant", "content": message.get("content")},
+            "finish_reason": choice.get("finish_reason") or "stop",
+        }],
+        "usage": completion.get("usage"),
+    }
+
+
+async def _sse_openai(chunks, trace: dict, t_start: float):
+    """Canonical chunks -> an OpenAI SSE stream."""
+    acc = _StreamAccumulator()
+    try:
+        async for chunk in chunks:
+            acc.feed(chunk)
+            yield f"data: {json.dumps(chunk, ensure_ascii=False, default=str)}\n\n"
+        yield "data: [DONE]\n\n"
+        _finalize_trace(
+            trace, t_start, "ok",
+            content=acc.content(), usage=acc.usage, finish_reason=acc.finish,
+            tool_calls=acc.tool_calls(),
+        )
+    except Exception as e:  # noqa: BLE001
+        _finalize_trace(trace, t_start, "error", error=str(e))
+        raise
+
+
+async def _sse_anthropic(chunks, trace: dict, t_start: float, model: str):
+    """Canonical chunks -> an Anthropic SSE stream.
+
+    A mid-stream failure is emitted as the protocol's own `error` event rather than re-raised:
+    the response status is already sent, so raising would end the body with no explanation,
+    and Anthropic clients do surface this event to the user.
+    """
+    acc = _StreamAccumulator()
+    encoder = wire.AnthropicEventEncoder(model)
+    try:
+        async for chunk in chunks:
+            acc.feed(chunk)
+            for frame in encoder.feed(chunk):
+                yield frame
+        for frame in encoder.finish(acc.usage):
+            yield frame
+        _finalize_trace(
+            trace, t_start, "ok",
+            content=acc.content(), usage=acc.usage, finish_reason=acc.finish,
+            tool_calls=acc.tool_calls(),
+        )
+    except Exception as e:  # noqa: BLE001
+        _finalize_trace(trace, t_start, "error", error=str(e))
+        yield encoder.error(str(e))
+
+
+async def _complete_via_responses_api(client, model: str, payload: dict) -> dict:
     """Adapt a chat request to the Responses API and convert the result back to the
     chat.completion shape."""
     kwargs = {"model": model, "input": payload["messages"]}
@@ -537,14 +770,10 @@ async def _call_via_responses_api(
         kwargs["max_output_tokens"] = max_out
     resp = await client.responses.create(**kwargs)
     usage = resp.usage.model_dump() if resp.usage else None
-    _finalize_trace(
-        trace, t_start, "ok",
-        content=resp.output_text, usage=usage, finish_reason="stop",
-    )
     # Any OpenAI-compatible upstream can be configured, so a missing created_at must not
     # fail the whole request
     created = int(getattr(resp, "created_at", None) or time.time())
-    completion = {
+    return {
         "id": resp.id,
         "object": "chat.completion",
         "created": created,
@@ -556,23 +785,6 @@ async def _call_via_responses_api(
         }],
         "usage": usage,
     }
-    if payload.get("stream"):
-        # Prototype stage: a streaming request to a responses-only model is returned as a
-        # single SSE chunk
-        chunk = {
-            "id": resp.id, "object": "chat.completion.chunk",
-            "created": created, "model": model,
-            "choices": [{"index": 0,
-                         "delta": {"role": "assistant", "content": resp.output_text},
-                         "finish_reason": "stop"}],
-        }
-
-        async def sse_once():
-            yield f"data: {json.dumps(chunk, ensure_ascii=False)}\n\n"
-            yield "data: [DONE]\n\n"
-
-        return StreamingResponse(sse_once(), media_type="text/event-stream", headers=headers)
-    return JSONResponse(completion, headers=headers)
 
 
 @app.get("/v1/models")
@@ -583,6 +795,9 @@ async def list_models(request: Request):
     # listing it. An empty list is a legitimate answer -- see the 403 in chat_completions.
     login = key["user_login"]
     allowed = await modelpolicy.allowed_models(cfg, login, _is_admin_login(login))
+    # Narrowed again by the key's own scope, for the same reason: a scoped key's picker must
+    # show what that key can actually reach, not what its owner could reach with another key.
+    allowed = keyscope.narrow(cfg, allowed, key.get("scope"))
     models = cfg.models if allowed is None else cfg.restricted_to(allowed).models
     return {
         "object": "list",
@@ -820,10 +1035,14 @@ async def create_key(request: Request, payload: dict = Body(default={})):
         logger.info("api key denied user=%s reason=%s", user["login"], verdict["reason"])
         raise HTTPException(status_code=403, detail=verdict["reason"])
 
+    scope = await _validated_scope(payload.get("scope"), user)
     record, plaintext = authstore.create_api_key(
-        user["login"], (payload.get("name") or "").strip() or "default"
+        user["login"], (payload.get("name") or "").strip() or "default", scope
     )
-    logger.info("api key created user=%s id=%s", user["login"], record["id"])
+    logger.info(
+        "api key created user=%s id=%s scope=%s",
+        user["login"], record["id"], keyscope.describe(scope),
+    )
     # record already carries the plaintext (the caller is by definition its owner); the
     # explicit key here keeps the response shape obvious at the call site.
     return {**record, "key": plaintext}
@@ -837,8 +1056,53 @@ async def update_key(request: Request, key_id: str, payload: dict = Body(...)):
         not user["is_admin"] and record["user_login"] != user["login"]
     ):
         raise HTTPException(status_code=404, detail="key not found")
-    updated = authstore.set_api_key_disabled(key_id, bool(payload.get("disabled")))
+    # Only the fields actually sent are touched, so the console can save a scope without
+    # having to resend a disabled flag it is not editing (and vice versa).
+    patch: dict = {}
+    if "disabled" in payload:
+        patch["disabled"] = bool(payload.get("disabled"))
+    if "name" in payload:
+        patch["name"] = (payload.get("name") or "").strip() or "default"
+    if "scope" in payload:
+        # Validated against the key's *owner*, not the caller: an administrator editing
+        # somebody else's key must not be able to widen it past what that person may use.
+        owner = {"login": record["user_login"], "is_admin": _is_admin_login(record["user_login"])}
+        patch["scope"] = await _validated_scope(payload.get("scope"), owner)
+    updated = authstore.set_api_key_fields(key_id, patch)
+    if updated is None:
+        raise HTTPException(status_code=404, detail="key not found")
+    logger.info(
+        "api key updated user=%s id=%s fields=%s",
+        user["login"], key_id, ",".join(sorted(patch)),
+    )
     return updated
+
+
+async def _validated_scope(raw, owner: dict) -> dict:
+    """Normalize an incoming key scope, and refuse one the owner could not use anyway.
+
+    Explicitly named models are checked against the owner's current policy set, because the
+    user picked them from a list and a name that is not on it is a mistake worth reporting
+    now. Connection types are deliberately not checked: that scope is a rule, so selecting a
+    type before an administrator has granted any model of that type is a legitimate thing to
+    do, and it starts working on its own once they do.
+    """
+    try:
+        scope = keyscope.normalize(raw, cfg)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    if scope.get("kind") == "models":
+        allowed = await modelpolicy.allowed_models(
+            cfg, owner["login"], bool(owner["is_admin"])
+        )
+        if allowed is not None:
+            denied = [m for m in scope["models"] if m not in set(allowed)]
+            if denied:
+                raise HTTPException(
+                    status_code=400,
+                    detail="not available to you: " + ", ".join(denied),
+                )
+    return scope
 
 
 @app.delete("/v1/keys/{key_id}")
@@ -947,6 +1211,16 @@ async def access_cache_refresh(request: Request):
 
 
 # -- Model policy -------------------------------------------------------------
+def _model_api_type(name: str) -> str:
+    """The connection type a catalog model resolves through, or "" when its connection is gone.
+
+    Resolved through the same provider lookup the router uses, so a model bound to a renamed or
+    deleted connection reports nothing rather than a stale type.
+    """
+    provider = cfg.get_provider((cfg.models.get(name) or {}).get("provider"))
+    return provider.api_type if provider is not None else ""
+
+
 @app.get("/v1/models/available")
 async def my_available_models(request: Request):
     """A signed-in user asks which models they may use, and why.
@@ -971,6 +1245,10 @@ async def my_available_models(request: Request):
                 "description": (cfg.models.get(name) or {}).get("description", ""),
                 "reasoning": bool((cfg.models.get(name) or {}).get("reasoning")),
                 "default": bool((cfg.models.get(name) or {}).get("default")),
+                # The connection type behind the model. Needed by the key scope editor, which
+                # offers "every model of this type" as a scope and cannot describe what that
+                # covers without knowing which type each model sits on.
+                "api_type": _model_api_type(name),
             }
             for name in verdict["models"]
         },

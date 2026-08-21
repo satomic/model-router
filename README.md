@@ -1,6 +1,6 @@
 # Model Router
 
-A model router (AI routing gateway): it accepts requests and routes them to a suitable backend model, either by rules or by an AI decision. The backend is not limited to Azure AI Foundry, and each model can be bound to a different connection. It ships with an Azure-portal-styled React console: GitHub sign-in, API key management, usage statistics, full-chain traces, and configuration management.
+A model router (AI routing gateway): it accepts requests and routes them to a suitable backend model, either by rules or by an AI decision. It speaks both the OpenAI chat-completions protocol and the Anthropic Messages protocol, and converts between them, so either kind of client can reach either kind of model. The backend is not limited to Azure AI Foundry, and each model can be bound to a different connection. It ships with an Azure-portal-styled React console: GitHub sign-in, API key management, usage statistics, full-chain traces, and configuration management.
 
 ## Quick start (Docker)
 
@@ -11,18 +11,18 @@ docker run -d --name model-router \
 ```
 
 Nothing to prepare: the configuration is created from the template on first start, and the single
-`/data` volume holds all of it — the configuration, the sign-in state, the keys and the traces — so
+`/data` volume holds all of it (the configuration, the sign-in state, the keys and the traces), so
 an upgrade is just a new image over the same volume.
 
-Open http://localhost:8000/ and sign in as the local super administrator — `admin` / `admin1234`,
+Open http://localhost:8000/ and sign in as the local super administrator, `admin` / `admin1234`,
 which forces a password change first. Configure a backend connection from the console, create an API
 key on the "API keys" page, and point your client at it:
 
-| Field | Value |
-|---|---|
-| Base URL | `http://localhost:8000/v1` |
-| API Key | `mr_...` |
-| Model | any model name registered under "Routing configuration" |
+| Field | OpenAI-compatible client | Anthropic-compatible client |
+|---|---|---|
+| Base URL | `http://localhost:8000/v1` | `http://localhost:8000` |
+| API Key | `mr_...` as `Authorization: Bearer` | `mr_...` as `x-api-key` |
+| Model | any model name registered under "Routing configuration" | the same, or `auto` |
 
 Volumes, port mapping, upgrades and reverse proxies: [Docker deployment](docs/docker.md).
 
@@ -37,13 +37,20 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000
 
 `data/config.yaml` is created from `config.example.yaml` on first start here too, and `data/` is the
 same single directory the container mounts. Running on your own machine, the first visit can also
-use the **setup wizard** to enter a GitHub OAuth Client ID / Secret — it is offered only to requests
+use the **setup wizard** to enter a GitHub OAuth Client ID / Secret. It is offered only to requests
 from `127.0.0.1`, which is why a container uses the local administrator instead.
 
 ## What it does
 
 - **Routes by rules or by an AI decision model**, then adapts parameters per model (reasoning models,
   the Responses API) before calling the backend.
+- **Speaks both protocols on the way in and on the way out.** `/v1/chat/completions` and
+  `/v1/messages` are two doors onto the same router, and a connection can be Azure OpenAI,
+  OpenAI-compatible or Anthropic-compatible. The four combinations all work, streaming included, so
+  an Anthropic-style client can be answered by an Azure deployment and the reverse.
+- **Scopes each API key independently.** One key can be limited to a set of models, or to every model
+  of chosen interface types, always as an intersection with what its owner is allowed, and the scope
+  can be narrowed later without reissuing the key.
 - **One user interaction is one routing decision and one trace.** An agentic client such as GitHub
   Copilot answers a single question with a loop of HTTP requests; an `x-interaction-id` holds the
   model constant across that loop and folds every turn into a single trace record, instead of
@@ -55,19 +62,19 @@ from `127.0.0.1`, which is why a container uses the local administrator instead.
 - **Curates the model list per user, team and organization.** Named model groups are granted per
   scope and resolve as a union, and every user has a page showing exactly what they may call and
   which grant made it available.
-- **Records the full chain** — request, routing decision, backend call, response, and per-turn tool
-  calls — readable in the console as a collapsible JSON tree.
+- **Records the full chain**: request, routing decision, backend call, response, and per-turn tool
+  calls, readable in the console as a collapsible JSON tree.
 
 ## Documentation
 
 | Document | Contents |
 |---|---|
 | [Operations guide](docs/user-guide.md) / [操作指南](docs/user-guide-cn.md)| **the console, screen by screen**: what an administrator configures, then what a standard user does |
-| [Architecture and data flow](docs/architecture.md) | **start here** — diagrams of the components, the request path, and every routing strategy |
-| [Docker deployment](docs/docker.md) | **the recommended path** — the image, port mapping, the data volume, upgrades, reverse proxies |
+| [Architecture and data flow](docs/architecture.md) | **start here**: diagrams of the components, the request path, and every routing strategy |
+| [Docker deployment](docs/docker.md) | **the recommended path**: the image, port mapping, the data volume, upgrades, reverse proxies |
 | [Getting started](docs/getting-started.md) | running from source, frontend development, console languages |
 | [Sign-in and authentication](docs/authentication.md) | the GitHub OAuth App, API keys, the local super administrator, the permission matrix |
-| [Backend connections](docs/providers.md) | providers, per-model bindings, non-Foundry OpenAI-compatible endpoints |
+| [Backend connections](docs/providers.md) | providers, per-model bindings, non-Foundry OpenAI-compatible and Anthropic-compatible endpoints, protocol conversion |
 | [Router logic](docs/router-logic.md) | the request flow, interaction stickiness, rule and AI routing, the editable decision prompt |
 | [Configuration](docs/configuration.md) | `config.yaml`, the console's configuration pages, hot reload |
 | [Access control](docs/access-control.md) | the key-creation policy and the local GitHub structure/member cache |

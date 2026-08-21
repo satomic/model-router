@@ -250,13 +250,19 @@ class AuthStore:
         return sorted(users, key=lambda u: u.get("last_seen") or 0, reverse=True)
 
     # -- API keys -------------------------------------------------------------
-    def create_api_key(self, user_login: str, name: str) -> tuple[dict, str]:
+    def create_api_key(
+        self, user_login: str, name: str, scope: dict | None = None
+    ) -> tuple[dict, str]:
         """Return (record, plaintext key).
 
         Both the plaintext and its digest are persisted: the digest is what lookup
         compares, and the plaintext is what lets the owner read their own key back later
         instead of having to delete it and reconfigure every client. It is only ever
         handed to that owner -- see public_key().
+
+        `scope` limits what this key may reach within its owner's own permitted set; it is
+        validated by app/keyscope.py before it gets here. None stores the unrestricted
+        default, which is also what keys created before scopes existed read back as.
         """
         plaintext = KEY_PREFIX + secrets.token_urlsafe(32)
         key_id = secrets.token_hex(8)
@@ -271,6 +277,7 @@ class AuthStore:
             "last_used_at": None,
             "request_count": 0,
             "disabled": False,
+            "scope": dict(scope) if scope else {"kind": "all"},
         }
         with self._lock:
             # Merge in other writers' entries first, so the whole table is not overwritten
@@ -345,6 +352,24 @@ class AuthStore:
             self._save_keys()
             return self.public_key(record)
 
+    def set_api_key_fields(self, key_id: str, patch: dict) -> dict | None:
+        """Apply a validated patch (any of disabled / name / scope) in one write.
+
+        One setter rather than three: each of these is a read-modify-write of the same file,
+        and a caller changing two fields through two setters would write the table twice and
+        could lose the first change to another worker's reload in between.
+        """
+        with self._lock:
+            self._reload_keys_if_changed()
+            record = self._keys.get(key_id)
+            if record is None:
+                return None
+            for field in ("disabled", "name", "scope"):
+                if field in patch:
+                    record[field] = patch[field]
+            self._save_keys()
+            return self.public_key(record)
+
     @staticmethod
     def public_key(record: dict, include_secret: bool = False) -> dict:
         """The outward-facing representation.
@@ -356,6 +381,10 @@ class AuthStore:
         them as unavailable.
         """
         out = {k: v for k, v in record.items() if k not in ("key_hash", "key")}
+        # Keys minted before scopes existed have no field; they are unrestricted, and filling
+        # it in here means every consumer -- console, enforcement, verify scripts -- reads one
+        # shape instead of each having to remember the missing case.
+        out.setdefault("scope", {"kind": "all"})
         if include_secret and record.get("key"):
             out["key"] = record["key"]
         return out

@@ -9,6 +9,7 @@
  */
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { copyText } from '../clipboard'
 
 type Kind = 'string' | 'number' | 'boolean' | 'null' | 'object' | 'array'
 
@@ -147,11 +148,13 @@ export default function JsonView({
   }
 
   async function copy() {
-    try {
-      await navigator.clipboard.writeText(text)
+    // Through the shared helper, which also works on a non-secure origin where
+    // navigator.clipboard does not exist at all. A refusal is not worth an error banner here:
+    // the JSON is on screen and selectable.
+    if (await copyText(text)) {
       setCopied(true)
       setTimeout(() => setCopied(false), 1500)
-    } catch { /* a denied clipboard permission is not worth an error banner */ }
+    }
   }
 
   return (

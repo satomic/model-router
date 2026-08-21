@@ -150,6 +150,7 @@
       "addTitle": "새 팀 연결",
       "lead": "키 형식은 <code>enterprise-slug/team-id</code>이며, 로컬 GitHub 캐시가 팀을 해석하는 데 필요한 형태입니다. Enterprise 관리자 토큰을 설정하면 <strong>액세스 제어 → 키 정책</strong>에서 숫자 팀 id를 확인할 수 있습니다.",
       "noneDiscovered": "엔터프라이즈 팀을 찾지 못했습니다. ‘액세스 제어 → 키 정책’에서 구조를 새로 고치세요.",
+      "noneAllowed": "키 정책에 따라 API 키를 만들 수 있는 엔터프라이즈 팀이 없어 그룹을 부여할 대상이 없습니다. ‘액세스 제어 → 키 정책’에서 허용하거나 연결을 직접 입력하세요.",
       "search": "팀 필터…",
       "key": "Enterprise / 팀 id",
       "prompt": "팀 키. <enterprise slug>/<team id> 형식으로 입력합니다. 예: your-enterprise/14501973",
@@ -160,6 +161,7 @@
       "addTitle": "새 조직 연결",
       "lead": "키는 <strong>조직 로그인 이름</strong>이며 GitHub URL에 나타나는 그대로 씁니다. 멤버십은 가능하면 로컬 GitHub 캐시가 답하고, 그렇지 않을 때만 실시간 호출을 합니다.",
       "noneDiscovered": "조직을 찾지 못했습니다. ‘액세스 제어 → 키 정책’에서 구조를 새로 고치세요.",
+      "noneAllowed": "키 정책에 따라 API 키를 만들 수 있는 조직이 없어 그룹을 부여할 대상이 없습니다. ‘액세스 제어 → 키 정책’에서 허용하거나 연결을 직접 입력하세요.",
       "search": "조직 필터…",
       "key": "조직 로그인 이름",
       "prompt": "조직 로그인 이름. 예: your-org"
@@ -177,9 +179,11 @@
       "partialBadge": "일부 목록",
       "partial": "GitHub가 조직 {{total}}개 중 {{listed}}개만 반환했으므로 이 목록은 불완전합니다. 필터는 반환된 항목만 검색합니다. 목록에 없는 조직은 직접 입력할 수 있습니다.",
       "gateOnBadge": "제한됨",
-      "gateOn": "API 키 생성이 <strong>제한되어</strong> 있으므로, 키를 만들 수 있는 구성원이 있는 범위에만 그룹을 부여할 수 있습니다 — 키가 없으면 라우터에 도달하지 못하므로 부여해도 아무 효과가 없습니다.",
+      "gateOn": "API 키 생성이 <strong>제한되어</strong> 있으므로, 이 표에는 ‘액세스 제어 → 키 정책’에서 허용된 범위만 표시됩니다. 다른 범위의 구성원은 키를 만들 수 없어 라우터에 도달하지 못하므로, 여기서 그룹을 부여해도 아무 효과가 없습니다.",
       "gateOffBadge": "제한 없음",
       "gateOff": "API 키 생성이 <strong>로그인할 수 있는 모든 사용자에게 열려</strong> 있으므로, 발견된 모든 범위에 그룹을 부여할 수 있습니다. 키 생성을 제한하려면 ‘액세스 제어 → 키 정책’으로 이동하세요.",
+      "excludedBadge": "정책으로 필터링됨",
+      "excluded": "표시되지 않음: 발견된 {{total}}개 범위 중 {{hidden}}개는 키 정책에서 허용되지 않았습니다. 여기서 연결하려면 ‘액세스 제어 → 키 정책’에서 먼저 허용하세요.",
       "mayCreateKeys": "키 생성 가능",
       "mayNotCreateKeys": "키 생성 불가",
       "entOff": "이 엔터프라이즈는 키 정책에서 꺼져 있어 구성원 누구도 API 키를 만들 수 없습니다.",
@@ -328,11 +332,26 @@
     "created": {
       "title": "키를 만들었습니다",
       "readyBadge": "바로 사용할 수 있습니다",
-      "note": "지금 클라이언트 설정에 복사하세요. 아래 키 목록에서 언제든지 다시 확인할 수 있습니다 — 이 키는 본인에게 항상 표시됩니다.",
+      "note": "지금 클라이언트 설정에 복사하세요. 아래 키 목록에서 언제든지 다시 확인할 수 있습니다 — 이 키는 본인에게 항상 표시됩니다."
+    },
+    "cli": {
+      "show": "사용 예시",
+      "close": "예시 닫기",
+      "rowTitle": "{{name}} 키의 명령줄 사용법",
       "byokTitle": "GitHub Copilot에서 BYOK로 사용하기",
+      "protocolHint": "같은 키로 두 프로토콜을 모두 쓸 수 있고, 변환은 라우터가 처리합니다",
+      "protocol": {
+        "openai": "OpenAI 호환",
+        "anthropic": "Anthropic 호환"
+      },
       "modelHint": "「라우팅 설정」에 등록된 아무 모델 이름",
       "curlComment": "명령줄에서 확인",
-      "attribution": "이 키로 보낸 모든 요청은 <code>{{login}}</code>에 귀속되며, 추적의 <code>user_id</code>가 바로 그 GitHub 계정입니다."
+      "modelIgnored": "model 필드는 무시됩니다. 모델은 라우터가 선택하고 추적 기록에 남습니다",
+      "copyCommand": "명령 복사",
+      "attribution": "이 키로 보낸 모든 요청은 <code>{{login}}</code>에 귀속되며, 추적의 <code>user_id</code>가 바로 그 GitHub 계정입니다.",
+      "placeholderBadge": "자리표시자",
+      "unavailableNote": "이 키의 평문은 읽을 수 있는 형태로 저장되어 있지 않아 예시에는 <code>{{placeholder}}</code> 를 넣었습니다. 생성할 때 저장해 둔 값을 넣거나, 키를 다시 만들어 읽을 수 있는 값을 받으세요.",
+      "otherUserNote": "이 키는 <code>{{login}}</code> 의 것이며 값은 소유자에게만 표시되므로, 예시에는 <code>{{placeholder}}</code> 를 넣었습니다."
     },
     "create": {
       "title": "새 키",
@@ -364,7 +383,8 @@
       "enable": "사용",
       "disable": "사용 중지",
       "confirmDelete": "키 「{{name}}」을 삭제할까요? 이 키를 쓰는 클라이언트는 즉시 동작하지 않습니다.",
-      "confirmDeleteTitle": "API 키 삭제"
+      "confirmDeleteTitle": "API 키 삭제",
+      "scope": "범위"
     },
     "copyFailed": "클립보드에 복사할 수 없습니다. 브라우저는 HTTPS(또는 localhost)에서만 이 동작을 허용합니다 — 「표시」를 누른 뒤 직접 복사하세요.",
     "access": {
@@ -401,6 +421,36 @@
       "scannedTruncated": "({{count}}개 탐색, 이후 생략)",
       "undecidable": "판정할 수 없음",
       "undecidableHint": "GitHub이 답을 주지 않아 미승인으로 처리합니다"
+    },
+    "scope": {
+      "title": "범위",
+      "hint": "이 키가 접근할 수 있는 범위입니다. 본인에게 허용된 범위를 넘지 못하고 좁히기만 합니다",
+      "kind": {
+        "all": "내 전체 모델",
+        "api_types": "연결 유형으로 지정",
+        "models": "특정 모델"
+      },
+      "kindHint": {
+        "all": "모델 정책이 허용한 전체 모델",
+        "api_types": "선택한 연결 유형의 모든 모델. 이후 추가되는 모델도 포함됩니다",
+        "models": "내 목록에서 직접 선택"
+      },
+      "typeCovers_other": "내 모델 {{count}}개 포함",
+      "typeCoversNone": "이 유형에 해당하는 모델이 아직 없습니다",
+      "pickAType": "연결 유형을 하나 이상 선택하세요.",
+      "pickAModel": "모델을 하나 이상 선택하세요.",
+      "noModels": "사용할 수 있는 모델이 아직 없습니다.",
+      "selectAll": "전체 선택",
+      "clear": "지우기",
+      "edit": "범위",
+      "close": "닫기",
+      "editTitle": "{{name}} 의 범위",
+      "save": "범위 저장",
+      "cancel": "취소",
+      "summary": {
+        "all": "전체 모델",
+        "models_other": "{{count}}개 모델"
+      }
     }
   },
   "access": {
@@ -693,7 +743,7 @@
     "step": "{{total}}단계 중 {{n}}단계 · {{label}}",
     "nextStep": "다음: {{label}} →",
     "guide": {
-      "providers": "여기서 시작합니다. <strong>백엔드 연결</strong>은 하나의 백엔드 주소와 그 키입니다(Azure AI Foundry 또는 OpenAI 호환 엔드포인트). 모델 카탈로그의 모든 모델은 이 중 하나를 통해 제공되므로, 연결을 최소 하나 저장하기 전에는 이 페이지의 다른 설정이 동작하지 않습니다.",
+      "providers": "여기서 시작합니다. <strong>연결</strong>은 백엔드 주소와 그 키의 조합이며 Azure AI Foundry, OpenAI 호환 엔드포인트, Anthropic 호환 엔드포인트 중 하나입니다. 모델 카탈로그의 모든 모델은 이 중 하나를 통해 제공되므로 연결을 최소 하나 저장하기 전에는 이 페이지의 다른 설정이 동작하지 않습니다.",
       "models": "각 항목은 클라이언트가 요청할 수 있는 모델 이름이며, 이를 제공하는 연결에 연결됩니다. <strong>설명</strong>은 장식이 아닙니다. AI 라우터가 선택할 때 읽는 것이 바로 이 문장이므로, 모호한 설명은 모호한 라우팅으로 이어집니다.",
       "strategy": "실제로 사용할 모델을 정하는 방식: <strong>규칙</strong>, <strong>AI</strong> 판단, 또는 <code>rule-then-ai</code> — 규칙을 먼저 보고, 일치하지 않은 요청만 판단 호출을 소모합니다.",
       "rules": "키워드와 길이 규칙을 <strong>순서대로</strong> 검사하며 첫 일치가 적용됩니다. 규칙을 사용하는 전략에서만 사용됩니다."
@@ -720,7 +770,7 @@
       "title": "백엔드 연결(Providers)",
       "count_other": "{{count}}개",
       "add": "+ 연결 추가",
-      "lead": "연결은 「주소 + 키」 한 쌍입니다. 모델은 기본적으로 「기본」으로 표시된 연결을 물려받지만, 각각 다른 연결에 묶을 수도 있습니다 — 다른 환경의 Azure AI Foundry여도 되고, 아무 OpenAI 호환 서비스여도 됩니다. 키는 서버의 <code>config.yaml</code>에 저장됩니다(이 파일은 <code>.gitignore</code>로 제외되어 있습니다).",
+      "lead": "연결은 “주소 + 키” 한 쌍입니다. 모델은 기본적으로 default 로 표시된 연결을 상속하며, 각자 자신의 연결을 지정할 수도 있습니다. 다른 환경의 Azure AI Foundry, OpenAI 호환 서비스, Anthropic 호환 서비스 모두 가능합니다. 키는 서버의 <code>config.yaml</code> 에 저장됩니다(이 파일은 <code>.gitignore</code> 로 제외됩니다).",
       "empty": "아직 연결이 없습니다. 하나 추가한 뒤에 모델을 묶을 수 있습니다.",
       "promptName": "새 연결의 이름(models가 이 이름으로 참조합니다. 예: openrouter):",
       "promptRename": "연결 이름 바꾸기:",
@@ -735,14 +785,28 @@
       "setDefault": "기본으로 설정",
       "rename": "이름 바꾸기",
       "baseUrl": "주소(base_url)",
-      "baseUrlHint": "Azure는 https://xxx.openai.azure.com/, OpenAI 호환은 /v1까지 적습니다",
+      "baseUrlHint": {
+        "azure": "리소스 루트 주소. 예: https://xxx.openai.azure.com/",
+        "openai": "/v1 까지 입력합니다",
+        "anthropic": "/v1/messages 를 제공하는 호스트"
+      },
       "apiKey": "키(api_key)",
       "apiKeyHint": "저장하면 config.yaml에 기록됩니다",
       "apiKeyPlaceholder": "비워 두면 .env의 AZURE_OPENAI_API_KEY로 대체합니다",
       "apiType": "인터페이스 종류(api_type)",
-      "apiTypeAzureOption": "azure — Azure OpenAI / AI Foundry",
-      "apiTypeOpenAIOption": "openai — OpenAI 호환 서비스",
-      "apiVersionHint": "azure에만 필요합니다"
+      "apiVersionHint": "azure에만 필요합니다",
+      "typeAnthropic": "Anthropic 호환",
+      "apiTypeOption": {
+        "azure": "azure · Azure OpenAI / AI Foundry",
+        "openai": "openai · OpenAI 호환 서비스",
+        "anthropic": "anthropic · Anthropic 호환 서비스(Messages API)"
+      },
+      "anthropicVersionHint": "anthropic-version 헤더로 전송됩니다. 비워 두면 2023-06-01",
+      "baseUrlPlaceholder": {
+        "azure": "https://your-resource.openai.azure.com/",
+        "openai": "https://api.example.com/v1",
+        "anthropic": "https://api.anthropic.com"
+      }
     },
     "models": {
       "title": "모델 카탈로그",

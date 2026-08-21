@@ -6,8 +6,8 @@ to hand every scope a curated, deliberately small list rather than the whole cat
 privilege boundary, which is why **administrators are exempt from it**, exactly as with the key
 policy.
 
-Resolution lives in [app/modelpolicy.py](../app/modelpolicy.py); the console page is "Routing
-configuration → Model policy".
+Resolution lives in [app/modelpolicy.py](../app/modelpolicy.py); the console page is **Model policy**, a top-level
+entry under Management.
 
 ## Model groups
 

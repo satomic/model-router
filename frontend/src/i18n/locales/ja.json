@@ -150,6 +150,7 @@
       "addTitle": "チームの紐づけを追加",
       "lead": "キーの形式は <code>enterprise-slug/team-id</code> で、ローカルの GitHub キャッシュがチームを解決するために必要な形です。Enterprise 管理者トークンを設定すると、<strong>アクセス制御 → キーポリシー</strong>で数値のチーム id を確認できます。",
       "noneDiscovered": "エンタープライズチームが検出されませんでした。「アクセス制御 → キーポリシー」で構成を更新してください。",
+      "noneAllowed": "キーポリシー上、API キーを作成できるエンタープライズチームがないため、グループを付与する対象がありません。「アクセス制御 → キーポリシー」で許可するか、割り当てを手動で入力してください。",
       "search": "チームを絞り込む…",
       "key": "Enterprise / チーム id",
       "prompt": "チームキー。<enterprise slug>/<team id> の形式で入力します。例: your-enterprise/14501973",
@@ -160,6 +161,7 @@
       "addTitle": "Organization の紐づけを追加",
       "lead": "キーは <strong>Organization のログイン名</strong>で、GitHub の URL に現れるとおりに書きます。メンバーシップは可能な限りローカルの GitHub キャッシュから答え、できない場合のみライブ呼び出しを行います。",
       "noneDiscovered": "Organization が検出されませんでした。「アクセス制御 → キーポリシー」で構成を更新してください。",
+      "noneAllowed": "キーポリシー上、API キーを作成できる Organization がないため、グループを付与する対象がありません。「アクセス制御 → キーポリシー」で許可するか、割り当てを手動で入力してください。",
       "search": "組織を絞り込む…",
       "key": "Organization のログイン名",
       "prompt": "Organization のログイン名。例: your-org"
@@ -177,9 +179,11 @@
       "partialBadge": "一部のみ",
       "partial": "GitHub は {{total}} 件の組織のうち {{listed}} 件のみを返したため、この一覧は不完全です。絞り込みは返された分だけを検索します。一覧にない組織は手動で入力できます。",
       "gateOnBadge": "制限あり",
-      "gateOn": "API キーの作成が<strong>制限されています</strong>。そのためキーを作成できるメンバーがいるスコープだけにグループを付与できます — キーがなければルーターには届かないので、付与しても何も得られません。",
+      "gateOn": "API キーの作成が<strong>制限されています</strong>。そのためこの表には「アクセス制御 → キーポリシー」で許可されたスコープだけを表示します。それ以外のスコープのメンバーはキーを作成できず、ルーターにも届かないため、ここでグループを付与しても何も得られません。",
       "gateOffBadge": "制限なし",
       "gateOff": "API キーの作成は<strong>サインインできる全員に開放</strong>されているため、検出されたすべてのスコープにグループを付与できます。キー作成を制限するには「アクセス制御 → キーポリシー」へ。",
+      "excludedBadge": "ポリシーで絞り込み",
+      "excluded": "非表示: 検出された {{total}} 件のスコープのうち {{hidden}} 件はキーポリシーで許可されていません。ここで付与するには「アクセス制御 → キーポリシー」で許可してください。",
       "mayCreateKeys": "キー作成可",
       "mayNotCreateKeys": "キー作成不可",
       "entOff": "このエンタープライズはキーポリシーで無効です。メンバーは誰も API キーを作成できません。",
@@ -328,11 +332,26 @@
     "created": {
       "title": "キーを作成しました",
       "readyBadge": "すぐに使えます",
-      "note": "今すぐクライアント設定にコピーしてください。あとから下のキー一覧でいつでも確認できます — このキーはあなたには常に表示されます。",
+      "note": "今すぐクライアント設定にコピーしてください。あとから下のキー一覧でいつでも確認できます — このキーはあなたには常に表示されます。"
+    },
+    "cli": {
+      "show": "使用例",
+      "close": "使用例を閉じる",
+      "rowTitle": "{{name}} のコマンドライン利用例",
       "byokTitle": "GitHub Copilot で BYOK として使う",
+      "protocolHint": "同じキーで両方のプロトコルが使えます。変換はルーターが行います",
+      "protocol": {
+        "openai": "OpenAI 互換",
+        "anthropic": "Anthropic 互換"
+      },
       "modelHint": "「ルーティング設定」に登録されている任意のモデル名",
       "curlComment": "コマンドラインでの確認",
-      "attribution": "このキーで送られたすべてのリクエストは <code>{{login}}</code> に紐付けられ、トレースの <code>user_id</code> がその GitHub アカウントになります。"
+      "modelIgnored": "model フィールドは無視されます。モデルはルーターが選び、トレースに記録されます",
+      "copyCommand": "コマンドをコピー",
+      "attribution": "このキーで送られたすべてのリクエストは <code>{{login}}</code> に紐付けられ、トレースの <code>user_id</code> がその GitHub アカウントになります。",
+      "placeholderBadge": "プレースホルダー",
+      "unavailableNote": "このキーの平文は読み取れる形で保存されていないため、例では <code>{{placeholder}}</code> を置いています。作成時に保存した値を入れるか、キーを作り直して読み取れるものを用意してください。",
+      "otherUserNote": "このキーは <code>{{login}}</code> のもので、値は所有者にのみ表示されるため、例では <code>{{placeholder}}</code> を置いています。"
     },
     "create": {
       "title": "新しいキー",
@@ -364,7 +383,8 @@
       "enable": "有効化",
       "disable": "無効化",
       "confirmDelete": "キー「{{name}}」を削除しますか？これを使っているクライアントは即座に動かなくなります。",
-      "confirmDeleteTitle": "API キーを削除"
+      "confirmDeleteTitle": "API キーを削除",
+      "scope": "スコープ"
     },
     "copyFailed": "クリップボードにコピーできませんでした。ブラウザーは HTTPS（または localhost）でのみこの操作を許可します — 「表示」を押して手動でコピーしてください。",
     "access": {
@@ -401,6 +421,36 @@
       "scannedTruncated": "（{{count}} 件を調査、以降は省略）",
       "undecidable": "判定できません",
       "undecidableHint": "GitHub から回答が得られず、不許可として扱います"
+    },
+    "scope": {
+      "title": "スコープ",
+      "hint": "このキーが到達できる範囲。自分に許可された範囲を超えることはなく、狭めるだけです",
+      "kind": {
+        "all": "自分の全モデル",
+        "api_types": "接続タイプで指定",
+        "models": "モデルを指定"
+      },
+      "kindHint": {
+        "all": "モデルポリシーで許可されている全モデル",
+        "api_types": "選んだ接続タイプの全モデル。後から追加されたものも含まれます",
+        "models": "自分の一覧から個別に選択"
+      },
+      "typeCovers_other": "自分のモデル {{count}} 件が対象",
+      "typeCoversNone": "このタイプのモデルはまだありません",
+      "pickAType": "接続タイプを 1 つ以上選んでください。",
+      "pickAModel": "モデルを 1 つ以上選んでください。",
+      "noModels": "利用できるモデルがまだありません。",
+      "selectAll": "すべて選択",
+      "clear": "クリア",
+      "edit": "スコープ",
+      "close": "閉じる",
+      "editTitle": "{{name}} のスコープ",
+      "save": "スコープを保存",
+      "cancel": "キャンセル",
+      "summary": {
+        "all": "全モデル",
+        "models_other": "{{count}} 件のモデル"
+      }
     }
   },
   "access": {
@@ -693,7 +743,7 @@
     "step": "ステップ {{n}} / {{total}} · {{label}}",
     "nextStep": "次へ: {{label}} →",
     "guide": {
-      "providers": "ここから始めます。<strong>バックエンド接続</strong>とは、1 つのバックエンドアドレスとそのキーのことです（Azure AI Foundry、または OpenAI 互換のエンドポイント）。モデルカタログのすべてのモデルはいずれかの接続経由で提供されるため、少なくとも 1 つを保存するまでこのページの他の設定は機能しません。",
+      "providers": "ここから始めます。<strong>接続</strong>とはバックエンドのアドレスとそのキーの組で、Azure AI Foundry、OpenAI 互換エンドポイント、Anthropic 互換エンドポイントのいずれかです。モデルカタログの各モデルはいずれかの接続を通じて提供されるため、少なくとも 1 つを保存するまでこのページの他の設定は機能しません。",
       "models": "各エントリはクライアントが要求できるモデル名で、それを提供する接続に紐づきます。<strong>説明</strong>は飾りではありません。AI ルーターが選択時に読むのはこの文章なので、曖昧な説明は曖昧なルーティングになります。",
       "strategy": "実際に使うモデルの決め方: <strong>ルール</strong>、<strong>AI</strong> による判断、または <code>rule-then-ai</code>（まずルールを見て、一致しなかったリクエストだけが判断呼び出しを消費します）。",
       "rules": "キーワードと長さのルールを<strong>順番に</strong>照合し、最初に一致したものが採用されます。ルールを使う戦略のときだけ参照されます。"
@@ -720,7 +770,7 @@
       "title": "バックエンド接続（Providers）",
       "count_other": "{{count}} 件",
       "add": "+ 接続を追加",
-      "lead": "接続は「URL + キー」1 組です。モデルは既定で「既定」と印の付いた接続を継承しますが、それぞれ別の接続に紐付けることもできます — 別環境の Azure AI Foundry でも、任意の OpenAI 互換サービスでも構いません。キーはサーバー側の <code>config.yaml</code> に保存されます（このファイルは <code>.gitignore</code> で除外されています）。",
+      "lead": "接続とは「アドレス + キー」の組です。モデルは既定で default と記された接続を継承し、個別に自分の接続を割り当てることもできます。別環境の Azure AI Foundry、OpenAI 互換サービス、Anthropic 互換サービスのいずれでも構いません。キーはサーバー上の <code>config.yaml</code> に保存されます（このファイルは <code>.gitignore</code> で除外されています）。",
       "empty": "接続がまだありません。1 つ追加してからモデルを紐付けてください。",
       "promptName": "新しい接続の名前（models はこの名前で参照します。例：openrouter）：",
       "promptRename": "接続の名前を変更：",
@@ -735,14 +785,28 @@
       "setDefault": "既定にする",
       "rename": "名前を変更",
       "baseUrl": "URL（base_url）",
-      "baseUrlHint": "Azure は https://xxx.openai.azure.com/ を、OpenAI 互換は /v1 まで指定します",
+      "baseUrlHint": {
+        "azure": "リソースのルート。例：https://xxx.openai.azure.com/",
+        "openai": "/v1 まで含めて入力します",
+        "anthropic": "/v1/messages を提供するホスト"
+      },
       "apiKey": "キー（api_key）",
       "apiKeyHint": "保存すると config.yaml に書き込まれます",
       "apiKeyPlaceholder": "空欄なら .env の AZURE_OPENAI_API_KEY にフォールバックします",
       "apiType": "インターフェイス種別（api_type）",
-      "apiTypeAzureOption": "azure — Azure OpenAI / AI Foundry",
-      "apiTypeOpenAIOption": "openai — OpenAI 互換サービス",
-      "apiVersionHint": "azure のみ必要です"
+      "apiVersionHint": "azure のみ必要です",
+      "typeAnthropic": "Anthropic 互換",
+      "apiTypeOption": {
+        "azure": "azure · Azure OpenAI / AI Foundry",
+        "openai": "openai · OpenAI 互換サービス",
+        "anthropic": "anthropic · Anthropic 互換サービス（Messages API）"
+      },
+      "anthropicVersionHint": "anthropic-version ヘッダーとして送信されます。空欄なら 2023-06-01",
+      "baseUrlPlaceholder": {
+        "azure": "https://your-resource.openai.azure.com/",
+        "openai": "https://api.example.com/v1",
+        "anthropic": "https://api.anthropic.com"
+      }
     },
     "models": {
       "title": "モデルカタログ",

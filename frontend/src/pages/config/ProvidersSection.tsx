@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Trans, useTranslation } from 'react-i18next'
-import type { ProviderMeta } from '../../api'
+import { API_TYPES, type ApiType, type ProviderMeta } from '../../api'
 import { useDialogs } from '../../components/Dialog'
 import type { SectionProps } from './types'
 
@@ -9,6 +9,30 @@ const BLANK_PROVIDER: ProviderMeta = {
   api_key: '',
   api_type: 'azure',
   api_version: '2024-12-01-preview',
+}
+
+/** The label for one connection type, so the badge and the picker cannot drift apart. */
+const TYPE_LABEL: Record<ApiType, string> = {
+  azure: 'config.providers.typeAzure',
+  openai: 'config.providers.typeOpenAI',
+  anthropic: 'config.providers.typeAnthropic',
+}
+
+/** The version field means a different thing per connection type, so it is labelled and
+ *  defaulted per type rather than shown as one generic "api_version" for all three. */
+const VERSION_FIELD: Record<ApiType, { label: string; hint: string; placeholder: string } | null> = {
+  azure: {
+    label: 'api_version',
+    hint: 'config.providers.apiVersionHint',
+    placeholder: '2024-12-01-preview',
+  },
+  // An OpenAI-compatible address carries no version parameter at all.
+  openai: null,
+  anthropic: {
+    label: 'anthropic-version',
+    hint: 'config.providers.anthropicVersionHint',
+    placeholder: '2023-06-01',
+  },
 }
 
 /** Backend connections: a set of "address + key" pairs that models reference by name. */
@@ -118,16 +142,14 @@ export default function ProvidersSection({ cfg, set, notify }: SectionProps) {
         const boundCount = modelNames.filter(
           (m) => (cfg.models[m].provider ?? cfg.default_provider) === name,
         ).length
+        const apiType: ApiType = (p.api_type as ApiType) ?? 'azure'
+        const version = VERSION_FIELD[apiType]
         return (
           <div className="provider-card" key={name}>
             <div className="head">
               <span className="name">{name}</span>
               {isDefault && <span className="badge ok">{t('config.providers.defaultBadge')}</span>}
-              <span className="badge">
-                {p.api_type === 'openai'
-                  ? t('config.providers.typeOpenAI')
-                  : t('config.providers.typeAzure')}
-              </span>
+              <span className="badge">{t(TYPE_LABEL[apiType])}</span>
               <span className="badge">{t('config.providers.boundModels', { count: boundCount })}</span>
               <span className="spacer" />
               {!isDefault && (
@@ -146,13 +168,13 @@ export default function ProvidersSection({ cfg, set, notify }: SectionProps) {
             <label className="field">
               <span className="field-name">
                 {t('config.providers.baseUrl')}
-                <span className="field-hint">{t('config.providers.baseUrlHint')}</span>
+                <span className="field-hint">{t('config.providers.baseUrlHint.' + apiType)}</span>
               </span>
               <input
                 type="text"
                 className="mono"
                 value={p.base_url ?? ''}
-                placeholder="https://your-resource.openai.azure.com/"
+                placeholder={t('config.providers.baseUrlPlaceholder.' + apiType)}
                 onChange={(e) => setProvider(name, { base_url: e.target.value })}
               />
             </label>
@@ -184,29 +206,38 @@ export default function ProvidersSection({ cfg, set, notify }: SectionProps) {
               <label className="field" style={{ marginBottom: 0 }}>
                 <span className="field-name">{t('config.providers.apiType')}</span>
                 <select
-                  value={p.api_type ?? 'azure'}
-                  onChange={(e) =>
-                    setProvider(name, { api_type: e.target.value as 'azure' | 'openai' })
-                  }
+                  value={apiType}
+                  onChange={(e) => {
+                    const next = e.target.value as ApiType
+                    // The stored version belongs to the type it was entered under, so it is
+                    // cleared on a switch: an Azure api-version string sent as
+                    // anthropic-version is rejected upstream, and a stale value in a field
+                    // the user never revisits is the kind of thing nobody thinks to check.
+                    setProvider(name, { api_type: next, api_version: '' })
+                  }}
                 >
-                  <option value="azure">{t('config.providers.apiTypeAzureOption')}</option>
-                  <option value="openai">{t('config.providers.apiTypeOpenAIOption')}</option>
+                  {API_TYPES.map((tp) => (
+                    <option key={tp} value={tp}>
+                      {t('config.providers.apiTypeOption.' + tp)}
+                    </option>
+                  ))}
                 </select>
               </label>
-              <label className="field" style={{ marginBottom: 0 }}>
-                <span className="field-name">
-                  api_version
-                  <span className="field-hint">{t('config.providers.apiVersionHint')}</span>
-                </span>
-                <input
-                  type="text"
-                  className="mono"
-                  value={p.api_version ?? ''}
-                  placeholder="2024-12-01-preview"
-                  disabled={p.api_type === 'openai'}
-                  onChange={(e) => setProvider(name, { api_version: e.target.value })}
-                />
-              </label>
+              {version && (
+                <label className="field" style={{ marginBottom: 0 }}>
+                  <span className="field-name">
+                    {version.label}
+                    <span className="field-hint">{t(version.hint)}</span>
+                  </span>
+                  <input
+                    type="text"
+                    className="mono"
+                    value={p.api_version ?? ''}
+                    placeholder={version.placeholder}
+                    onChange={(e) => setProvider(name, { api_version: e.target.value })}
+                  />
+                </label>
+              )}
             </div>
           </div>
         )

@@ -67,19 +67,31 @@ auth:
         organizations: []      # Allowed organization logins, e.g. [your-org]
         teams: []              # Allowed enterprise-team **numeric ids**, e.g. ['14501973']
 
-# Backend connections: any OpenAI-compatible address and key can be configured here
-# api_type: azure (Azure OpenAI / Foundry, deployment-path URLs) | openai (plain OpenAI-compatible)
+# Backend connections: any OpenAI-compatible or Anthropic-compatible address and key
+# api_type: azure (Azure OpenAI / Foundry, deployment-path URLs)
+#         | openai    (plain OpenAI-compatible; no version field)
+#         | anthropic (Messages API; api_version is the anthropic-version header)
+# Callers do not have to match the type. The router accepts requests on both
+# /v1/chat/completions and /v1/messages and converts to whatever the chosen model's
+# connection speaks, so any client protocol can reach any model.
 providers:
   foundry:
     base_url: https://your-resource.openai.azure.com/
     api_key: ''
     api_type: azure
-    api_version: 2024-12-01-preview
+    api_version: 2024-12-01-preview   # the ?api-version= query parameter
   # Example: attach any OpenAI-compatible service
   # openrouter:
   #   base_url: https://openrouter.ai/api/v1
   #   api_key: sk-or-...
   #   api_type: openai
+  # Example: attach an Anthropic-compatible service (Anthropic, a Databricks Claude
+  # serving endpoint, any gateway exposing /v1/messages). The key is sent as x-api-key.
+  # anthropic:
+  #   base_url: https://api.anthropic.com
+  #   api_key: sk-ant-...
+  #   api_type: anthropic
+  #   api_version: '2023-06-01'       # the anthropic-version header; omit for this default
 
 # The connection used by models that do not name a provider of their own
 default_provider: foundry
@@ -100,6 +112,14 @@ models:
   #   model_name: anthropic/claude-opus-5
   #   reasoning: true
   #   description: Flagship high-end model.
+  # Example: a Claude model on an Anthropic-compatible connection. reasoning: true is
+  # required on endpoints that reject sampling parameters, which Databricks Claude
+  # serving endpoints do; without it every call through them fails with an upstream 400.
+  # claude-sonnet-5:
+  #   provider: anthropic
+  #   model_name: claude-sonnet-5
+  #   reasoning: true
+  #   description: Strong reasoning and long-context model. Good for large refactors and deep analysis.
 
 ai_router:
   decision_model: gpt-4.1

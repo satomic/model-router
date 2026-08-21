@@ -64,13 +64,19 @@ aggregate. The in-memory index of the 500 most recent summaries remains only for
   even Copilot BYOK requests are attributed accurately
 - **request**: the original request headers (`authorization` / `api-key` / `x-api-key` / `cookie`
   and other sensitive headers are redacted), the complete messages, and the request parameters
-- **routing**: the chosen model, the reason, the decision latency, and the decision analysis —
-  in rule mode, the evaluation result of every rule and the keyword that matched; in AI mode, the
-  system prompt actually sent this time (`decision_system` — the prompt is editable, so each call is
-  archived), the input given to the decision model, its raw output, the rationale, the latency and
+- **routing**: the chosen model, the reason, the decision latency, and the decision analysis. In
+  rule mode, the evaluation result of every rule and the keyword that matched; in AI mode, the
+  system prompt actually sent this time (`decision_system`, archived per call because the prompt is
+  editable), the input given to the decision model, its raw output, the rationale, the latency and
   the token consumption; for a sticky hit, a note about the binding
+- **client_protocol / backend.protocol**: which door the request arrived on (`openai` for
+  `/v1/chat/completions`, `anthropic` for `/v1/messages`) and which protocol the backend spoke. They
+  are recorded **per turn** rather than once per interaction, because one chain can be answered by an
+  Azure deployment on its first turn and a Claude endpoint on its second, and a turn that does not
+  say which is which cannot explain itself. When the two differ, `wire.py` converted the call
 - **backend**: the provider name and address, `api_type`, the real deployment name, the API flavour
-  (chat/responses), the payload sent after parameter adaptation, and the backend latency (never any
+  (chat/responses), the payload sent after parameter adaptation, `dropped_params` when a
+  parameter the target protocol has no equivalent for was removed, and the backend latency (never any
   credentials)
 - **response**: the complete response content (a streaming request is aggregated and recorded once
   the stream ends), `finish_reason`, the `tool_calls` the model requested, and `usage` (summed over

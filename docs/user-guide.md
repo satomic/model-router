@@ -34,8 +34,9 @@ can be inspected afterwards.
 
 ### 1.2 How it works
 
-One process. It serves the console at `/`, the OpenAI-compatible API under `/v1`, and keeps all of
-its state in a single `data/` directory: no database, no cache server, no queue. A request goes
+One process. It serves the console at `/`, an API under `/v1` that speaks **both** the OpenAI
+chat-completions protocol and the Anthropic Messages protocol, and keeps all of its state in a single
+`data/` directory: no database, no cache server, no queue. A request goes
 through authentication, the model policy, the sticky-binding check, the routing strategy, parameter
 adaptation for the chosen model, the backend call, and finally the trace record.
 
@@ -47,7 +48,9 @@ system: which button to press, in which order, and what the screen says afterwar
 
 | Concept | What it means here |
 |---|---|
-| **Connection** (provider) | One backend address plus its key. Models bind to a connection, so one router can serve models living on different endpoints. |
+| **Connection** (provider) | One backend address plus its key, and the interface type it speaks: Azure OpenAI, an OpenAI-compatible service, or an Anthropic-compatible service. Models bind to a connection, so one router can serve models living on different endpoints and different protocols. |
+| **Protocol conversion** | The client protocol and the backend protocol are chosen independently. An OpenAI-style client can be answered by a Claude endpoint and an Anthropic-style client by an Azure deployment; the router converts request and response, streaming included. |
+| **Key scope** | What a single API key may reach, inside what its owner may reach. A scope only ever narrows: `all`, or every model of chosen interface types, or an explicit list. |
 | **Model catalog** | The model names a client is allowed to send. Each entry carries a description, which is what the AI decision model reads when choosing. |
 | **Default model** | Used when no rule matches, and when an AI decision fails or times out. Exactly one model carries the `default` badge. |
 | **Interaction** | One user question. An agentic client such as GitHub Copilot answers it with a loop of HTTP requests that all carry the same `x-interaction-id`. The router decides once for the whole loop and folds every call into one trace. |
@@ -122,12 +125,22 @@ saved: a model with no reachable address cannot be called.
 
 1. Click **+ Add connection** and give it a name (`foundry`, `stub`, `eu-west`; the name is only
    used to bind models to it).
-2. **Address (base_url)**: for Azure use `https://<resource>.openai.azure.com/`; for any other
-   OpenAI-compatible service go all the way to `/v1`, e.g. `http://127.0.0.1:8899/v1`.
+2. **Address (base_url)**, per interface type:
+   * `azure`: the resource root, `https://<resource>.openai.azure.com/`.
+   * `openai`: all the way to `/v1`, e.g. `http://127.0.0.1:8899/v1`.
+   * `anthropic`: the host that serves `/v1/messages`, e.g.
+     `https://<workspace>.azuredatabricks.net/serving-endpoints/anthropic`.
 3. **Key (api_key)**: written to `data/config.yaml` on the server when you save. Use **Show** to
-   reveal what is currently stored.
-4. **Interface type (api_type)**: `azure` for Azure OpenAI / AI Foundry, `openai` for everything
-   else. **api_version** only matters for Azure.
+   reveal what is currently stored. For an `anthropic` connection this is the value the endpoint
+   expects in the `x-api-key` header.
+4. **Interface type (api_type)**: `azure` for Azure OpenAI / AI Foundry, `openai` for any other
+   OpenAI-compatible service, `anthropic` for a service that speaks the Messages API (Anthropic
+   itself, Databricks Claude serving endpoints, Bedrock-style gateways that expose the same shape).
+   The version field beside it changes meaning with the type: for `azure` it is the `?api-version=`
+   query parameter (default `2024-12-01-preview`), for `anthropic` it is the `anthropic-version`
+   request header (default `2023-06-01`), and `openai` has no version at all. Switching the type
+   clears the field on purpose, because an Azure version string sent as an `anthropic-version`
+   header is rejected upstream.
 5. One connection carries the `default` badge; models that do not name a connection of their own
    inherit it. Use **Set as default** on another row to move it.
 6. Press **Save and apply**. The bar above the panels tells you whether the page is *In sync with
@@ -135,6 +148,21 @@ saved: a model with no reachable address cannot be called.
 
 Saving reloads the configuration in place: the router rebuilds its client pool, so a corrected key
 takes effect on the next request without a restart.
+
+**The interface type is a backend detail, not a client contract.** Callers never have to match it.
+The router accepts requests on both protocols and converts to whatever the chosen model's connection
+speaks, in all four combinations:
+
+| Client sends | Backend connection | What the router does |
+|---|---|---|
+| `POST /v1/chat/completions` | `azure` / `openai` | passes through |
+| `POST /v1/chat/completions` | `anthropic` | converts the request to Messages, converts the reply back to a chat completion |
+| `POST /v1/messages` | `anthropic` | passes through |
+| `POST /v1/messages` | `azure` / `openai` | converts the request to chat completions, converts the reply back to a Messages response |
+
+Streaming is converted the same way, event by event, so a streaming client sees its own protocol's
+events regardless of which backend answered. Each trace turn records both sides as `client_protocol`
+and `protocol`, which is how you tell after the fact whether a conversion happened.
 
 More detail, including the non-Foundry cases: [Backend connections](providers.md).
 
@@ -157,7 +185,9 @@ For each model:
 5. **Default model**: exactly one. It is used when no rule matches and when an AI decision fails.
 6. **Reasoning model**: tick it for the gpt-5.x / o3 families. The router then sends
    `max_completion_tokens` instead of `max_tokens` and strips sampling parameters such as
-   `temperature`, which those models reject.
+   `temperature`, which those models reject. Tick it for a Claude model too when its endpoint
+   refuses sampling parameters: Databricks Claude serving endpoints reject `temperature` outright,
+   and without this flag every call through them fails with an upstream 400.
 
 Deleting a model also cleans up after itself: the console reports how many rules and model groups
 referenced it and were updated.
@@ -237,10 +267,17 @@ Team and organization grants are further down the same page:
   from a list instead of typing an `enterprise-slug/team-id` key that silently matches nobody if it
   has a typo in it. **+ Enter one manually** is the fallback for a deployment with no enterprise
   administrator token.
-- The **may create keys** / **no keys** badge is the key policy showing through: a group granted to a
-  scope whose members cannot create a key grants nothing, because without a key they never reach
-  `/v1/chat/completions`. Ineligible scopes are listed rather than hidden, so you can see it is the
-  key policy withholding them and not a discovery failure.
+- **Only the scopes the key policy allows are listed.** A group granted to a scope whose members
+  cannot create a key grants nothing, because without a key they never reach
+  `/v1/chat/completions`, so both tables offer what **Access control -> Key policy** permits and
+  nothing else. The `filtered` note says how many scopes were withheld out of how many were
+  discovered, so an organization you cannot find is explained on the page rather than looked for in
+  a broken discovery. To bind one that is not listed, allow it under Access control first.
+- A scope that is **already bound** stays listed even after the key policy stops allowing it, marked
+  `no keys`, because a binding the router still enforces has to remain clearable from the page that
+  owns it.
+- The two empty states mean different things: *nothing discovered* points at the enterprise
+  administrator token or the structure cache, while *nothing allowed* points at the key policy.
 - Long lists are searchable, and a `partial list` badge appears when GitHub returned fewer
   organizations than the enterprise actually owns.
 - **Save and apply** commits, exactly as on the configuration pages.
@@ -466,27 +503,60 @@ decides.
   ask an administrator for access. Nothing you can do in the console changes it.
 
 To create a key: type a name that will remind you where it is used (`copilot-laptop`, `ci`), leave it
-empty for `default`, and press **Create key**.
+empty for `default`, choose a **Scope**, and press **Create key**.
+
+The scope is what this one key may reach, and it is always evaluated *inside* what the model policy
+allows you. It can only narrow, never widen, so a scope can never become a way around the policy:
+
+| Scope | What it covers |
+|---|---|
+| **All your models** | everything the model policy allows you, which is the default |
+| **By connection type** | every model on connections of the ticked interface types, **including models added to those connections later** |
+| **Specific models** | an explicit list, ticked from your own available models |
+
+"By connection type" is stored as the type, not as the models it happens to match today, which is why
+each type shows how many of your models it currently covers rather than pre-ticking them. A key scoped
+to `anthropic` picks up a Claude model added next week without anyone editing the key.
 
 ![A newly created key](images/23-user-key-created.png)
 
 The key is shown in full, with a **Copy** button and a ready-made configuration block for GitHub
-Copilot BYOK. Every call made with this key is attributed to your login, so treat it as your own
-credential: anything sent with it appears under your name in the traces and in the usage statistics.
+Copilot BYOK. The block comes in both protocols: pick **OpenAI-compatible** or **Anthropic-compatible**
+and the environment variables and the `curl` line change together, so you can paste the one your
+client actually wants. **Copy command** copies the whole snippet. Every call made with this key is
+attributed to your login, so treat it as your own credential: anything sent with it appears under your
+name in the traces and in the usage statistics.
 
-The **My keys** table lists each key with its creation time, last use and call count, and lets you
-reveal, copy, disable or delete it. A disabled key is refused with a 401 without being deleted, which
-is the right first move if you think a key has leaked.
+The **My keys** table lists each key with its scope, creation time, last use and call count, and lets
+you reveal, copy, disable or delete it. **Scope** opens the same editor inline, so a key handed to a CI
+job can be narrowed once its needs are known rather than at the moment it was created; the change takes
+effect on the very next request. A disabled key is refused with a 401 without being deleted, which is
+the right first move if you think a key has leaked.
+
+**Usage example** on any row reopens that configuration block later. The panel above appears once,
+straight after creation, so a key made last month had nowhere left to tell you the base URL, the
+header names or the `curl` line. The row has it, in both protocols, with your key filled in and the
+same **Copy command** button. Opening it also unmasks that key in the table, so the row and the
+snippet cannot disagree about what is on screen, and closing it masks the key again. Two cases show
+`YOUR_API_KEY` in place of the value and say which case it is: a key created before the router kept
+readable key values, where you paste in the value you saved or create a new key, and, for an
+administrator viewing **All users**, somebody else's key, whose value is only ever shown to its owner.
 
 ### 3.5 Send requests
 
-Point any OpenAI-compatible client at the router. Three fields:
+Point any OpenAI-compatible **or** Anthropic-compatible client at the router. Three fields either
+way:
 
-| Field | Value |
-|---|---|
-| Base URL | `http://<host>:8000/v1` |
-| API Key | your `mr_…` key |
-| Model | any model name from your Available models page |
+| Field | OpenAI-compatible client | Anthropic-compatible client |
+|---|---|---|
+| Base URL | `http://<host>:8000/v1` | `http://<host>:8000` |
+| API Key | your `mr_…` key, as `Authorization: Bearer` | your `mr_…` key, as `x-api-key` |
+| Model | any model name from your Available models page | the same, or `auto` |
+
+One key works on both. Which protocol you speak has no bearing on which models you can reach: the
+router converts, so an Anthropic-style client can be answered by an Azure deployment and the reverse.
+The `model` field is a request, not an instruction, because the routing strategy decides the model and
+the trace records which one it chose.
 
 **GitHub Copilot (BYOK)**: add an OpenAI-compatible provider with the three values above. Copilot
 sends no user identity of its own, which is exactly why attribution comes from the key's owner; it
@@ -495,11 +565,22 @@ does send `x-interaction-id`, so its tool-call loop is routed once and recorded 
 **curl**:
 
 ```bash
+# OpenAI-compatible
 curl http://127.0.0.1:8000/v1/chat/completions \
   -H "Authorization: Bearer mr_..." \
   -H "Content-Type: application/json" \
   -d '{"model":"gpt-4o","messages":[{"role":"user","content":"Refactor this module and explain the design"}]}'
+
+# Anthropic-compatible
+curl http://127.0.0.1:8000/v1/messages \
+  -H "x-api-key: mr_..." \
+  -H "anthropic-version: 2023-06-01" \
+  -H "Content-Type: application/json" \
+  -d '{"model":"auto","max_tokens":256,"messages":[{"role":"user","content":"Refactor this module and explain the design"}]}'
 ```
+
+For an Anthropic-style client set `ANTHROPIC_BASE_URL` to `http://<host>:8000` and
+`ANTHROPIC_AUTH_TOKEN` to your `mr_…` key.
 
 The response headers say what happened without opening the console at all: `x-routed-model`,
 `x-router-reason`, `x-router-decision-ms`, `x-trace-id`, and `x-router-interaction-id` when the
