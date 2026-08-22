@@ -335,7 +335,7 @@ export default function ModelsSection({ cfg, set, notify, goto }: SectionProps) 
                                   })
                                 }
                               />
-                              Responses API
+                              {t('config.models.traitResponses')}
                             </label>
                           </div>
                         </td>

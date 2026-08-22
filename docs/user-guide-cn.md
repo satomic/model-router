@@ -3,7 +3,7 @@
 [English](user-guide.md) · **简体中文**
 
 本文面向使用控制台的两类人：把路由器搭起来并维护下去的**管理员**，以及登录、拿到密钥、把客户端指
-过来的**普通用户**。下面的每一张截图都来自真实控制台，版本 1.0.0，界面语言为英文。
+过来的**普通用户**。下面的每一张截图都来自真实控制台，版本 1.1.0，界面语言为英文。
 
 第一次阅读请按顺序看。管理员部分放在前面，因为在后端连接、模型目录和密钥策略配置好之前，普通用户
 无事可做。
@@ -115,8 +115,14 @@ Messages 协议的 API，并把全部状态放在一个 `data/` 目录里：没�
 
 ![步骤 1：后端连接](images/06-config-providers.png)
 
+已保存的连接是一张表：**Connection**、**Type**、**Address**、**Key**（只显示一个 `set` 标记，不显示
+值）、**Bound models**，以及带 **Set as default**、**Rename**、**Delete** 的 **Actions** 列。表格上
+方是一个 **Search** 搜索框和一个 **Interface type** 过滤器，右侧写着 `N of N shown`，一旦用了搜索或
+过滤就会出现 **Clear filters** 按钮。**点任意一行即可展开它的设置**：下面这些字段都在那个行内编辑器
+里，而不在页面本身上。
+
 1. 点 **+ Add connection**，给它起个名字（`foundry`、`stub`、`eu-west`；这个名字只用来把模型绑定到
-   它上面）。
+   它上面）。新建的行会直接带着展开的编辑器出现。
 2. **地址（base_url）**，按接口类型不同：
    * `azure`：资源根地址 `https://<资源名>.openai.azure.com/`。
    * `openai`：要一直写到 `/v1`，例如 `http://127.0.0.1:8899/v1`。
@@ -158,6 +164,15 @@ Messages 协议的 API，并把全部状态放在一个 `data/` 目录里：没�
 
 ![步骤 2：模型目录](images/07-config-models.png)
 
+这张表的列是 **Model**、**Connection**、**Upstream name**、**Capabilities**（`default`、`reasoning`、
+`responses api` 这几个标记）、**Description** 和 **Actions**。**Search** 同时匹配名字和描述，
+**Connection** 和 **Capability** 两个下拉进一步收窄；`N of N shown` 和 **Clear filters** 的行为与上
+一个页签一致。
+
+点一行会在它下面展开设置，下面这些字段都在这里编辑：
+
+![展开了编辑器的模型行](images/07b-config-model-editor.png)
+
 每个模型：
 
 1. **+ Add model**，填入路由器对外暴露的名字（`gpt-4o`、`gpt-5.4-pro` 等）。
@@ -170,6 +185,10 @@ Messages 协议的 API，并把全部状态放在一个 `data/` 目录里：没�
    `max_completion_tokens` 而不是 `max_tokens`，并去掉 `temperature` 这类采样参数，因为这些模型不接受。
    如果某个 Claude 模型所在的端点也不接受采样参数，同样要勾上：Databricks 的 Claude serving endpoint
    会直接拒绝 `temperature`，不勾这一项的话，经过它的每一次调用都会以上游 400 失败。
+7. **Responses API**：当这个模型在上游是通过 Responses API 而不是聊天补全提供的时候勾上。路由器随后
+   会调用 `/openai/v1/responses`，并把结果转换回标准的 `chat.completion` 形状，所以客户端还是照原样
+   发请求；流式请求会作为单个 SSE 分块返回。Capabilities 列里的 `responses api` 标记指出哪些模型开了
+   这一项，**Capability** 过滤器也可以只列出它们。
 
 删除模型时也会收拾干净：控制台会报告有多少条规则和模型组引用过它并已被更新。
 
@@ -178,6 +197,11 @@ Messages 协议的 API，并把全部状态放在一个 `data/` 目录里：没�
 **Routing configuration → Routing strategy。** 三种策略，再加上粘性和决策模型的设置。
 
 ![步骤 3：路由策略](images/08-config-strategy.png)
+
+页面最上面是 **Routing chain in effect**，把下面这些设置当前实际做的事画了出来：请求、关键词规则、AI
+决策、默认模型。当前策略根本不会走到的环节会被置灰，并标上 `not used`。截图里的策略是 *AI routing*，
+所以尽管配了四条规则，规则那一环仍然是灰的，这也是发现规则被忽略的最快方式。规则和默认模型两个环节
+本身是链接，点进去就是负责它们的页面。
 
 | 策略 | 行为 | 成本 |
 |---|---|---|
@@ -205,7 +229,15 @@ Messages 协议的 API，并把全部状态放在一个 `data/` 目录里：没�
 
 ![步骤 4：规则路由](images/09-config-rules.png)
 
-- 规则**自上而下**求值；第一个命中的决定模型，其余的不再判断。用箭头按钮调整顺序。
+规则是一张表：**Order**、**Rule**、**Conditions**（每个关键词一个小标签，长度条件显示成
+`6000+ characters`）、**Target model** 和 **Actions**。**Search** 同时匹配规则名和它的任一关键词，
+**Target model** 下拉只留下指向某个模型的规则，点一行会展开它的编辑器。面板标题旁边的标记会数出规则
+条数，并在当前策略让规则失效时直接说明，就像截图里那样：*the strategy is currently AI routing only,
+so rules have no effect*。
+
+- 规则**自上而下**求值；第一个命中的决定模型，其余的不再判断。用 **Actions** 列里的上下按钮调整顺
+  序。搜索或过滤生效期间这两个按钮是禁用的，因为在过滤后的视图里挪动一行，它会落到这个视图看不见的
+  位置；先清掉过滤条件，鼠标悬停时页面也会这么提示。
 - **关键词（Keywords）**用逗号分隔，不区分大小写，按正则表达式匹配提示词；命中任意一个即路由。
 - **最小提示词长度（Minimum prompt length）**改为按长度路由。一条规则同时写了两者时，只检查长度。
 - 每条规则都指明它路由到哪个模型，并且可以停用而不删除。
@@ -222,13 +254,15 @@ Messages 协议的 API，并把全部状态放在一个 `data/` 目录里：没�
 ![模型策略：模型组与已登录用户](images/10-model-policy.png)
 
 1. 勾选 **Restrict which models each caller may use** 启用策略。关闭时，每个调用者看到的都是完整目录。
-2. **模型组（Model groups）**：**+ Add group**，起名，然后勾选它包含的模型。`All` / `None` 一次全选
-   或全不选；`Rename` 和 `Delete` 作用于整个组。**空组是合法的**，含义也正如字面：一个调用者如果只
-   被授予了一个空组，那他什么都不能调用。
-3. **已登录用户的默认组（Default group for signed-in users）**把某个组授予所有登录过的人。要实现
-   “只给最便宜的那个模型”，这里是最自然的位置。
-4. **登录过的用户（Users who have signed in）**列出路由器见过的所有人，带首次/最近登录时间和登录次
-   数，以及每个用户的组选择器。**Refresh** 会重新读取这个列表。
+2. **已登录用户的默认组（Default group for signed-in users）**和开关在同一个面板里，把某个组授予所
+   有登录过的人。要实现“只给最便宜的那个模型”，这里是最自然的位置；保持 *No default group* 不变，则
+   一个没有其他绑定的账号仍然不受限制。
+3. **模型组（Model groups）**：**+ Add group**，起名，然后勾选它包含的模型。`All` / `None` 一次全选
+   或全不选；`Rename` 和 `Delete` 作用于整个组，组名旁边的标记会数出它包含多少个模型、被绑定到多少
+   个作用域。**空组是合法的**，含义也正如字面：一个调用者如果只被授予了一个空组，那他什么都不能调用。
+4. **登录过的用户（Users who have signed in）**按最近活动排序列出路由器见过的所有人，带登录方式
+   （`GitHub` 或 `Local`）、首次/最近登录时间、登录次数，以及每个用户的组选择器。**Refresh** 会重新
+   读取这个列表。
 
 团队和组织的授予在同一页面再往下：
 
@@ -321,6 +355,8 @@ Client ID 和 Client Secret 来自 GitHub → Settings → Developer settings �
 所以这个开关**默认关闭**。关闭时，每个密钥都覆盖全部模型与全部连接类型，这也正是作用域功能出现之前每个
 密钥的行为，因此关着它并不会从任何人手里收回什么。
 
+![密钥作用域](images/11b-access-key-scope.png)
+
 1. **总开关**：*Let the users, teams and organizations listed below restrict their API keys*。默认关
    闭，即任何人都不能限制自己的密钥。
 2. **Users、Enterprise teams、Organizations**：三张允许清单，填法和模型策略的作用域绑定一样。用户从所
@@ -359,7 +395,7 @@ Organizations，就等于允许这些组织里的所有人。同一张表内命�
 
 ![调用链列表](images/15-traces-list.png)
 
-这个列表从磁盘读取并分页，所以它不局限于最近的活动：表头显示 `50 of 403`，底部可以加载更多。可以按
+这个列表从磁盘读取并分页，所以它不局限于最近的活动：表头显示 `50 of 516`，底部可以加载更多。可以按
 **Date** 过滤，按 **Trace ID** 的任意片段过滤，管理员还可以按 **User** 过滤。**Auto refresh** 只重新
 加载第一页。`Decision` 列是这个模型被选中的原因：某条规则自己的名字、`default`、`ai-decision`、
 `ai-fallback-default`，或者 `interaction-sticky` / `session-sticky`。`Calls` 大于 1 表示这是一个智能

@@ -4,7 +4,7 @@
 
 A walkthrough of the console for the two people who use it: the **administrator** who sets the
 router up and keeps it running, and the **standard user** who signs in, gets a key and points a
-client at it. Every screenshot below is the real console, taken at version 1.0.0 with the language
+client at it. Every screenshot below is the real console, taken at version 1.1.0 with the language
 set to English.
 
 Read it in order the first time. The administrator sections come first because a standard user has
@@ -123,8 +123,14 @@ saved: a model with no reachable address cannot be called.
 
 ![Step 1: backend connections](images/06-config-providers.png)
 
+Saved connections are a table: **Connection**, **Type**, **Address**, **Key** (a `set` badge, never
+the value), **Bound models**, and an **Actions** column carrying **Set as default**, **Rename** and
+**Delete**. Above it are a **Search** box and an **Interface type** filter, with `N of N shown` on the
+right and a **Clear filters** button once either is in use. **Select any row to open its settings**:
+every field below lives in that inline editor rather than on the page itself.
+
 1. Click **+ Add connection** and give it a name (`foundry`, `stub`, `eu-west`; the name is only
-   used to bind models to it).
+   used to bind models to it). The new row opens with its editor already expanded.
 2. **Address (base_url)**, per interface type:
    * `azure`: the resource root, `https://<resource>.openai.azure.com/`.
    * `openai`: all the way to `/v1`, e.g. `http://127.0.0.1:8899/v1`.
@@ -173,6 +179,15 @@ field of a request.
 
 ![Step 2: model catalog](images/07-config-models.png)
 
+The table lists **Model**, **Connection**, **Upstream name**, **Capabilities** (the `default`,
+`reasoning` and `responses api` badges), **Description** and **Actions**. **Search** matches a name
+or a description, and the **Connection** and **Capability** selects narrow the list further;
+`N of N shown` and **Clear filters** work as on the previous tab.
+
+Selecting a row opens its settings underneath it, which is where every field below is edited:
+
+![A model row with its editor open](images/07b-config-model-editor.png)
+
 For each model:
 
 1. **+ Add model** and enter the name the router exposes (`gpt-4o`, `gpt-5.4-pro`, …).
@@ -188,6 +203,11 @@ For each model:
    `temperature`, which those models reject. Tick it for a Claude model too when its endpoint
    refuses sampling parameters: Databricks Claude serving endpoints reject `temperature` outright,
    and without this flag every call through them fails with an upstream 400.
+7. **Responses API**: tick it when this model is served upstream through the Responses API rather
+   than Chat Completions. The router then calls `/openai/v1/responses` and converts the answer back
+   to the ordinary `chat.completion` shape, so clients keep sending what they already send; a
+   streaming request comes back as a single SSE chunk. The `responses api` badge marks the models
+   where it is on, and the **Capability** filter lists them on their own.
 
 Deleting a model also cleans up after itself: the console reports how many rules and model groups
 referenced it and were updated.
@@ -198,6 +218,13 @@ referenced it and were updated.
 decision-model settings.
 
 ![Step 3: routing strategy](images/08-config-strategy.png)
+
+The page opens with **Routing chain in effect**, a picture of what the settings below currently do:
+Request, then keyword rules, then the AI decision, then the default model. A stage the chosen
+strategy never consults is dimmed and badged `not used`. In the screenshot the strategy is *AI
+routing*, so the rules stage is greyed out even though four rules are configured, which is the
+fastest way to spot rules that are being ignored. The rules and default-model stages are links to
+the pages that own them.
 
 | Strategy | Behaviour | Cost |
 |---|---|---|
@@ -228,8 +255,17 @@ are the ones the decision model cannot reason about.
 
 ![Step 4: rule routing](images/09-config-rules.png)
 
+Rules are a table of **Order**, **Rule**, **Conditions** (every keyword as its own chip, a length
+condition as a `6000+ characters` chip), **Target model** and **Actions**. **Search** matches a rule
+name or any of its keywords, the **Target model** select narrows to the rules pointing at one model,
+and selecting a row opens its editor. The badge beside the panel title counts the rules and says so
+when the current strategy makes them inert, as in the screenshot: *the strategy is currently AI
+routing only, so rules have no effect*.
+
 - Rules are evaluated **top to bottom**; the first match decides the model and the rest are skipped.
-  Use the arrow buttons to reorder.
+  Reorder with the up and down buttons in the **Actions** column. They are disabled while a search
+  or a filter is active, because a row moved inside a filtered view would land somewhere the view
+  does not show; clear the filters first and the page says so on hover.
 - **Keywords** are comma-separated, case-insensitive, matched as regular expressions against the
   prompt; any one match routes.
 - **Minimum prompt length** routes on size instead. When a rule carries both, only the length is
@@ -251,13 +287,16 @@ granted to scopes; the result is the union of everything that applies to a calle
 
 1. Tick **Restrict which models each caller may use** to enable the policy. While it is off, every
    caller sees the whole catalog.
-2. **Model groups**: **+ Add group**, name it, then tick the models it contains. `All` / `None`
-   select every box at once; `Rename` and `Delete` act on the group. An **empty group is legal** and
-   means exactly what it says: a caller whose only grant is an empty group may call nothing.
-3. **Default group for signed-in users** grants a group to everybody who has signed in. It is the
-   natural place for "the cheap model only".
-4. **Users who have signed in** lists everyone the router has seen, with first/last sign-in and
-   sign-in count, and a per-user group selector. **Refresh** re-reads the list.
+2. **Default group for signed-in users**, in the same panel as the switch, grants a group to
+   everybody who has signed in. It is the natural place for "the cheap model only"; left at *No
+   default group*, an account with no other binding stays unrestricted.
+3. **Model groups**: **+ Add group**, name it, then tick the models it contains. `All` / `None`
+   select every box at once; `Rename` and `Delete` act on the group, and its badges count the models
+   it holds and the scopes it is bound to. An **empty group is legal** and means exactly what it
+   says: a caller whose only grant is an empty group may call nothing.
+4. **Users who have signed in** lists everyone the router has seen, most recent activity first, with
+   how they signed in (`GitHub` or `Local`), first and last sign-in, sign-in count, and a per-user
+   group selector. **Refresh** re-reads the list.
 
 Team and organization grants are further down the same page:
 
@@ -369,6 +408,8 @@ It is therefore **off by default**, and while it is off every key covers all mod
 connection types, which is what every key did before scopes existed. Switching it off later takes
 nothing away from anybody.
 
+![Key scope](images/11b-access-key-scope.png)
+
 1. **The master switch**: *Let the users, teams and organizations listed below restrict their API
    keys*. Off, the default, means nobody may.
 2. **Users, Enterprise teams, Organizations**: three allow lists, filled in the same way as the model
@@ -416,7 +457,7 @@ themselves.
 ![Traces](images/15-traces-list.png)
 
 The list is read from disk and paged, so it is not limited to recent activity: the header shows
-`50 of 403` and a footer loads more. Filter by **Date**, by any part of the **Trace ID**, and, as an
+`50 of 516` and a footer loads more. Filter by **Date**, by any part of the **Trace ID**, and, as an
 administrator, by **User**. **Auto refresh** reloads the first page only. The `Decision` column is
 the reason the model was chosen: a rule's own name, `default`, `ai-decision`, `ai-fallback-default`,
 or `interaction-sticky` / `session-sticky`. `Calls` greater than 1 means an agent tool loop.
