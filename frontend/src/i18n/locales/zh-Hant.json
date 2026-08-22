@@ -417,6 +417,17 @@
         "live": "即時",
         "liveHint": "本次請求即時呼叫了 GitHub —— 這一列仍然是每次判定一趟往返"
       },
+      "reason": {
+        "admin": "你是本服務的管理員，可以直接建立 API 金鑰。",
+        "policyOff": "企業存取控制未啟用，任何已登入帳號都可以建立 API 金鑰。",
+        "noToken": "企業存取控制已啟用，但管理員尚未設定 GitHub Enterprise 權杖，服務無法核對你的企業成員身分。請聯絡管理員。",
+        "noEnterprise": "企業存取控制已啟用，但管理員尚未開放任何企業。請聯絡管理員。",
+        "memberOrganization": "你是組織 {{name}} 的成員（企業 {{enterprise}}），因此可以建立 API 金鑰。",
+        "memberTeam": "你是企業團隊 {{name}} 的成員（企業 {{enterprise}}），因此可以建立 API 金鑰。",
+        "memberEnterprise": "你是企業 {{name}} 的成員，因此可以建立 API 金鑰。",
+        "member": "你是 {{name}} 的成員（企業 {{enterprise}}），因此可以建立 API 金鑰。",
+        "noMembership": "你不屬於任何已開放的企業、企業團隊或組織，因此不能建立 API 金鑰，也就無法使用 BYOK。若要申請，請讓管理員把你的組織加入允許清單。"
+      },
       "scanned": "（探測 {{count}} 個）",
       "scannedTruncated": "（探測 {{count}} 個，已截斷）",
       "undecidable": "無法判定",
@@ -450,6 +461,20 @@
       "summary": {
         "all": "全部模型",
         "models_other": "{{count}} 個模型"
+      },
+      "lockedBadge": "不允許",
+      "widenOnly": "你可以把這個範圍改回全部模型與全部連線類型，但不能改成另一種限制。",
+      "verdict": {
+        "admin": "管理員可以為任何金鑰設定範圍。",
+        "off": "本部署未啟用縮小 API 金鑰範圍，因此每個金鑰都涵蓋全部模型與全部連線類型。請聯絡管理員。",
+        "nobodyAllowed": "縮小 API 金鑰範圍已啟用，但管理員尚未開放任何使用者、團隊或組織，因此每個金鑰都涵蓋全部模型與全部連線類型。請聯絡管理員。",
+        "levelsFailed": "你不被允許縮小 API 金鑰的範圍：管理員要求在{{levels}}層級上符合，而你並不符合。你建立的每個金鑰都涵蓋全部模型與全部連線類型。請聯絡管理員。",
+        "allowed": "你可以把 API 金鑰限制到指定模型或指定連線類型。"
+      },
+      "levelName": {
+        "user": "使用者",
+        "team": "團隊",
+        "organization": "組織"
       }
     }
   },
@@ -472,6 +497,10 @@
       "policy": {
         "label": "金鑰策略",
         "hint": "依 Enterprise / Team / Organization 控制誰能建立金鑰"
+      },
+      "keyscope": {
+        "label": "金鑰範圍",
+        "hint": "使用者是否可以將金鑰限制在特定模型或連線類型"
       }
     },
     "kind": {
@@ -612,6 +641,90 @@
       "teamListUnavailable": "團隊清單不可用",
       "teamListUnavailableNote": "——該企業只能依組織授權。",
       "noTeams": "該企業下沒有企業團隊。"
+    },
+    "keyscope": {
+      "title": "限制 API 金鑰的範圍",
+      "on": "已對下列帳號開放",
+      "off": "任何人都不可以",
+      "toggle": "允許下列使用者、團隊與組織限制自己的 API 金鑰",
+      "onNote": "由下面三張表決定誰可以這樣做。其餘帳號建立的金鑰都涵蓋<strong>全部模型與全部連線類型</strong>。",
+      "offNote": "任何人都不能限制金鑰。每個金鑰都涵蓋<strong>全部模型與全部連線類型</strong>，這也是範圍功能出現之前每個金鑰的行為，因此保持關閉不會收回任何能力。",
+      "why": "把金鑰限制到某個昂貴模型，等於<strong>把這個金鑰上的每一次請求都釘在它上面</strong>，把便宜的工作派給便宜的模型對該金鑰就不再成立。這正是本開關要避免的成本問題。",
+      "emptyBadge": "目前誰都不符合",
+      "empty": "開關已開啟但三張表都是空的，所以目前沒有人可以限制金鑰。請至少新增一個使用者、團隊或組織。",
+      "ruleAnd": "凡是填了內容的表<strong>都必須命中</strong>。填了兩張表，就要同時命中兩張。",
+      "ruleAbstain": "留空的表<strong>不參與判斷</strong>，所以只填一個組織，就等於允許該組織裡的所有人。",
+      "ruleOr": "同一張表內命中任一項即可。",
+      "ruleAdmin": "管理員永遠可以限制金鑰。",
+      "ruleExisting": "已經帶有限制的金鑰<strong>會保持原樣</strong>。收回權限只會阻止新的限制，不會把已經發出的金鑰放寬。",
+      "allowedCount_other": "已允許 {{count}} 項",
+      "notConsulted": "不參與判斷",
+      "notConsultedHint": "為空，因此這一級不參與判斷",
+      "addManually": "手動新增",
+      "exists": "{{name}} 已經在清單中。",
+      "badKey": "請使用 enterprise-slug/team-id 的形式，例如 your-enterprise/14501973。",
+      "noStructure": "沒有可選項",
+      "needToken": "先在<strong>金鑰政策</strong>頁儲存企業管理員權杖，才能從清單中勾選。在此之前只能手動新增。",
+      "noMatch": "沒有符合「{{query}}」的項目。",
+      "hidden": "已顯示 {{total}} 項中的 {{shown}} 項。",
+      "showAll": "顯示全部 {{total}} 項",
+      "manual": "手動新增",
+      "manualHint": "不在已發現的結構中：手動輸入的，或來自目前權杖已看不到的企業",
+      "signedIn": "已登入使用者",
+      "gateOnBadge": "已限制",
+      "gateOn": "建立 API 金鑰<strong>受到限制</strong>，因此此表只列出在「存取控制 → 金鑰政策」中被允許的帳號。其他帳號根本無法建立金鑰，允許他們縮小範圍不會產生任何效果。",
+      "gateOffBadge": "未限制",
+      "gateOff": "建立 API 金鑰<strong>對所有可登入使用者開放</strong>，因此下方所有帳號都可以被允許縮小範圍。若要限制金鑰建立，請前往「存取控制 → 金鑰政策」。",
+      "savedVerdict": "每位使用者的判定來自已儲存的金鑰政策，因此修改金鑰政策後請先儲存再查看此欄。",
+      "excludedBadge": "已依政策篩選",
+      "excluded": "未列出：共 {{total}} 項，其中 {{hidden}} 項未被金鑰政策允許建立 API 金鑰。若要在此顯示，請在「存取控制 → 金鑰政策」中開放。",
+      "partialBadge": "清單不完整",
+      "partialUsers": "帳號數量超過本頁單次請求可評估的上限，未能判定的帳號會以「未知」顯示，而不是被隱藏。",
+      "mayCreateKeys": "可建立金鑰",
+      "mayNotCreateKeys": "不可建立金鑰",
+      "unknownKeys": "未知",
+      "reason": {
+        "entOff": "該企業在金鑰政策中已關閉，其成員皆不可建立 API 金鑰。",
+        "orgNotAllowed": "依金鑰政策，該組織不被允許建立 API 金鑰。",
+        "teamNotAllowed": "依金鑰政策，該團隊不被允許建立 API 金鑰。",
+        "userNotAllowed": "依金鑰政策，該帳號不可建立 API 金鑰，因此也不存在需要縮小範圍的金鑰。",
+        "unknown": "無法確定該帳號是否可以建立 API 金鑰，因此仍然顯示而不隱藏。"
+      },
+      "table": {
+        "source": "來源",
+        "allow": "允許限制",
+        "keyPolicy": "金鑰政策"
+      },
+      "users": {
+        "title": "使用者",
+        "lead": "所有登入過的帳號。勾選允許限制自己金鑰的帳號。",
+        "key": "GitHub 登入名稱",
+        "none": "還沒有人登入過。",
+        "search": "篩選使用者",
+        "addTitle": "新增使用者",
+        "prompt": "允許限制自己金鑰的帳號的 GitHub 登入名稱。",
+        "noneEligible": "依金鑰政策，沒有任何已登入帳號被允許建立 API 金鑰，因此這裡沒有可開放的對象。請在「存取控制 → 金鑰政策」中開放，或手動輸入登入名稱。"
+      },
+      "teams": {
+        "title": "企業團隊",
+        "lead": "透過企業管理員權杖發現的團隊，儲存形式為 <code>enterprise-slug/team-id</code>。",
+        "key": "團隊",
+        "none": "沒有發現企業團隊。",
+        "search": "篩選團隊",
+        "addTitle": "新增團隊",
+        "prompt": "團隊識別 enterprise-slug/team-id，例如 your-enterprise/14501973。",
+        "noneEligible": "依金鑰政策，沒有任何企業團隊被允許建立 API 金鑰，因此這裡沒有可開放的對象。請在「存取控制 → 金鑰政策」中開放，或手動輸入團隊。"
+      },
+      "organizations": {
+        "title": "組織",
+        "lead": "透過企業管理員權杖發現的組織，儲存形式為組織登入名稱。",
+        "key": "組織",
+        "none": "沒有發現組織。",
+        "search": "篩選組織",
+        "addTitle": "新增組織",
+        "prompt": "組織登入名稱。",
+        "noneEligible": "依金鑰政策，沒有任何組織被允許建立 API 金鑰，因此這裡沒有可開放的對象。請在「存取控制 → 金鑰政策」中開放，或手動輸入組織。"
+      }
     }
   },
   "playground": {

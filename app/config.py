@@ -288,6 +288,9 @@ class RouterConfig:
         # Defaults to an empty dict, i.e. disabled, so upgrading an existing
         # deployment does not change behaviour.
         self.key_policy: dict = dict(auth.get("key_policy") or {})
+        # Who may narrow an API key's scope; evaluated in app/scopepolicy.py. Absent means
+        # disabled, and disabled means nobody -- the closed default, unlike key_policy above.
+        self.key_scope_policy: dict = dict(auth.get("key_scope_policy") or {})
         # A username/password super administrator, so the console stays reachable where
         # GitHub is not. Enabled by default: without it a deployment that cannot reach
         # github.com has no way in at all. See app/localadmin.py for the credential rules.
@@ -320,6 +323,16 @@ class RouterConfig:
     @property
     def gh_admin_token(self) -> str:
         return str(self.key_policy.get("github_token") or "").strip()
+
+    @property
+    def key_scope_policy_enabled(self) -> bool:
+        """Whether anybody at all may narrow an API key's scope.
+
+        Defaults to False, and False means "nobody" rather than "everybody": a key with no scope
+        already reaches everything its owner may reach, so the closed default takes no capability
+        away from an existing deployment. See app/scopepolicy.py.
+        """
+        return bool(self.key_scope_policy.get("enabled", False))
 
     # -- Model policy ---------------------------------------------------------
     @property
@@ -526,6 +539,7 @@ def validate_raw(raw: dict) -> list[str]:
             if admins is not None and not isinstance(admins, list):
                 errors.append("auth.admin_logins must be a list")
             errors.extend(_validate_key_policy(auth.get("key_policy")))
+            errors.extend(_validate_key_scope_policy(auth.get("key_scope_policy")))
             errors.extend(_validate_local_admin(auth.get("local_admin")))
     return errors
 
@@ -710,4 +724,32 @@ def _validate_key_policy(policy) -> list[str]:
                 errors.append(
                     f"auth.key_policy.enterprises[{slug!r}].{field} must be a list"
                 )
+    return errors
+
+
+def _validate_key_scope_policy(policy) -> list[str]:
+    """Validate auth.key_scope_policy (who may narrow an API key -- see app/scopepolicy.py).
+
+    Types only. In particular a `teams` entry that is not '<enterprise slug>/<team id>' is not
+    rejected here: the same shape sits in model_policy.teams unvalidated, a hand-edited
+    config.yaml with one bad entry would otherwise block every unrelated save from the console,
+    and scopepolicy already logs the entry it had to ignore. The console validates the format at
+    the point of entry, which is where it can still be corrected in the field.
+    """
+    if policy is None:
+        return []
+    if not isinstance(policy, dict):
+        return ["auth.key_scope_policy must be an object"]
+
+    errors: list[str] = []
+    if not isinstance(policy.get("enabled", False), bool):
+        errors.append("auth.key_scope_policy.enabled must be a boolean")
+    for field in ("users", "teams", "organizations"):
+        value = policy.get(field)
+        if value is None:
+            continue
+        if not isinstance(value, list):
+            errors.append(f"auth.key_scope_policy.{field} must be a list")
+        elif any(isinstance(item, (dict, list)) for item in value):
+            errors.append(f"auth.key_scope_policy.{field} must be a list of names")
     return errors

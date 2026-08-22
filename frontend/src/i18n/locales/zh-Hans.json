@@ -417,6 +417,17 @@
         "live": "实时",
         "liveHint": "本次请求实时调用了 GitHub —— 这一行仍然是每次判定一趟往返"
       },
+      "reason": {
+        "admin": "你是本服务的管理员，可以直接创建 API 密钥。",
+        "policyOff": "企业访问控制未启用，任何已登录账号都可以创建 API 密钥。",
+        "noToken": "企业访问控制已启用，但管理员尚未配置 GitHub Enterprise 令牌，服务无法核验你的企业成员身份。请联系管理员。",
+        "noEnterprise": "企业访问控制已启用，但管理员尚未放开任何企业。请联系管理员。",
+        "memberOrganization": "你是组织 {{name}} 的成员（企业 {{enterprise}}），因此可以创建 API 密钥。",
+        "memberTeam": "你是企业团队 {{name}} 的成员（企业 {{enterprise}}），因此可以创建 API 密钥。",
+        "memberEnterprise": "你是企业 {{name}} 的成员，因此可以创建 API 密钥。",
+        "member": "你是 {{name}} 的成员（企业 {{enterprise}}），因此可以创建 API 密钥。",
+        "noMembership": "你不属于任何被放开的企业、企业团队或组织，因此不能创建 API 密钥，也就无法使用 BYOK。如需申请，请让管理员把你的组织加入允许列表。"
+      },
       "scanned": "（探测 {{count}} 个）",
       "scannedTruncated": "（探测 {{count}} 个，已截断）",
       "undecidable": "无法判定",
@@ -450,6 +461,20 @@
       "summary": {
         "all": "全部模型",
         "models_other": "{{count}} 个模型"
+      },
+      "lockedBadge": "不允许",
+      "widenOnly": "你可以把这个作用域改回全部模型与全部连接类型，但不能改成另一种限制。",
+      "verdict": {
+        "admin": "管理员可以为任何密钥设置作用域。",
+        "off": "本部署未启用缩小 API 密钥作用域，因此每个密钥都覆盖全部模型与全部连接类型。请联系管理员。",
+        "nobodyAllowed": "缩小 API 密钥作用域已启用，但管理员尚未放开任何用户、团队或组织，因此每个密钥都覆盖全部模型与全部连接类型。请联系管理员。",
+        "levelsFailed": "你不被允许缩小 API 密钥的作用域：管理员要求在{{levels}}层级上匹配，而你不满足。你创建的每个密钥都覆盖全部模型与全部连接类型。请联系管理员。",
+        "allowed": "你可以把 API 密钥限制到指定模型或指定连接类型。"
+      },
+      "levelName": {
+        "user": "用户",
+        "team": "团队",
+        "organization": "组织"
       }
     }
   },
@@ -472,6 +497,10 @@
       "policy": {
         "label": "密钥策略",
         "hint": "按 Enterprise / Team / Organization 控制谁能建密钥"
+      },
+      "keyscope": {
+        "label": "密钥作用域",
+        "hint": "用户是否可以把密钥限制到特定模型或连接类型"
       }
     },
     "kind": {
@@ -612,6 +641,90 @@
       "teamListUnavailable": "团队列表不可用",
       "teamListUnavailableNote": "——该企业只能按组织授权。",
       "noTeams": "该企业下没有企业团队。"
+    },
+    "keyscope": {
+      "title": "限制 API 密钥的范围",
+      "on": "已对下列账号开放",
+      "off": "任何人都不可以",
+      "toggle": "允许下列用户、团队和组织限制自己的 API 密钥",
+      "onNote": "由下面三张表决定谁可以这样做。其余账号创建的密钥都覆盖<strong>全部模型与全部连接类型</strong>。",
+      "offNote": "任何人都不能限制密钥。每个密钥都覆盖<strong>全部模型与全部连接类型</strong>，这也是作用域功能出现之前每个密钥的行为，所以保持关闭不会收回任何能力。",
+      "why": "把密钥限制到某个昂贵模型，等于<strong>把这个密钥上的每一次请求都钉在它上面</strong>，把便宜的活派给便宜的模型这件事对该密钥就不再成立。这正是本开关要避免的成本问题。",
+      "emptyBadge": "当前谁都不满足",
+      "empty": "开关已打开但三张表都是空的，所以目前没有人可以限制密钥。请至少添加一个用户、团队或组织。",
+      "ruleAnd": "凡是填写了内容的表<strong>都必须命中</strong>。填了两张表，就要同时命中两张。",
+      "ruleAbstain": "留空的表<strong>不参与判断</strong>，所以只填一个组织，就等于允许该组织里的所有人。",
+      "ruleOr": "同一张表内命中任意一项即可。",
+      "ruleAdmin": "管理员始终可以限制密钥。",
+      "ruleExisting": "已经带有限制的密钥<strong>会保持原样</strong>。收回权限只会阻止新的限制，不会把已经发出的密钥放宽。",
+      "allowedCount_other": "已允许 {{count}} 项",
+      "notConsulted": "不参与判断",
+      "notConsultedHint": "为空，因此这一级不参与判断",
+      "addManually": "手动添加",
+      "exists": "{{name}} 已经在列表中。",
+      "badKey": "请使用 enterprise-slug/team-id 的形式，例如 your-enterprise/14501973。",
+      "noStructure": "没有可选项",
+      "needToken": "先在<strong>密钥策略</strong>页保存企业管理员令牌，才能从列表中勾选。在此之前只能手动添加。",
+      "noMatch": "没有匹配“{{query}}”的项。",
+      "hidden": "已显示 {{total}} 项中的 {{shown}} 项。",
+      "showAll": "显示全部 {{total}} 项",
+      "manual": "手动添加",
+      "manualHint": "不在已发现的结构中：手动输入的，或来自当前令牌已看不到的企业",
+      "signedIn": "已登录用户",
+      "gateOnBadge": "已限制",
+      "gateOn": "创建 API 密钥<strong>受到限制</strong>，因此此表只列出在“访问控制 → 密钥策略”中被允许的账号。其他账号根本无法创建密钥，允许他们缩小作用域不会产生任何效果。",
+      "gateOffBadge": "未限制",
+      "gateOff": "创建 API 密钥<strong>对所有可登录用户开放</strong>，因此下方所有账号都可以被允许缩小作用域。如需限制密钥创建，请前往“访问控制 → 密钥策略”。",
+      "savedVerdict": "每个用户的判定来自已保存的密钥策略，因此修改密钥策略后请先保存再查看此列。",
+      "excludedBadge": "已按策略过滤",
+      "excluded": "未列出：共 {{total}} 项，其中 {{hidden}} 项未被密钥策略允许创建 API 密钥。如需在此显示，请在“访问控制 → 密钥策略”中放开。",
+      "partialBadge": "列表不完整",
+      "partialUsers": "账号数量超过本页单次请求可评估的上限，未能判定的账号会以“未知”显示，而不是被隐藏。",
+      "mayCreateKeys": "可创建密钥",
+      "mayNotCreateKeys": "不可创建密钥",
+      "unknownKeys": "未知",
+      "reason": {
+        "entOff": "该企业在密钥策略中已关闭，其成员均不可创建 API 密钥。",
+        "orgNotAllowed": "按照密钥策略，该组织不被允许创建 API 密钥。",
+        "teamNotAllowed": "按照密钥策略，该团队不被允许创建 API 密钥。",
+        "userNotAllowed": "按照密钥策略，该账号不可创建 API 密钥，因此也不存在需要缩小作用域的密钥。",
+        "unknown": "无法确定该账号是否可以创建 API 密钥，因此仍然显示而不隐藏。"
+      },
+      "table": {
+        "source": "来源",
+        "allow": "允许限制",
+        "keyPolicy": "密钥策略"
+      },
+      "users": {
+        "title": "用户",
+        "lead": "所有登录过的账号。勾选允许限制自己密钥的账号。",
+        "key": "GitHub 登录名",
+        "none": "还没有人登录过。",
+        "search": "筛选用户",
+        "addTitle": "添加用户",
+        "prompt": "允许限制自己密钥的账号的 GitHub 登录名。",
+        "noneEligible": "按照密钥策略，没有任何已登录账号被允许创建 API 密钥，因此这里没有可放开的对象。请在“访问控制 → 密钥策略”中放开，或手动添加登录名。"
+      },
+      "teams": {
+        "title": "企业团队",
+        "lead": "通过企业管理员令牌发现的团队，保存形式为 <code>enterprise-slug/team-id</code>。",
+        "key": "团队",
+        "none": "没有发现企业团队。",
+        "search": "筛选团队",
+        "addTitle": "添加团队",
+        "prompt": "团队标识 enterprise-slug/team-id，例如 your-enterprise/14501973。",
+        "noneEligible": "按照密钥策略，没有任何企业团队被允许创建 API 密钥，因此这里没有可放开的对象。请在“访问控制 → 密钥策略”中放开，或手动添加团队。"
+      },
+      "organizations": {
+        "title": "组织",
+        "lead": "通过企业管理员令牌发现的组织，保存形式为组织登录名。",
+        "key": "组织",
+        "none": "没有发现组织。",
+        "search": "筛选组织",
+        "addTitle": "添加组织",
+        "prompt": "组织登录名。",
+        "noneEligible": "按照密钥策略，没有任何组织被允许创建 API 密钥，因此这里没有可放开的对象。请在“访问控制 → 密钥策略”中放开，或手动添加组织。"
+      }
     }
   },
   "playground": {

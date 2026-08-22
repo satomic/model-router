@@ -54,6 +54,13 @@ logger = logging.getLogger("mr")
 # probing all of them is both slow and rate-limited.
 _MAX_ORG_PROBE = 30
 
+# Verdict kind -> reason code, for the one verdict whose sentence names what was matched.
+_MEMBER_CODES = {
+    "organization": "memberOrganization",
+    "team": "memberTeam",
+    "enterprise": "memberEnterprise",
+}
+
 
 async def _team_names(token: str, slug: str) -> dict[str, str]:
     """Map enterprise team id -> name.
@@ -80,17 +87,24 @@ async def _team_names(token: str, slug: str) -> dict[str, str]:
 
 
 async def evaluate(cfg, login: str, is_admin: bool) -> dict:
-    """Return {allowed, reason, detail, matched, policy_enabled, checked}.
+    """Return {allowed, reason, reason_code, reason_params, detail, matched, policy_enabled}.
 
     `reason` is a single sentence for the user; `detail` is the item-by-item evidence
     (the UI renders it as "current permissions and limits"). Never put the token or any
     other credential into the return value.
+
+    `reason_code` names the same verdict without saying it in any language, and `reason_params`
+    carries the values the sentence interpolates. The console translates that pair, because this
+    module is English-only on purpose: the sentence is what goes into the log lines and the 403
+    bodies, where a reader's locale is not known and must not change the record.
     """
     policy = cfg.key_policy
     if is_admin:
         return {
             "allowed": True,
             "reason": "You are an administrator of this service and can create API keys directly.",
+            "reason_code": "admin",
+            "reason_params": {},
             "policy_enabled": bool(policy.get("enabled")),
             "matched": {"kind": "admin"},
             "detail": [],
@@ -100,6 +114,8 @@ async def evaluate(cfg, login: str, is_admin: bool) -> dict:
         return {
             "allowed": True,
             "reason": "Enterprise access control is disabled, so any signed-in account can create API keys.",
+            "reason_code": "policyOff",
+            "reason_params": {},
             "policy_enabled": False,
             "matched": None,
             "detail": [],
@@ -112,6 +128,8 @@ async def evaluate(cfg, login: str, is_admin: bool) -> dict:
             "reason": "Enterprise access control is enabled, but the administrator has not "
                       "configured a GitHub Enterprise token, so the service cannot verify your "
                       "enterprise membership. Please contact your administrator.",
+            "reason_code": "noToken",
+            "reason_params": {},
             "policy_enabled": True,
             "matched": None,
             "detail": [],
@@ -127,6 +145,8 @@ async def evaluate(cfg, login: str, is_admin: bool) -> dict:
             "allowed": False,
             "reason": "Enterprise access control is enabled, but the administrator has not "
                       "allowed any enterprise yet. Please contact your administrator.",
+            "reason_code": "noEnterprise",
+            "reason_params": {},
             "policy_enabled": True,
             "matched": None,
             "detail": [],
@@ -239,6 +259,14 @@ async def evaluate(cfg, login: str, is_admin: bool) -> dict:
             "allowed": True,
             "reason": f"You are a member of {where} (enterprise {matched['enterprise']}), "
                       "so you can create API keys.",
+            # One code per kind rather than one code carrying the kind: each reads as its own
+            # sentence in the catalogs, and "organization X" is not a noun phrase every language
+            # builds the same way.
+            "reason_code": _MEMBER_CODES.get(matched["kind"], "member"),
+            "reason_params": {
+                "name": matched.get("name") or "",
+                "enterprise": matched.get("enterprise") or "",
+            },
             "policy_enabled": True,
             "matched": matched,
             "detail": detail,
@@ -250,6 +278,8 @@ async def evaluate(cfg, login: str, is_admin: bool) -> dict:
                   "organization, so you cannot create an API key and therefore cannot use "
                   "BYOK. To request access, ask your administrator to add your organization "
                   "to the allow list.",
+        "reason_code": "noMembership",
+        "reason_params": {},
         "policy_enabled": True,
         "matched": None,
         "detail": detail,

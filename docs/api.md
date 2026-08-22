@@ -10,7 +10,7 @@
 | `POST /v1/auth/setup` | the first-run wizard (only while unconfigured + from the local machine) |
 | `GET /v1/auth/github/login` · `GET /v1/auth/github/callback` · `POST /v1/auth/logout` | the GitHub OAuth flow |
 | `GET/POST /v1/keys`, `PATCH/DELETE /v1/keys/{id}` | list / create (returns the one-time plaintext, subject to the key policy) / disable / delete API keys. `POST` takes an optional `scope`; `PATCH` accepts `disabled` and `scope` independently, so saving one does not clear the other |
-| `GET /v1/access/me` | whether the signed-in user may create a key: the verdict, the reason, and the per-check evidence |
+| `GET /v1/access/me` | whether the signed-in user may create a key: the verdict, the reason, and the per-check evidence; plus `key_scope`, the separate verdict on whether they may [narrow a key](#api-key-scopes). Both verdicts also carry `reason_code` and `reason_params`, the same answer machine-readably, so a console can say it in the reader's language; `reason` stays the English record used by the logs and the `403` bodies (see [access control](access-control.md#both-verdicts-in-the-readers-language)) |
 | `GET /v1/access/token` | the status of the Enterprise administrator token (administrators; returns only a mask and the owner, **never echoes the plaintext**) |
 | `POST /v1/access/verify-token` | validate a token and report its scopes (administrators) |
 | `GET /v1/access/discover?refresh=` | automatically fetch the enterprise, Enterprise Team and organization lists (administrators; served from `data/github/structure.json`, `?refresh=1` goes to GitHub) |
@@ -61,3 +61,11 @@ group from the user and every one of their keys loses it on the next request.
 added to an `anthropic` connection later is picked up without editing the key. `models` is validated
 against the owner's own available models when it is written, so a scope cannot name something its
 owner could not reach in the first place.
+
+Setting any scope other than `{"kind": "all"}` is itself a **permission**, granted per user, team and
+organization under `auth.key_scope_policy` and off by default, because a key pinned to one expensive
+model defeats the routing that keeps costs down. `POST /v1/keys` and `PATCH /v1/keys/{id}` answer
+`403` with the failing level named when the caller does not have it. Widening a key back to
+`{"kind": "all"}` is always accepted, and administrators are exempt. The verdict a console can read
+ahead of time is `key_scope` on `GET /v1/access/me`; the semantics are in
+[Access control](access-control.md#who-may-narrow-a-keys-scope).

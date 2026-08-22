@@ -39,6 +39,7 @@ from . import (
     localadmin,
     modelpolicy,
     release,
+    scopepolicy,
     wire,
 )
 from .version import ISSUES_URL, RELEASES_URL, REPO_URL, VERSION
@@ -1035,7 +1036,7 @@ async def create_key(request: Request, payload: dict = Body(default={})):
         logger.info("api key denied user=%s reason=%s", user["login"], verdict["reason"])
         raise HTTPException(status_code=403, detail=verdict["reason"])
 
-    scope = await _validated_scope(payload.get("scope"), user)
+    scope = await _validated_scope(payload.get("scope"), user, user)
     record, plaintext = authstore.create_api_key(
         user["login"], (payload.get("name") or "").strip() or "default", scope
     )
@@ -1067,7 +1068,7 @@ async def update_key(request: Request, key_id: str, payload: dict = Body(...)):
         # Validated against the key's *owner*, not the caller: an administrator editing
         # somebody else's key must not be able to widen it past what that person may use.
         owner = {"login": record["user_login"], "is_admin": _is_admin_login(record["user_login"])}
-        patch["scope"] = await _validated_scope(payload.get("scope"), owner)
+        patch["scope"] = await _validated_scope(payload.get("scope"), owner, user)
     updated = authstore.set_api_key_fields(key_id, patch)
     if updated is None:
         raise HTTPException(status_code=404, detail="key not found")
@@ -1078,7 +1079,7 @@ async def update_key(request: Request, key_id: str, payload: dict = Body(...)):
     return updated
 
 
-async def _validated_scope(raw, owner: dict) -> dict:
+async def _validated_scope(raw, owner: dict, actor: dict) -> dict:
     """Normalize an incoming key scope, and refuse one the owner could not use anyway.
 
     Explicitly named models are checked against the owner's current policy set, because the
@@ -1086,11 +1087,29 @@ async def _validated_scope(raw, owner: dict) -> dict:
     now. Connection types are deliberately not checked: that scope is a rule, so selecting a
     type before an administrator has granted any model of that type is a legitimate thing to
     do, and it starts working on its own once they do.
+
+    Two different people are consulted, on purpose. `owner` answers "which models may this key
+    reach", because the key belongs to them. `actor` answers "may a scope be set at all", because
+    that is a permission to perform an action and the person performing it is the caller -- an
+    administrator narrowing somebody else's key is exercising their own authority, not that
+    person's. The permission gate lives here rather than in the two endpoints so that no future
+    caller can add a third way to set a scope and forget it.
     """
     try:
         scope = keyscope.normalize(raw, cfg)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    if scope.get("kind") != keyscope.KIND_ALL:
+        # Only narrowing is gated. Widening a key back to "everything its owner may reach" is
+        # always allowed: it is the documented default, it carries no cost risk, and refusing it
+        # would trap an already-narrowed key in place once the permission was withdrawn.
+        verdict = await scopepolicy.evaluate(cfg, actor["login"], bool(actor["is_admin"]))
+        if not verdict["allowed"]:
+            logger.info(
+                "key scope denied user=%s scope=%s reason=%s",
+                actor["login"], keyscope.describe(scope), verdict["reason"],
+            )
+            raise HTTPException(status_code=403, detail=verdict["reason"])
     if scope.get("kind") == "models":
         allowed = await modelpolicy.allowed_models(
             cfg, owner["login"], bool(owner["is_admin"])
@@ -1124,8 +1143,18 @@ async def access_me(request: Request):
     """A signed-in user asks whether they may create API keys, and on what evidence. The
     UI turns this into an explicit explanation."""
     user = _user(request)
-    verdict = await keypolicy.evaluate(cfg, user["login"], bool(user["is_admin"]))
-    return {"login": user["login"], "is_admin": bool(user["is_admin"]), **verdict}
+    # Both verdicts in one request: the page asks them together, and the second is nested rather
+    # than merged because the two share field names ("allowed", "reason") that must not collide.
+    verdict, key_scope = await asyncio.gather(
+        keypolicy.evaluate(cfg, user["login"], bool(user["is_admin"])),
+        scopepolicy.evaluate(cfg, user["login"], bool(user["is_admin"])),
+    )
+    return {
+        "login": user["login"],
+        "is_admin": bool(user["is_admin"]),
+        **verdict,
+        "key_scope": key_scope,
+    }
 
 
 @app.get("/v1/access/token")
@@ -1259,14 +1288,53 @@ async def my_available_models(request: Request):
     }
 
 
+# How many known logins one request will evaluate for key-creation permission, and how many of
+# those evaluations may be in flight at once. Both are guards on a cost that is not the caller's:
+# an uncached verdict is one or more live GitHub calls, so an unbounded loop over a long
+# known_users.json would turn one page load into hundreds of API calls. Users past the cap are
+# reported as "unknown" rather than quietly dropped -- see below.
+_MAX_ELIGIBILITY_USERS = 200
+_ELIGIBILITY_CONCURRENCY = 8
+
+
+async def _key_eligibility(logins: list[str]) -> dict[str, bool]:
+    """Map login -> may that login create an API key, under the saved key policy.
+
+    Deliberately the same keypolicy.evaluate() the Keys page shows the user themselves, rather
+    than a second reading of the config: a page that filters by its own idea of the rule would
+    eventually disagree with the rule that is actually enforced, and an administrator would be
+    configuring a list against a permission nobody has. Cache-first through ghcache means a
+    deployment with a warm member list answers this with zero GitHub calls.
+
+    A login whose evaluation raises is left out of the map, which the caller reports as unknown.
+    """
+    sem = asyncio.Semaphore(_ELIGIBILITY_CONCURRENCY)
+
+    async def one(login: str) -> tuple[str, bool | None]:
+        async with sem:
+            try:
+                verdict = await keypolicy.evaluate(cfg, login, cfg.is_admin_login(login))
+                return login, bool(verdict.get("allowed"))
+            except Exception as e:  # noqa: BLE001 a display filter must not fail the page
+                logger.warning("key-creation eligibility failed for %s: %s", login, e)
+                return login, None
+
+    results = await asyncio.gather(*(one(login) for login in logins))
+    return {login: allowed for login, allowed in results if allowed is not None}
+
+
 @app.get("/v1/access/users")
-async def list_signed_in_users(request: Request):
+async def list_signed_in_users(request: Request, eligibility: bool = False):
     """Administrators only: every login that has ever signed in.
 
     Read from data/known_users.json rather than from the session table -- sessions are purged
     when they expire, so they can only ever answer "who is signed in right now", which is not
     the question. This is what makes assigning a model group to a user possible without asking
     them to spell their GitHub login.
+
+    `eligibility=1` adds `can_create_key` per user, which the key-scope allow list needs to offer
+    only accounts that may create a key at all. It is opt-in because it costs a policy evaluation
+    per user, and the model-policy table that shares this endpoint does not need it.
     """
     _admin(request)
     users = authstore.list_known_users()
@@ -1277,13 +1345,30 @@ async def list_signed_in_users(request: Request):
         str(k).strip().lower(): v
         for k, v in ((cfg.model_policy.get("users") or {}).items())
     }
+
+    allowed: dict[str, bool] = {}
+    truncated = False
+    if eligibility:
+        logins = [str(u.get("login") or "") for u in users if u.get("login")]
+        truncated = len(logins) > _MAX_ELIGIBILITY_USERS
+        allowed = await _key_eligibility(logins[:_MAX_ELIGIBILITY_USERS])
+
+    def decorate(u: dict) -> dict:
+        row = {**u, "model_group": bindings.get(str(u.get("login", "")).lower()) or ""}
+        if eligibility:
+            # None, not False, when the verdict is unknown: "we could not tell" and "not allowed"
+            # are different answers, and a page that hides its rows by this field must not hide a
+            # row it never managed to evaluate.
+            row["can_create_key"] = allowed.get(str(u.get("login") or ""))
+        return row
+
     return {
-        "users": [
-            {**u, "model_group": bindings.get(str(u.get("login", "")).lower()) or ""}
-            for u in users
-        ],
+        "users": [decorate(u) for u in users],
         "default_group": cfg.default_group,
         "policy_enabled": cfg.model_policy_enabled,
+        "key_policy_enabled": bool(cfg.key_policy.get("enabled")),
+        "eligibility_evaluated": bool(eligibility),
+        "eligibility_truncated": truncated,
     }
 
 

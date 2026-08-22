@@ -27,7 +27,10 @@ from __future__ import annotations
 from .config import _API_TYPES
 
 KINDS = ("all", "api_types", "models")
-DEFAULT_SCOPE = {"kind": "all"}
+# "Everything the owner may reach", i.e. no narrowing at all. Named because callers outside this
+# module compare against it to decide whether a scope needs permission (see app/scopepolicy.py).
+KIND_ALL = "all"
+DEFAULT_SCOPE = {"kind": KIND_ALL}
 
 
 def normalize(raw, cfg=None) -> dict:

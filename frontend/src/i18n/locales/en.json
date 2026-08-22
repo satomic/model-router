@@ -431,6 +431,17 @@
         "live": "live",
         "liveHint": "answered by calling GitHub for this request — this row still costs a round trip per check"
       },
+      "reason": {
+        "admin": "You are an administrator of this service and can create API keys directly.",
+        "policyOff": "Enterprise access control is disabled, so any signed-in account can create API keys.",
+        "noToken": "Enterprise access control is enabled, but the administrator has not configured a GitHub Enterprise token, so the service cannot verify your enterprise membership. Please contact your administrator.",
+        "noEnterprise": "Enterprise access control is enabled, but the administrator has not allowed any enterprise yet. Please contact your administrator.",
+        "memberOrganization": "You are a member of organization {{name}} (enterprise {{enterprise}}), so you can create API keys.",
+        "memberTeam": "You are a member of enterprise team {{name}} (enterprise {{enterprise}}), so you can create API keys.",
+        "memberEnterprise": "You are a member of enterprise {{name}}, so you can create API keys.",
+        "member": "You are a member of {{name}} (enterprise {{enterprise}}), so you can create API keys.",
+        "noMembership": "You do not belong to any allowed enterprise, enterprise team or organization, so you cannot create an API key and therefore cannot use BYOK. To request access, ask your administrator to add your organization to the allow list."
+      },
       "scanned": "(probed {{count}})",
       "scannedTruncated": "(probed {{count}}, truncated)",
       "undecidable": "cannot determine",
@@ -466,6 +477,20 @@
         "all": "All your models",
         "models_one": "{{count}} model",
         "models_other": "{{count}} models"
+      },
+      "lockedBadge": "Not allowed",
+      "widenOnly": "You may clear this scope back to all models and all connection types, but not change it to a different restriction.",
+      "verdict": {
+        "admin": "Administrators may set a scope on any key.",
+        "off": "Narrowing an API key is not enabled on this deployment, so every key covers all models and all connection types. Please contact your administrator.",
+        "nobodyAllowed": "Narrowing an API key is enabled, but the administrator has not allowed any user, team or organization yet, so every key covers all models and all connection types. Please contact your administrator.",
+        "levelsFailed": "You are not allowed to narrow an API key: the administrator requires a match at the {{levels}} level, and you do not have one. Every key you create covers all models and all connection types. Please contact your administrator.",
+        "allowed": "You may restrict an API key to specific models or connection types."
+      },
+      "levelName": {
+        "user": "user",
+        "team": "team",
+        "organization": "organization"
       }
     }
   },
@@ -488,6 +513,10 @@
       "policy": {
         "label": "Key policy",
         "hint": "who may create keys, by Enterprise / Team / Organization"
+      },
+      "keyscope": {
+        "label": "Key scope",
+        "hint": "whether users may restrict a key to specific models or connection types"
       }
     },
     "kind": {
@@ -633,6 +662,91 @@
       "teamListUnavailable": "team list unavailable",
       "teamListUnavailableNote": "— this enterprise can only be authorized by organization.",
       "noTeams": "This enterprise has no enterprise teams."
+    },
+    "keyscope": {
+      "title": "Narrowing an API key",
+      "on": "Allowed for the accounts below",
+      "off": "Nobody",
+      "toggle": "Let the users, teams and organizations listed below restrict their API keys",
+      "onNote": "The lists below decide who may do it. Everybody else creates keys that cover <strong>all models and all connection types</strong>.",
+      "offNote": "Nobody may restrict a key. Every key covers <strong>all models and all connection types</strong>, which is what every key did before scopes existed, so leaving this off takes nothing away.",
+      "why": "A key restricted to one expensive model has <strong>pinned every request on that key to it</strong>, so routing cheap work to a cheap model stops applying. That is the cost this control exists to prevent.",
+      "emptyBadge": "Grants nobody",
+      "empty": "Switched on with all three lists empty, so nobody may restrict a key yet. Add at least one user, team or organization.",
+      "ruleAnd": "Every list you fill in <strong>must</strong> match. Fill in two, and both have to match.",
+      "ruleAbstain": "A list left empty is <strong>not consulted</strong>, so listing one organization on its own allows everybody in it.",
+      "ruleOr": "Within one list, a single match is enough.",
+      "ruleAdmin": "Administrators may always restrict a key.",
+      "ruleExisting": "Keys that already carry a restriction <strong>keep it</strong>. Taking the permission away stops new restrictions; it does not widen keys already issued.",
+      "allowedCount_one": "{{count}} allowed",
+      "allowedCount_other": "{{count}} allowed",
+      "notConsulted": "Not consulted",
+      "notConsultedHint": "Empty, so this level is not part of the decision",
+      "addManually": "Add manually",
+      "exists": "{{name}} is already on the list.",
+      "badKey": "Use 'enterprise-slug/team-id', for example your-enterprise/14501973.",
+      "noStructure": "Nothing to pick from",
+      "needToken": "Save an enterprise administrator token on the <strong>Key policy</strong> tab to pick from a list. Until then, add entries by hand.",
+      "noMatch": "Nothing matches “{{query}}”.",
+      "hidden": "Showing {{shown}} of {{total}}.",
+      "showAll": "Show all {{total}}",
+      "manual": "Added by hand",
+      "manualHint": "Not in the discovered structure: typed in, or from an enterprise this token can no longer see",
+      "signedIn": "Signed in",
+      "gateOnBadge": "gated",
+      "gateOn": "Creating an API key is <strong>restricted</strong>, so this table lists only the accounts allowed under Access control → Key policy. Anybody else cannot create a key at all, so allowing them to narrow one would grant nothing.",
+      "gateOffBadge": "not gated",
+      "gateOff": "Creating an API key is <strong>open to everyone who can sign in</strong>, so every account below can be allowed to narrow one. Restricting key creation is done under Access control → Key policy.",
+      "savedVerdict": "The verdict per user comes from the saved key policy, so save an edit to it before reading this column.",
+      "excludedBadge": "filtered",
+      "excluded": "Not listed: {{hidden}} of {{total}}, which the key policy does not allow to create API keys. Allow one under Access control → Key policy to offer it here.",
+      "partialBadge": "partial list",
+      "partialUsers": "There were more accounts than this page evaluates in one request, so the ones it could not check are shown with an unknown verdict rather than hidden.",
+      "mayCreateKeys": "may create keys",
+      "mayNotCreateKeys": "no keys",
+      "unknownKeys": "unknown",
+      "reason": {
+        "entOff": "This enterprise is switched off in the key policy, so none of its members may create an API key.",
+        "orgNotAllowed": "This organization is not allowed to create API keys under the key policy.",
+        "teamNotAllowed": "This team is not allowed to create API keys under the key policy.",
+        "userNotAllowed": "This account may not create an API key under the key policy, so there is no key of theirs to narrow.",
+        "unknown": "Whether this account may create an API key could not be established, so it is offered rather than hidden."
+      },
+      "table": {
+        "source": "Source",
+        "allow": "May restrict",
+        "keyPolicy": "Key policy"
+      },
+      "users": {
+        "title": "Users",
+        "lead": "Everyone who has signed in. Tick the accounts allowed to restrict their own keys.",
+        "key": "GitHub login",
+        "none": "Nobody has signed in yet.",
+        "search": "Filter users",
+        "addTitle": "Add a user",
+        "prompt": "The GitHub login of an account that may restrict its keys.",
+        "noneEligible": "No signed-in account is allowed to create API keys under the key policy, so there is nobody to allow here. Allow one under Access control → Key policy, or add a login by hand."
+      },
+      "teams": {
+        "title": "Enterprise teams",
+        "lead": "Teams discovered through the enterprise administrator token, stored as <code>enterprise-slug/team-id</code>.",
+        "key": "Team",
+        "none": "No enterprise teams were discovered.",
+        "search": "Filter teams",
+        "addTitle": "Add a team",
+        "prompt": "The team key, 'enterprise-slug/team-id', for example your-enterprise/14501973.",
+        "noneEligible": "No enterprise team is allowed to create API keys under the key policy, so there is nothing to allow here. Allow one under Access control → Key policy, or add a team by hand."
+      },
+      "organizations": {
+        "title": "Organizations",
+        "lead": "Organizations discovered through the enterprise administrator token, stored as the organization login.",
+        "key": "Organization",
+        "none": "No organizations were discovered.",
+        "search": "Filter organizations",
+        "addTitle": "Add an organization",
+        "prompt": "The organization login.",
+        "noneEligible": "No organization is allowed to create API keys under the key policy, so there is nothing to allow here. Allow one under Access control → Key policy, or add an organization by hand."
+      }
     }
   },
   "playground": {

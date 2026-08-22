@@ -22,6 +22,7 @@ import ScopeEditor, {
   type ScopeModel,
 } from '../components/ScopeEditor'
 import { formatDateTime } from '../i18n/format'
+import { keyPolicyReason, keyScopeReason } from '../reasons'
 
 /** Unix seconds -> a locale-formatted timestamp, or an em dash when never used. */
 const fmt = (ts: number | null) => (ts ? formatDateTime(ts * 1000) : '—')
@@ -148,7 +149,10 @@ export default function KeysPage({ user }: { user: SessionUser }) {
     setBusy(true)
     setError('')
     try {
-      const created = await createKey(name.trim() || 'default', scope)
+      // Deliberately not `scope`: with the editor hidden the draft cannot have been changed,
+      // and sending the default explicitly means a verdict that arrived late cannot produce a
+      // request that 403s.
+      const created = await createKey(name.trim() || 'default', scopeLocked ? { kind: 'all' } : scope)
       setFresh(created)
       setName('')
       setScope({ kind: 'all' })
@@ -180,6 +184,10 @@ export default function KeysPage({ user }: { user: SessionUser }) {
   /** The button is not disabled while the verdict is still loading: the backend enforces
    *  the rule anyway, so one slow request should not lock up the UI. */
   const blocked = access !== null && !access.allowed
+  /** Whether this account may narrow a key at all. Same "not while loading" posture as above,
+   *  and the same division of labour: the console hides what is not permitted, the backend is
+   *  what actually refuses it (POST/PATCH /v1/keys answer 403). */
+  const scopeLocked = access !== null && !access.key_scope.allowed
 
   return (
     <div>
@@ -250,7 +258,7 @@ export default function KeysPage({ user }: { user: SessionUser }) {
                 className="btn"
                 onClick={create}
                 disabled={busy || blocked || !scopeIsComplete(scope)}
-                title={blocked ? access?.reason : undefined}
+                title={blocked ? keyPolicyReason(t, access) : undefined}
               >
                 {busy ? t('keys.create.creating') : t('keys.create.submit')}
               </button>
@@ -262,7 +270,18 @@ export default function KeysPage({ user }: { user: SessionUser }) {
               {t('keys.scope.title')}
               <span className="field-hint">{t('keys.scope.hint')}</span>
             </span>
-            <ScopeEditor value={scope} onChange={setScope} models={myModels} disabled={blocked} />
+            {scopeLocked ? (
+              /* The server's own verdict, not a generic sentence: it names which level the
+                 account failed to match, and asking an administrator is the only route to the
+                 capability, so the user needs to know what to ask to be added to. Rendered from
+                 the verdict's reason code, because the backend says it in English only. */
+              <p className="panel-note" style={{ margin: 0 }}>
+                <span className="badge warn">{t('keys.scope.lockedBadge')}</span>{' '}
+                {keyScopeReason(t, access?.key_scope ?? null)}
+              </p>
+            ) : (
+              <ScopeEditor value={scope} onChange={setScope} models={myModels} disabled={blocked} />
+            )}
           </div>
           {blocked && (
             <p className="panel-note" style={{ marginBottom: 0 }}>
@@ -396,16 +415,24 @@ export default function KeysPage({ user }: { user: SessionUser }) {
                       >
                         {examplesId === k.id ? t('keys.cli.close') : t('keys.cli.show')}
                       </button>{' '}
-                      <button
-                        className="btn ghost sm"
-                        onClick={() => {
-                          if (editingId === k.id) return setEditingId(null)
-                          setDraft(k.scope ?? { kind: 'all' })
-                          setEditingId(k.id)
-                        }}
-                      >
-                        {editingId === k.id ? t('keys.scope.close') : t('keys.scope.edit')}
-                      </button>{' '}
+                      {/* Hidden where there is nothing the button could do: an account that may
+                          not narrow a key has no edit to make on an unrestricted one. A key that
+                          already carries a scope keeps its button, because widening back to
+                          "everything" stays allowed and a key stuck narrow would be worse. */}
+                      {(!scopeLocked || (k.scope && k.scope.kind !== 'all')) && (
+                        <>
+                          <button
+                            className="btn ghost sm"
+                            onClick={() => {
+                              if (editingId === k.id) return setEditingId(null)
+                              setDraft(k.scope ?? { kind: 'all' })
+                              setEditingId(k.id)
+                            }}
+                          >
+                            {editingId === k.id ? t('keys.scope.close') : t('keys.scope.edit')}
+                          </button>{' '}
+                        </>
+                      )}
                       <button
                         className="btn ghost sm"
                         onClick={() =>
@@ -458,11 +485,20 @@ export default function KeysPage({ user }: { user: SessionUser }) {
                           {t('keys.scope.editTitle', { name: k.name })}
                           <span className="field-hint">{t('keys.scope.hint')}</span>
                         </div>
+                        {scopeLocked && (
+                          <p className="panel-note" style={{ marginTop: 0 }}>
+                            <span className="badge warn">{t('keys.scope.lockedBadge')}</span>{' '}
+                            {t('keys.scope.widenOnly')}
+                          </p>
+                        )}
                         <ScopeEditor
                           value={draft}
                           onChange={setDraft}
                           models={myModels}
                           disabled={savingScope}
+                          // Clearing the restriction is the only edit the backend will accept from
+                          // an account that may not narrow a key, so it is the only one offered.
+                          widenOnly={scopeLocked}
                         />
                         <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
                           <button
@@ -596,7 +632,7 @@ function AccessPanel({
       </div>
       <div className="panel-body">
         <p className="panel-note" style={{ marginTop: 0, marginBottom: matched || !ok ? 10 : 0 }}>
-          {access.reason}
+          {keyPolicyReason(t, access)}
         </p>
 
         {matched && (

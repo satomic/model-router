@@ -2,6 +2,9 @@ import { useMemo, useState } from 'react'
 import { useTranslation, Trans } from 'react-i18next'
 import type { DiscoveredEnterprise, KeyPolicy } from '../../api'
 import { useDialogs } from '../../components/Dialog'
+// The eligibility rule is shared with the key-scope allow lists: a scope whose members cannot
+// create an API key is offered by neither page, and the rule has to say the same thing on both.
+import { scopeCandidates, type ScopeCandidate } from '../../keyeligibility'
 
 /** How many rows are rendered before the list has to be asked for in full.
  *
@@ -13,73 +16,7 @@ import { useDialogs } from '../../components/Dialog'
 const VISIBLE = 20
 
 /** One bindable scope: an organization, or an enterprise team. */
-interface Candidate {
-  /** The binding key stored in config: an organization login, or '<enterprise slug>/<team id>'. */
-  key: string
-  /** What to show a human -- the organization login, or the team's display name. */
-  name: string
-  /** Which enterprise it came from, so two identically named teams stay distinguishable. */
-  enterprise: string
-  /** Whether members of this scope may create an API key at all, under the current key policy. */
-  eligible: boolean
-  /** Why not, when they may not. A translation key under `policy.bindings.`. */
-  reason?: 'entOff' | 'orgNotAllowed' | 'teamNotAllowed'
-}
-
-/** Build the bindable list from the discovered structure, filtered by who may create an API key.
- *
- *  The filter is the point rather than a nicety: a model group bound to a scope whose members
- *  cannot create a key grants nothing, because without a key they never reach
- *  /v1/chat/completions. So `eligible` is what decides whether the table offers a row at all; the
- *  caller drops the ineligible ones and says how many it dropped. The reason is still recorded per
- *  candidate, because a scope that is **already bound** survives that filter and has to explain
- *  itself.
- *
- *  With the key policy switched off every discovered scope is eligible: the gate is open, so
- *  anybody who can sign in can create a key.
- */
-function candidatesFor(
-  scope: 'teams' | 'organizations',
-  discovered: DiscoveredEnterprise[],
-  keyPolicy: KeyPolicy,
-): Candidate[] {
-  const gated = Boolean(keyPolicy.enabled)
-  const rules = keyPolicy.enterprises ?? {}
-  const out: Candidate[] = []
-
-  for (const ent of discovered) {
-    const rule = rules[ent.slug] ?? {}
-    const entOn = Boolean(rule.enabled)
-    const allowedOrgs = (rule.organizations ?? []).map(String)
-    const allowedTeams = (rule.teams ?? []).map(String)
-
-    if (scope === 'organizations') {
-      for (const org of ent.organizations) {
-        const allowed = Boolean(rule.allow_all_orgs) || allowedOrgs.includes(org.login)
-        out.push({
-          key: org.login,
-          name: org.login,
-          enterprise: ent.name,
-          eligible: !gated || (entOn && allowed),
-          reason: !gated ? undefined : !entOn ? 'entOff' : allowed ? undefined : 'orgNotAllowed',
-        })
-      }
-    } else {
-      for (const team of ent.teams) {
-        const allowed = allowedTeams.includes(String(team.id))
-        out.push({
-          // The numeric id, not the slug: this is the form the backend's team lookup needs.
-          key: `${ent.slug}/${team.id}`,
-          name: team.name,
-          enterprise: ent.name,
-          eligible: !gated || (entOn && allowed),
-          reason: !gated ? undefined : !entOn ? 'entOff' : allowed ? undefined : 'teamNotAllowed',
-        })
-      }
-    }
-  }
-  return out
-}
+type Candidate = ScopeCandidate
 
 /** Team and organization bindings, picked from the structure discovered on the Access control page.
  *
@@ -123,7 +60,7 @@ export default function ScopeBindings({
 
   const bindings = table ?? {}
   const all = useMemo(
-    () => candidatesFor(scope, discovered ?? [], keyPolicy),
+    () => scopeCandidates(scope, discovered ?? [], keyPolicy),
     [scope, discovered, keyPolicy],
   )
   const known = new Set(all.map((c) => c.key))

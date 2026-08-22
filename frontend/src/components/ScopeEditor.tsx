@@ -26,13 +26,22 @@ export default function ScopeEditor({
   onChange,
   models,
   disabled,
+  widenOnly,
 }: {
   value: KeyScope
   onChange: (next: KeyScope) => void
   models: ScopeModel[]
   disabled?: boolean
+  /** The caller may clear a restriction but not replace it with a different one, which is the
+   *  state an already narrowed key is in once the permission to narrow has been withdrawn. Only
+   *  "all" stays selectable then: the backend answers 403 to any other edit, and an editor that
+   *  offers one is an editor whose only outcome is an error message. */
+  widenOnly?: boolean
 }) {
   const { t } = useTranslation()
+  // Every control except the "all" radio, in the widen-only state. Not `frozen && kind !== 'all'`:
+  // the "all" kind renders no choices at all, so the two are the same condition here.
+  const choicesDisabled = disabled || Boolean(widenOnly)
   const selectedTypes = value.kind === 'api_types' ? value.api_types : []
   const selectedModels = value.kind === 'models' ? value.models : []
 
@@ -69,7 +78,7 @@ export default function ScopeEditor({
             <input
               type="radio"
               checked={(value.kind ?? 'all') === kind}
-              disabled={disabled}
+              disabled={disabled || (Boolean(widenOnly) && kind !== 'all')}
               onChange={() => pickKind(kind)}
             />
             <span>
@@ -89,7 +98,7 @@ export default function ScopeEditor({
                 <input
                   type="checkbox"
                   checked={selectedTypes.includes(tp)}
-                  disabled={disabled}
+                  disabled={choicesDisabled}
                   onChange={() => toggleType(tp)}
                 />
                 <span>
@@ -119,7 +128,7 @@ export default function ScopeEditor({
                 <button
                   type="button"
                   className="btn-link"
-                  disabled={disabled}
+                  disabled={choicesDisabled}
                   onClick={() => onChange({ kind: 'models', models: models.map((m) => m.name) })}
                 >
                   {t('keys.scope.selectAll')}
@@ -127,7 +136,7 @@ export default function ScopeEditor({
                 <button
                   type="button"
                   className="btn-link"
-                  disabled={disabled}
+                  disabled={choicesDisabled}
                   onClick={() => onChange({ kind: 'models', models: [] })}
                 >
                   {t('keys.scope.clear')}
@@ -138,7 +147,7 @@ export default function ScopeEditor({
                   <input
                     type="checkbox"
                     checked={selectedModels.includes(m.name)}
-                    disabled={disabled}
+                    disabled={choicesDisabled}
                     onChange={() => toggleModel(m.name)}
                   />
                   <span>

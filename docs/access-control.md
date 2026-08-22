@@ -1,4 +1,4 @@
-# Access control: who may sign in, who may create keys
+# Access control: who may sign in, who may create keys, how far a key reaches
 
 > Which **models** a caller may then use is a separate control with its own semantics (a union across
 > scopes rather than a single verdict, and fail-open rather than fail-closed): see
@@ -106,3 +106,131 @@ verdict is returned; a failed resolution falls back to showing the id and never 
 authorization decision itself. When denied, the create button is disabled and explained — **not
 belonging to any allowed Enterprise / Organization means no key, and therefore no BYOK** — and the
 evidence in the panel can be sent straight to an administrator as an access request.
+
+## Who may narrow a key's scope
+
+A key can be **restricted** to particular models or particular connection types, so that one key
+reaches only `gpt-4o-mini` on `/v1/chat/completions` while another reaches everything. That
+restriction is called the key's **scope**, and it can only ever subtract: the effective set is
+`model policy of the owner ∩ scope of the key`, so a scope grants nothing that the owner did not
+already have (see [model policy](model-policy.md), and `app/keyscope.py` for the intersection).
+
+Which is why the control on it is a **cost** control, not a security one. A user who scopes their
+key to the single most expensive model has pinned every request on that key to it, and the whole
+point of the router, sending cheap work to a cheap model, stops applying to that key. So narrowing
+is a permission an administrator grants, and it is **off by default**. Every key then covers all
+models and all connection types, which is exactly what every key did before scopes existed, so the
+default takes nothing away from anybody.
+
+The permission is configured on "Access control → Key scope", and it is evaluated in
+[app/scopepolicy.py](../app/scopepolicy.py):
+
+```yaml
+auth:
+  key_scope_policy:
+    enabled: false                # false (the default) = nobody may narrow a key
+    users: [alice, bob]           # GitHub logins
+    teams: ['my-enterprise/14501973']   # '<enterprise slug>/<team id>'
+    organizations: [org-a]        # organization logins
+```
+
+The rules, which are also printed on the page itself because one of them is not guessable from
+three tables:
+
+- **The levels are combined with AND**, not OR. With both `users` and `organizations` filled in,
+  a caller must be on the user list *and* in one of the listed organizations. This is the opposite
+  of the key-creation policy above, which is an OR,
+  and deliberately so: creating a key is the capability being handed out there, while here every
+  additional list is an administrator narrowing who may spend.
+- **A level left empty abstains** rather than denying. Otherwise listing one organization on its
+  own would match nobody at all, because no login is a member of an empty user list, and the
+  feature would look broken. So filling in only `organizations` allows everybody in it.
+- **Within one level, any single match is enough.**
+- `enabled: false`, the default, denies everybody. `enabled: true` with all three lists empty also
+  denies everybody, fail-closed, the same posture as an enabled key policy with no token; the
+  console says so with a "Grants nobody" badge rather than letting it read as "allow all".
+- **Administrators are exempt**, and an administrator editing somebody else's key exercises their
+  own permission, not that person's.
+- A membership lookup that cannot be answered denies that level. Failing closed here costs a user
+  a restriction they wanted; failing open would cost money.
+
+Two things stay allowed regardless of the verdict. **Widening** a key back to "everything its owner
+may reach" is always permitted, because it is the documented default, it carries no cost risk, and
+refusing it would trap an already narrowed key in place the moment the permission was withdrawn.
+And **keys that already carry a restriction keep it**: taking the permission away stops new
+restrictions, it does not rewrite keys already issued.
+
+Enforcement is in the backend, on both `POST /v1/keys` and `PATCH /v1/keys/{id}`, which answer
+`403` with the reason naming the level that failed. The console reads the same verdict from
+`GET /v1/access/me` (as `key_scope`) and hides the scope editor rather than offering an action the
+server will refuse, but hiding it is a courtesy: the gate is the endpoint.
+
+### The three lists only offer accounts that may create a key
+
+Narrowing is something you do to a key you own, so the permission is meaningless for anybody who
+cannot create a key in the first place. The three tables on "Access control → Key scope" therefore
+list only the users, teams and organizations that the **key policy** above allows to create an API
+key, exactly as the model policy bindings tables do, and each table says how many entries it left
+out and why. With the key policy switched off the gate is open, so every discovered scope is
+offered.
+
+The two halves of that filter are answered in different places, because they are different
+questions. Teams and organizations are decided by the saved `auth.key_policy` lists, so the console
+computes them in the browser from the draft it is editing, through the rule shared with the model
+policy page in [frontend/src/keyeligibility.ts](../frontend/src/keyeligibility.ts): edit the key
+policy in the tab next door and these tables follow immediately, before a save. A **user** cannot be
+decided that way. `key_policy` has no user list at all; it gates on Enterprise, Organization and
+Team membership, so whether one login may create a key is a membership question only the server can
+answer. `GET /v1/access/users?eligibility=1` answers it by running the same
+[app/keypolicy.py](../app/keypolicy.py) evaluation the Keys page shows that user about themselves,
+against the **saved** policy, which is why the users table asks you to save a key-policy edit before
+reading its verdict column. Cached member lists make this cheap; the request evaluates at most 200
+logins, and any beyond that are marked unknown rather than dropped.
+
+Three postures in that filter are deliberate. An **unknown** verdict is offered, not hidden: "we
+could not establish it" and "not allowed" are different answers, and a table that hid the first
+would quietly shrink during a GitHub outage. An entry that is **already on the allow list** survives
+the filter and stays visible with its reason, so a permission granted before the key policy tightened
+can still be seen and cleared. And the dropped count is always printed, so a filtered list never
+reads as the whole list.
+
+## Both verdicts in the reader's language
+
+The two policy modules are English-only on purpose. Their sentence is the **record**: it is what
+goes into the server log, into the `403` body of `POST /v1/keys` and `PATCH /v1/keys/{id}`, and into
+the response an API caller parses, all places where the reader's locale is unknown and must not
+change what was written down. The console, however, is translated into five languages, and a page
+that mixes a Japanese layout with an English verdict is a page that has not been translated.
+
+So each verdict carries both. Beside `reason` (the English sentence) sits `reason_code`, which names
+the same verdict without saying it in any language, and `reason_params`, the values that sentence
+interpolates:
+
+```json
+{
+  "allowed": true,
+  "reason": "You are a member of organization nekoaru (enterprise satomic), so you can create API keys.",
+  "reason_code": "memberOrganization",
+  "reason_params": { "name": "nekoaru", "enterprise": "satomic" }
+}
+```
+
+The console renders the code through its own catalogs
+([frontend/src/reasons.ts](../frontend/src/reasons.ts)) and falls back to `reason` for a code it does
+not recognise, so an older console against a newer server degrades to English rather than to a blank
+line. The codes are `admin`, `policyOff`, `noToken`, `noEnterprise`, `memberOrganization`,
+`memberTeam`, `memberEnterprise`, `member` and `noMembership` for key creation, and `admin`, `off`,
+`nobodyAllowed`, `levelsFailed` and `allowed` for the scope permission.
+
+Two details in that contract are deliberate. Membership gets **one code per kind** rather than one
+code carrying a kind, because "organization *X*" is not a noun phrase every language builds the same
+way. And `levelsFailed` passes the failing levels as bare names (`{"levels": ["user", "team"]}`)
+rather than as the joined English phrase, because only the console knows what those levels are called
+in the reader's language and in which order that language lists them; it joins them with
+`Intl.ListFormat`, where the separator is not a comma everywhere.
+
+The failure mode this creates is a new backend branch whose code nobody translated: it falls back to
+English **silently**, which no assertion about the English text can see.
+[verify/verify_keyscope_policy.py](../verify/verify_keyscope_policy.py) therefore provokes every
+branch of both modules, checks that each returns its own code, and cross-checks the full set of codes
+against all five catalogs.

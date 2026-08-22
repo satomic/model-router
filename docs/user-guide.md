@@ -289,7 +289,7 @@ Only an actual grant that resolves to an empty set denies anything. Full semanti
 
 ### 2.7 Access control
 
-Four tabs, and the order below is the order they matter in.
+Five tabs, and the order below is the order they matter in.
 
 #### Administrators and sign-in
 
@@ -356,6 +356,48 @@ This is the gate on API-key creation, and the page where the GitHub structure is
 5. **Save and apply**.
 
 Full semantics, including how a decision is evidenced: [Access control](access-control.md).
+
+#### Key scope
+
+Whether a user may restrict one of their API keys to particular models or connection types. This is a
+**cost** control, not a security one: a scope can only ever subtract from what the model policy
+already allows its owner, so it grants nothing, but a user who scopes a key to the single most
+expensive model has pinned every request on that key to it, and routing cheap work to a cheap model
+stops applying to that key.
+
+It is therefore **off by default**, and while it is off every key covers all models and all
+connection types, which is what every key did before scopes existed. Switching it off later takes
+nothing away from anybody.
+
+1. **The master switch**: *Let the users, teams and organizations listed below restrict their API
+   keys*. Off, the default, means nobody may.
+2. **Users, Enterprise teams, Organizations**: three allow lists, filled in the same way as the model
+   policy bindings. Users are ticked from everybody who has signed in; teams and organizations are
+   ticked from the structure discovered by the enterprise administrator token on the **Key policy**
+   tab, and can also be typed in by hand where there is no token.
+3. **Save and apply**.
+
+Each of the three tables lists only the accounts that the **Key policy** tab allows to create an API
+key, and prints how many it left out. Somebody who cannot create a key has no key to narrow, so the
+permission would grant them nothing. With key creation not restricted at all, every discovered
+account is offered. Two exceptions keep the tables honest: an account already on an allow list stays
+visible even after the key policy stops allowing it, so the entry can be seen and cleared, and an
+account whose eligibility could not be established is shown as *unknown* rather than hidden. The
+per-user verdict is read from the **saved** key policy, so save a key-policy edit before reading that
+column; teams and organizations follow an unsaved edit immediately.
+
+The one rule that is not guessable from three tables, and which the page states next to the switch:
+the three levels are combined with **AND**, but only the ones actually filled in. Fill in users and
+organizations, and a caller has to match both. Leave a list empty and it is **not consulted**, so
+filling in only Organizations allows everybody in them. Within one list, any single match is enough.
+Switched on with all three lists empty denies everybody, and the page says so with a *Grants nobody*
+badge rather than letting an empty configuration read as *allow all*.
+
+Administrators may always restrict a key, including somebody else's. And taking the permission away
+does not rewrite keys already issued: a key that already carries a restriction keeps it, and may
+still be widened back to everything, which is never refused.
+
+Full semantics: [Who may narrow a key's scope](access-control.md#who-may-narrow-a-keys-scope).
 
 ### 2.8 Monitoring: usage, traces, playground
 
@@ -506,11 +548,17 @@ To create a key: type a name that will remind you where it is used (`copilot-lap
 empty for `default`, choose a **Scope**, and press **Create key**.
 
 The scope is what this one key may reach, and it is always evaluated *inside* what the model policy
-allows you. It can only narrow, never widen, so a scope can never become a way around the policy:
+allows you. It can only narrow, never widen, so a scope can never become a way around the policy.
+
+**If you see *Not allowed* where the scope picker should be**, your administrator has not granted your
+account permission to restrict a key, and the key you create covers all models and all connection
+types. That is the default and it does not limit what you can call; ask an administrator if you
+specifically want a narrower key, and quote the sentence next to the badge, because it names which
+level did not match.
 
 | Scope | What it covers |
 |---|---|
-| **All your models** | everything the model policy allows you, which is the default |
+| **All your models** | everything the model policy allows you, which is the default, and the only option unless an administrator granted you the rest |
 | **By connection type** | every model on connections of the ticked interface types, **including models added to those connections later** |
 | **Specific models** | an explicit list, ticked from your own available models |
 
@@ -530,8 +578,10 @@ name in the traces and in the usage statistics.
 The **My keys** table lists each key with its scope, creation time, last use and call count, and lets
 you reveal, copy, disable or delete it. **Scope** opens the same editor inline, so a key handed to a CI
 job can be narrowed once its needs are known rather than at the moment it was created; the change takes
-effect on the very next request. A disabled key is refused with a 401 without being deleted, which is
-the right first move if you think a key has leaked.
+effect on the very next request. Without the permission the button appears only on keys that already
+carry a restriction, and then only to clear it back to all models and all connection types. A
+disabled key is refused with a 401 without being deleted, which is the right first move if you think
+a key has leaked.
 
 **Usage example** on any row reopens that configuration block later. The panel above appears once,
 straight after creation, so a key made last month had nowhere left to tell you the base URL, the

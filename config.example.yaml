@@ -67,6 +67,20 @@ auth:
         organizations: []      # Allowed organization logins, e.g. [your-org]
         teams: []              # Allowed enterprise-team **numeric ids**, e.g. ['14501973']
 
+  # Who may narrow an API key to specific models or connection types.
+  # A key with no scope reaches everything its owner is allowed, which is what every key did
+  # before scopes existed, so the default here is "nobody" and it takes nothing away. The reason
+  # to keep it closed: a user who scopes their key to one expensive model has pinned every
+  # request on that key to it, and routing cheap work to a cheap model stops applying.
+  # The three levels are combined with AND, but only the ones you actually fill in: a level left
+  # empty abstains instead of denying, otherwise listing an organization alone would match nobody.
+  # Within one level any single match is enough. Administrators are exempt.
+  key_scope_policy:
+    enabled: false             # false (the default) = nobody may narrow a key
+    users: []                  # GitHub logins, e.g. [your-github-login]
+    teams: []                  # '<enterprise slug>/<team id>', e.g. ['your-enterprise-slug/14501973']
+    organizations: []          # Organization logins, e.g. [your-org]
+
 # Backend connections: any OpenAI-compatible or Anthropic-compatible address and key
 # api_type: azure (Azure OpenAI / Foundry, deployment-path URLs)
 #         | openai    (plain OpenAI-compatible; no version field)

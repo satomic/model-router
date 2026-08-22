@@ -194,6 +194,19 @@ export interface KeyPolicy {
   enterprises?: Record<string, EnterpriseRule>
 }
 
+/** Who may narrow an API key's scope. Deny by default, and **AND across the levels the
+ *  administrator actually filled in**: a level left empty abstains rather than denying, because
+ *  a strict "must match all three" would make an organization-only grant match nobody. Within one
+ *  level any single match is enough. Evaluated in app/scopepolicy.py. */
+export interface KeyScopePolicy {
+  enabled?: boolean
+  /** GitHub logins. */
+  users?: string[]
+  /** '<enterprise slug>/<team id>', the form the backend's GitHub cache needs. */
+  teams?: string[]
+  organizations?: string[]
+}
+
 /** The local super administrator. Note there is no plaintext password here and no hash either:
  *  the credential is written through /v1/auth/local/password and is never part of a config draft. */
 export interface LocalAdminConfig {
@@ -208,6 +221,7 @@ export interface AuthConfig {
   allow_any_github_user?: boolean
   session_ttl_seconds?: number
   key_policy?: KeyPolicy
+  key_scope_policy?: KeyScopePolicy
   local_admin?: LocalAdminConfig
 }
 
@@ -607,14 +621,41 @@ export interface AccessCheck {
   source?: 'cache' | 'probe' | 'live'
 }
 
+/** One level of the key-scope decision. `configured` false means the administrator left that
+ *  level empty, so it abstained rather than passing on merit. */
+export interface KeyScopeLevel {
+  level: 'user' | 'team' | 'organization'
+  configured: boolean
+  passed: boolean
+  matched: string
+  source: string
+}
+
+/** Whether this person may narrow an API key. Nested inside AccessVerdict rather than merged,
+ *  because both verdicts carry `allowed` and `reason`. */
+export interface KeyScopeVerdict {
+  allowed: boolean
+  reason: string
+  /** The same verdict, machine-readable, so src/reasons.ts can say it in the reader's language.
+   *  The English `reason` stays the record for logs and 403 bodies. */
+  reason_code?: string
+  reason_params?: { levels?: string[] }
+  policy_enabled: boolean
+  levels: KeyScopeLevel[]
+}
+
 export interface AccessVerdict {
   login: string
   is_admin: boolean
   allowed: boolean
   reason: string
+  /** See KeyScopeVerdict.reason_code: the code is what the console translates. */
+  reason_code?: string
+  reason_params?: { name?: string; enterprise?: string }
   policy_enabled: boolean
   matched: { kind: string; enterprise?: string; name?: string; id?: string } | null
   detail: AccessCheck[]
+  key_scope: KeyScopeVerdict
 }
 
 export interface TokenOwner {
@@ -771,14 +812,28 @@ export interface KnownUser {
   sign_ins: number
   /** The group bound to this login in model_policy.users, '' when none. */
   model_group: string
+  /** Whether this login may create an API key under the saved key policy. Present only when the
+   *  caller asked for it, and `null` when the verdict could not be established (GitHub
+   *  unreachable, or a login past the server's evaluation cap) -- which is not the same answer as
+   *  false and must not be filtered like it. */
+  can_create_key?: boolean | null
 }
 
-export async function getSignedInUsers(): Promise<{
+export interface SignedInUsers {
   users: KnownUser[]
   default_group: string
   policy_enabled: boolean
-}> {
-  return json('/v1/access/users')
+  /** Whether key creation is gated at all. With the gate open every login may create a key. */
+  key_policy_enabled?: boolean
+  eligibility_evaluated?: boolean
+  /** True when there were more logins than the server would evaluate in one request. */
+  eligibility_truncated?: boolean
+}
+
+/** `eligibility` costs a key-policy evaluation per user, so only the page that filters by it asks
+ *  for it. */
+export async function getSignedInUsers(eligibility = false): Promise<SignedInUsers> {
+  return json(`/v1/access/users${eligibility ? '?eligibility=1' : ''}`)
 }
 
 // ── Usage ────────────────────────────────────────────────────────

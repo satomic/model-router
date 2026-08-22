@@ -5,11 +5,12 @@ import { getConfig, putAuthConfig, type AuthConfig } from '../api'
 import { useDialogs } from '../components/Dialog'
 import AdminsSection from './access/AdminsSection'
 import KeyPolicySection from './access/KeyPolicySection'
+import KeyScopeSection from './access/KeyScopeSection'
 import LocalAdminSection from './access/LocalAdminSection'
 import OAuthSection from './access/OAuthSection'
 import type { AccessSectionProps } from './access/types'
 
-type SectionKey = 'admins' | 'oauth' | 'local' | 'policy'
+type SectionKey = 'admins' | 'oauth' | 'local' | 'policy' | 'keyscope'
 
 interface SectionDef {
   key: SectionKey
@@ -41,6 +42,11 @@ const SECTIONS: SectionDef[] = [
     key: 'policy',
     owns: ['key_policy'],
     render: (p) => <KeyPolicySection {...p} />,
+  },
+  {
+    key: 'keyscope',
+    owns: ['key_scope_policy'],
+    render: (p) => <KeyScopeSection {...p} />,
   },
 ]
 
