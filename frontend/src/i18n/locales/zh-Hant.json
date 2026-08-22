@@ -919,7 +919,17 @@
         "azure": "https://your-resource.openai.azure.com/",
         "openai": "https://api.example.com/v1",
         "anthropic": "https://api.anthropic.com"
-      }
+      },
+      "searchPlaceholder": "名稱或位址",
+      "filterType": "介面類型",
+      "colName": "連線",
+      "colType": "類型",
+      "colAddress": "位址",
+      "colKey": "金鑰",
+      "colModels": "綁定模型",
+      "keySet": "已填寫",
+      "keyUnset": "未填寫",
+      "noAddress": "未填寫"
     },
     "models": {
       "title": "模型目錄",
@@ -942,7 +952,18 @@
       "modelNameOverride": "上游名稱覆寫（model_name）",
       "modelNameOverrideHint": "留空則用上面的模型名稱",
       "isDefault": "預設模型（無規則命中 / 決策失敗時使用）",
-      "isReasoning": "推理系（max_completion_tokens，剝離取樣參數）"
+      "isReasoning": "推理系（max_completion_tokens，剝離取樣參數）",
+      "searchPlaceholder": "名稱或描述",
+      "filterConnection": "連線",
+      "filterTrait": "能力",
+      "traitResponses": "Responses API",
+      "colName": "模型",
+      "colConnection": "連線",
+      "colUpstream": "上游名稱",
+      "colTraits": "能力",
+      "colDescription": "描述",
+      "sameAsName": "與模型名稱相同",
+      "noDescription": "尚無描述"
     },
     "strategy": {
       "title": "路由策略",
@@ -996,7 +1017,16 @@
       "minPromptCharsHint": "留空則不啟用",
       "disabled": "不啟用",
       "moveUp": "上移",
-      "moveDown": "下移"
+      "moveDown": "下移",
+      "searchPlaceholder": "名稱或關鍵字",
+      "filterModel": "目標模型",
+      "colOrder": "順序",
+      "colName": "規則",
+      "colConditions": "條件",
+      "colModel": "目標模型",
+      "noConditions": "符合所有請求",
+      "minChars": "{{n}} 字元以上",
+      "reorderLocked": "先清除搜尋與篩選條件才能調整順序"
     },
     "prompt": {
       "title": "AI 決策提示詞",
@@ -1031,6 +1061,30 @@
         "translate": "把這段話翻譯成英文",
         "proof": "證明：任意連續函數在閉區間上一致連續"
       }
+    },
+    "list": {
+      "search": "搜尋",
+      "clear": "清除篩選",
+      "showing": "已顯示 {{shown}} / {{total}}",
+      "noMatch": "沒有符合目前搜尋或篩選條件的項目。",
+      "rowHint": "點選任一列即可展開該項目的設定。",
+      "all": "全部",
+      "actions": "操作",
+      "expand": "展開設定",
+      "collapse": "收起設定"
+    },
+    "flow": {
+      "title": "目前生效的路由鏈路",
+      "request": "請求",
+      "requestNote": "用戶端呼叫 /v1/chat/completions",
+      "rules": "關鍵字規則",
+      "rulesNote": "命中的第一條規則生效",
+      "ai": "AI 決策",
+      "aiNote": "決策模型判斷請求意圖",
+      "default": "預設模型",
+      "defaultNote": "前面都沒有決定時使用",
+      "unused": "目前策略不使用",
+      "noModel": "未設定"
     }
   }
 }

@@ -91,7 +91,7 @@ function Forbidden() {
 }
 
 export default function App() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const [status, setStatus] = useState<AuthStatus | null>(null)
   const [health, setHealth] = useState<Health | null>(null)
   const [rel, setRel] = useState<ReleaseStatus | null>(null)
@@ -188,12 +188,18 @@ export default function App() {
     subtitle: t(`nav.${entry.key}.subtitle`),
   }
   // Third breadcrumb level: a sub-page's own label, or a trace id shown verbatim.
+  const sub = `${seg0}.section.${seg1}.label`
   const crumb =
     seg1 === undefined
       ? undefined
       : seg0 === 'traces'
         ? seg1
-        : t(`${seg0}.section.${seg1}.label`, { defaultValue: '' }) || undefined
+        : // i18n.exists rather than a defaultValue: i18next treats an empty-string default as no
+          // default at all and hands back the key, so a junk sub-path such as /access/typo printed
+          // "access.section.typo.label" into the breadcrumb instead of dropping the level.
+          i18n.exists(sub)
+          ? t(sub)
+          : undefined
 
   /** Admin-only routes render their page or the refusal -- never a redirect, so the URL a user
    *  was given stays in the address bar and remains diagnosable. */

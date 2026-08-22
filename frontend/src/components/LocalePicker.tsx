@@ -14,19 +14,24 @@ export default function LocalePicker({ compact = false }: { compact?: boolean })
   const { t } = useTranslation()
   const [locale, setLocale] = useLocale()
 
+  // The wrapper carries the caret. The select itself has `appearance: none`, because the
+  // dropdown button the OS draws is sized and coloured by the OS and made this control look
+  // unrelated to the status chip beside it in the topbar.
   return (
-    <select
-      className={`locale-picker ${compact ? 'compact' : ''}`}
-      value={locale}
-      title={t('shell.language')}
-      aria-label={t('shell.language')}
-      onChange={(e) => setLocale(e.target.value as Locale)}
-    >
-      {LOCALES.map((l) => (
-        <option key={l} value={l}>
-          {LOCALE_LABELS[l]}
-        </option>
-      ))}
-    </select>
+    <span className={`locale-field ${compact ? 'compact' : ''}`}>
+      <select
+        className={`locale-picker ${compact ? 'compact' : ''}`}
+        value={locale}
+        title={t('shell.language')}
+        aria-label={t('shell.language')}
+        onChange={(e) => setLocale(e.target.value as Locale)}
+      >
+        {LOCALES.map((l) => (
+          <option key={l} value={l}>
+            {LOCALE_LABELS[l]}
+          </option>
+        ))}
+      </select>
+    </span>
   )
 }

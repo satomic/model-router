@@ -919,7 +919,17 @@
         "azure": "https://your-resource.openai.azure.com/",
         "openai": "https://api.example.com/v1",
         "anthropic": "https://api.anthropic.com"
-      }
+      },
+      "searchPlaceholder": "名前またはアドレス",
+      "filterType": "インターフェース種別",
+      "colName": "接続",
+      "colType": "種別",
+      "colAddress": "アドレス",
+      "colKey": "キー",
+      "colModels": "紐付くモデル",
+      "keySet": "設定済み",
+      "keyUnset": "未設定",
+      "noAddress": "未設定"
     },
     "models": {
       "title": "モデルカタログ",
@@ -942,7 +952,18 @@
       "modelNameOverride": "上流での名前の上書き（model_name）",
       "modelNameOverrideHint": "空欄なら上のモデル名を使います",
       "isDefault": "既定モデル（ルールに一致しない / 判断が失敗した場合に使用）",
-      "isReasoning": "推論系（max_completion_tokens、サンプリングパラメーターを除去）"
+      "isReasoning": "推論系（max_completion_tokens、サンプリングパラメーターを除去）",
+      "searchPlaceholder": "名前または説明",
+      "filterConnection": "接続",
+      "filterTrait": "機能",
+      "traitResponses": "Responses API",
+      "colName": "モデル",
+      "colConnection": "接続",
+      "colUpstream": "上流の名前",
+      "colTraits": "機能",
+      "colDescription": "説明",
+      "sameAsName": "モデル名と同じ",
+      "noDescription": "説明なし"
     },
     "strategy": {
       "title": "ルーティング戦略",
@@ -996,7 +1017,16 @@
       "minPromptCharsHint": "空欄なら無効",
       "disabled": "無効",
       "moveUp": "上へ移動",
-      "moveDown": "下へ移動"
+      "moveDown": "下へ移動",
+      "searchPlaceholder": "名前またはキーワード",
+      "filterModel": "対象モデル",
+      "colOrder": "順序",
+      "colName": "ルール",
+      "colConditions": "条件",
+      "colModel": "対象モデル",
+      "noConditions": "すべてのリクエストに一致",
+      "minChars": "{{n}} 文字以上",
+      "reorderLocked": "順序を変更するには、検索とフィルターを先にクリアしてください"
     },
     "prompt": {
       "title": "AI 判断プロンプト",
@@ -1031,6 +1061,30 @@
         "translate": "この文章を英語に翻訳してください",
         "proof": "証明せよ：閉区間上の任意の連続関数は一様連続である"
       }
+    },
+    "list": {
+      "search": "検索",
+      "clear": "フィルターをクリア",
+      "showing": "{{total}} 件中 {{shown}} 件を表示",
+      "noMatch": "現在の検索条件やフィルターに一致する項目はありません。",
+      "rowHint": "行をクリックすると、その項目の設定が開きます。",
+      "all": "すべて",
+      "actions": "操作",
+      "expand": "設定を開く",
+      "collapse": "設定を閉じる"
+    },
+    "flow": {
+      "title": "現在有効なルーティング経路",
+      "request": "リクエスト",
+      "requestNote": "クライアントが /v1/chat/completions を呼び出す",
+      "rules": "キーワードルール",
+      "rulesNote": "最初に一致したルールが決める",
+      "ai": "AI 判定",
+      "aiNote": "判定モデルがリクエストの意図を読む",
+      "default": "既定モデル",
+      "defaultNote": "ほかで決まらなかった場合に使う",
+      "unused": "この戦略では使わない",
+      "noModel": "未設定"
     }
   }
 }

@@ -239,7 +239,7 @@ export default function KeysPage({ user }: { user: SessionUser }) {
           {blocked && <span className="badge error">{t('keys.create.notAllowedBadge')}</span>}
         </div>
         <div className="panel-body">
-          <div className="row" style={{ alignItems: 'flex-end' }}>
+          <div className="row">
             <label className="field" style={{ marginBottom: 0, flex: 3 }}>
               <span className="field-name">
                 {t('keys.create.name')}

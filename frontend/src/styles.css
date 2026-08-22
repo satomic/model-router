@@ -188,15 +188,22 @@ body {
   color: rgba(255, 255, 255, 0.85);
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 10px;
 }
+/* Every control in this group -- the health chip, the update link, the two project links, the
+   language select, the theme button and the user pill -- is one 32px-tall box with the same
+   radius. They used to be 22 / 32 / 32 / 36, which read as four unrelated widgets sitting in a
+   row rather than as one status group. */
 .topbar .status .chip {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 3px 8px;
+  gap: 6px;
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
   border-radius: var(--radius);
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.1);
+  font-size: 12.5px;
   white-space: nowrap;
 }
 .dot { color: #6bb700; font-size: 10px; }
@@ -206,6 +213,7 @@ body {
    the health chip's green and the error red both fail to. */
 .topbar .status a.chip.update {
   background: #ffb900;
+  border-color: #ffb900;
   color: #201f1e;
   font-weight: 600;
   text-decoration: none;
@@ -234,25 +242,49 @@ a.icon-btn {
   text-decoration: none;
 }
 
-/* Language selector. In the topbar it sits on the dark header, so it borrows the
-   transparent-on-white treatment of .icon-btn; `.compact` is the variant used on the
-   sign-in / setup cards, which sit on the normal page background. */
+/* Language selector. In the topbar it sits on the dark header, so it wears the same box as the
+   status chips next to it; `.compact` is the variant used on the sign-in / setup cards, which
+   sit on the normal page background.
+
+   The wrapper exists for the caret. A native select on Windows paints its own dropdown button,
+   in the OS's colours and at the OS's size, which is what made this control look unrelated to
+   the chip beside it however carefully the two were measured. `appearance: none` removes it and
+   the wrapper's ::after draws one in `currentColor`, so it follows the text in both themes -- a
+   background image would need two copies and would still miss forced-colors mode. */
+.locale-field {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  color: inherit;
+}
+.locale-field::after {
+  content: '▾';
+  position: absolute;
+  right: 8px;
+  font-size: 10.5px;
+  line-height: 1;
+  opacity: 0.9;
+  pointer-events: none;
+}
 .locale-picker {
+  appearance: none;
+  -webkit-appearance: none;
   height: 32px;
-  padding: 0 6px;
-  border: 1px solid rgba(255, 255, 255, 0.28);
+  padding: 0 24px 0 9px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
   border-radius: var(--radius);
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.1);
   color: #fff;
   font-size: 12.5px;
   font-family: var(--sans);
   cursor: pointer;
-  max-width: 118px;
+  max-width: 132px;
 }
 .locale-picker:hover { background: rgba(255, 255, 255, 0.18); }
 /* The dropdown list itself is painted by the OS, which ignores the light-on-dark
    colours above -- give the options readable colours explicitly. */
 .locale-picker option { color: var(--text); background: var(--bg-panel); }
+.locale-field.compact { color: var(--text); }
 .locale-picker.compact {
   border-color: var(--line);
   background: var(--bg-panel);
@@ -267,21 +299,21 @@ a.icon-btn {
 .user-pill {
   display: flex;
   align-items: center;
-  gap: 8px;
-  height: 36px;
-  padding: 0 8px;
+  gap: 7px;
+  height: 32px;
+  padding: 0 8px 0 4px;
   border: none;
   background: none;
   color: #fff;
   cursor: pointer;
   border-radius: var(--radius);
   font-family: var(--sans);
-  font-size: 13px;
+  font-size: 12.5px;
 }
 .user-pill:hover { background: rgba(255, 255, 255, 0.12); }
 .avatar {
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
   background: var(--accent-pressed);
   display: grid;
@@ -403,6 +435,9 @@ a.icon-btn {
   flex-wrap: wrap;
 }
 .cmdbar .spacer { margin-left: auto; }
+/* A command bar is small buttons by convention, so the select beside them matches .btn.sm rather
+   than the 32px default: the alternative aligns one control by leaving five buttons short. */
+.cmdbar select { height: 26px; padding: 2px 8px; font-size: 12.5px; }
 .page { padding: 18px 24px 60px; width: 100%; }
 .layout-split {
   display: grid;
@@ -690,6 +725,9 @@ body.dragging { user-select: none; cursor: col-resize; }
 .panel-head .head-search {
   width: 200px;
   min-width: 120px;
+  /* 26px, not the 32px every other control now takes: this one sits beside .btn ghost sm in the
+     head, so the small size is the matching one. */
+  height: 26px;
   padding: 4px 8px;
   font-size: 12.5px;
   font-weight: 400;
@@ -780,6 +818,22 @@ textarea, select {
   padding: 7px 9px;
   outline: none;
 }
+/* One height for every control, and the same 32px button.btn uses, so a control and a button
+   sitting side by side read as one band. The rule above sets padding and no height, which left
+   each control at its own intrinsic size: an input 30px, a select 36px, a mono input 30px. In a
+   filter bar or a two-field .row that is a visible misalignment, and patching it per page (as
+   .filter-field once did) leaves every other row still wrong. textarea is excluded on purpose --
+   it has to be able to grow. */
+input[type='text'], input[type='number'], input[type='password'], input[type='date'], select {
+  height: 32px;
+  /* Shallower than the 7px above, because a fixed height makes these controls clip their own
+     contents to the content box, and 7px inside 32px leaves only 16px: less than a select's
+     label needs (its descenders go, so "foundry" renders as "foundrv"), less than a number
+     input's spin buttons need, and less than a date input's picker icon needs. The browser
+     centres the contents itself, so nothing moves. textarea keeps the 7px, since it grows
+     instead of clipping. */
+  padding-block: 4px;
+}
 input[type='text'].mono, input[type='password'].mono, textarea.mono { font-family: var(--mono); font-size: 12.5px; }
 /* The native date picker's indicator is black-on-black in dark mode; invert it rather than
    hide it, since it is the only affordance that opens the calendar. */
@@ -790,7 +844,17 @@ input:focus, textarea:focus, select:focus {
   box-shadow: inset 0 -1px 0 0 var(--accent);
 }
 textarea { resize: vertical; min-height: 62px; font-family: var(--sans); }
-.row { display: flex; gap: 14px; flex-wrap: wrap; }
+.row {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  /* Bottom-aligned, so the controls in a row line up even when one field's label wraps to two
+     lines and the other's does not: with the default stretch the taller label pushes its own
+     control down and the row reads as two misaligned boxes. KeysPage used to patch this inline,
+     which fixed one row and left every other one wrong. A .row of panels rather than fields
+     opts back out (UsagePage sets flex-start), since a panel should not be dragged downwards. */
+  align-items: flex-end;
+}
 .row > * { flex: 1; min-width: 160px; }
 .check {
   display: inline-flex;
@@ -812,7 +876,11 @@ button.btn {
   font-family: var(--sans);
   font-size: 13.5px;
   font-weight: 600;
-  padding: 7px 18px;
+  /* 6px block padding, not 7px: at 7px the line box pushes the button to 34px and the min-height
+     below never binds, so every button sat 2px taller than the 32px it declares and than the form
+     controls beside it. min-height rather than height is kept on purpose, so a label that wraps
+     can still grow. */
+  padding: 6px 18px;
   min-height: 32px;
   background: var(--accent);
   color: var(--text-on-accent);
@@ -1002,26 +1070,106 @@ textarea.prompt-editor {
 }
 
 /* ── Model / rule / provider cards ────────────────────────────────────── */
-.model-card, .rule-card, .provider-card {
+.provider-card {
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
   background: var(--bg-raise);
   padding: 14px;
   margin-bottom: 12px;
 }
-.model-card .head, .rule-card .head, .provider-card .head {
+.provider-card .head {
   display: flex;
   align-items: center;
   gap: 10px;
   margin-bottom: 10px;
   flex-wrap: wrap;
 }
-.model-card .head .name, .provider-card .head .name {
+.provider-card .head .name {
   font-weight: 600;
   font-size: 14px;
   color: var(--text);
 }
-.model-card .head .spacer, .provider-card .head .spacer { margin-left: auto; }
+.provider-card .head .spacer { margin-left: auto; }
+
+/* Configuration lists (connections / models / rules).
+
+   Each of these three pages used to be a stack of permanently expanded forms, one per record,
+   which made a six-model catalog a two-thousand-pixel scroll with nothing comparable across it.
+   They are now one row per record, with the editor opening underneath the row that was clicked
+   -- so the list answers "what is configured" and the form still gets full width for the record
+   being changed. */
+.cfg-table .cell-name { font-weight: 600; }
+/* The caret is the affordance for the row click, so it is drawn where the eye starts rather
+   than in an actions column. */
+.cfg-table .expander {
+  display: inline-block;
+  width: 15px;
+  /* 11px in --text-dim, not 10px in --text-faint: a triangle this small at the faint ink
+     reads as a stray dot rather than as the thing you can click. */
+  color: var(--text-dim);
+  font-size: 11px;
+}
+.cfg-table tr.selected .expander { color: var(--accent); }
+.cfg-table .cell-badges { display: inline-flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+/* An inline-flex inside the cell rather than a flex <td>: a table cell that is a flex container
+   stops participating in the fixed column widths above it. */
+.cfg-table .cell-acts { display: inline-flex; gap: 6px; flex-wrap: wrap; }
+tr.editor-tr { cursor: default; }
+tr.editor-tr:hover { background: none; }
+/* The editor spans every column, so it has to bring the panel's own padding back. */
+td.editor-cell {
+  padding: 14px 16px 16px;
+  background: var(--bg-subtle);
+  white-space: normal;
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+.filter-field select { min-width: 130px; }
+
+/* The routing chain on the strategy page (config/RoutingFlow) */
+.flow { display: flex; align-items: stretch; flex-wrap: wrap; gap: 6px; }
+.flow-step { display: flex; align-items: stretch; gap: 6px; flex: 1 1 190px; min-width: 180px; }
+.flow-arrow { align-self: center; color: var(--text-faint); font-size: 15px; }
+.flow-stage {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--bg-subtle);
+}
+.flow-stage.on { border-color: var(--accent-wash-hi); background: var(--accent-wash); }
+/* Dimmed, not hidden: which stages a request skips is the difference between the three
+   strategies, and a stage that disappears cannot be compared with the one that replaced it. */
+.flow-stage.off { opacity: 0.55; }
+.flow-stage.linked { cursor: pointer; }
+.flow-stage.linked:hover { border-color: var(--accent); }
+.flow-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-dim);
+  flex-wrap: wrap;
+}
+.flow-value { font-size: 13.5px; font-weight: 600; color: var(--text); word-break: break-all; }
+.flow-note { font-size: 11.5px; color: var(--text-faint); }
+
+@media (max-width: 820px) {
+  /* Stacked, and the arrows point down instead of across. */
+  .flow { flex-direction: column; }
+  /* flex: 0 0 auto resets the 190px basis: once the step is a column that basis is a
+     *height*, which stretched every stage to 190px of mostly empty box. */
+  .flow-step { flex-direction: column; flex: 0 0 auto; }
+  .flow-arrow {
+    align-self: flex-start;
+    margin-left: 14px;
+    /* One glyph, rotated, rather than a second arrow in the markup: the chain reads
+       downwards here, and a sideways arrow between stacked boxes points at nothing. */
+    transform: rotate(90deg);
+  }
+}
 
 .reply-box {
   border: 1px solid var(--line);
@@ -1239,6 +1387,9 @@ textarea.prompt-editor {
 /* When an input shares a row with buttons, let the input take the remaining width: otherwise
    its width:100% pushes the buttons onto a second line (which used to split "Verify" in two). */
 .secret-reveal > input { flex: 1; min-width: 0; }
+/* And the buttons come up to the field's height. The opposite of .cmdbar above, for the opposite
+   reason: here the control is the subject of the row and the buttons act on it. */
+.secret-reveal button.btn.sm { min-height: 32px; }
 .secret-reveal > .btn { flex: none; white-space: nowrap; }
 
 /* The Key column of the API-key table: a masked/plain value plus Show and Copy. The code

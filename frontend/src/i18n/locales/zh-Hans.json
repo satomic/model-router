@@ -919,7 +919,17 @@
         "azure": "https://your-resource.openai.azure.com/",
         "openai": "https://api.example.com/v1",
         "anthropic": "https://api.anthropic.com"
-      }
+      },
+      "searchPlaceholder": "名称或地址",
+      "filterType": "接口类型",
+      "colName": "连接",
+      "colType": "类型",
+      "colAddress": "地址",
+      "colKey": "密钥",
+      "colModels": "绑定模型",
+      "keySet": "已填写",
+      "keyUnset": "未填写",
+      "noAddress": "未填写"
     },
     "models": {
       "title": "模型目录",
@@ -942,7 +952,18 @@
       "modelNameOverride": "上游名称覆盖（model_name）",
       "modelNameOverrideHint": "留空则用上面的模型名",
       "isDefault": "默认模型（无规则命中 / 决策失败时使用）",
-      "isReasoning": "推理系（max_completion_tokens，剥离采样参数）"
+      "isReasoning": "推理系（max_completion_tokens，剥离采样参数）",
+      "searchPlaceholder": "名称或描述",
+      "filterConnection": "连接",
+      "filterTrait": "能力",
+      "traitResponses": "Responses API",
+      "colName": "模型",
+      "colConnection": "连接",
+      "colUpstream": "上游名称",
+      "colTraits": "能力",
+      "colDescription": "描述",
+      "sameAsName": "与模型名相同",
+      "noDescription": "暂无描述"
     },
     "strategy": {
       "title": "路由策略",
@@ -996,7 +1017,16 @@
       "minPromptCharsHint": "留空则不启用",
       "disabled": "不启用",
       "moveUp": "上移",
-      "moveDown": "下移"
+      "moveDown": "下移",
+      "searchPlaceholder": "名称或关键词",
+      "filterModel": "目标模型",
+      "colOrder": "顺序",
+      "colName": "规则",
+      "colConditions": "条件",
+      "colModel": "目标模型",
+      "noConditions": "匹配全部请求",
+      "minChars": "{{n}} 字符以上",
+      "reorderLocked": "先清除搜索和筛选条件才能调整顺序"
     },
     "prompt": {
       "title": "AI 决策提示词",
@@ -1031,6 +1061,30 @@
         "translate": "把这段话翻译成英文",
         "proof": "证明：任意连续函数在闭区间上一致连续"
       }
+    },
+    "list": {
+      "search": "搜索",
+      "clear": "清除筛选",
+      "showing": "已显示 {{shown}} / {{total}}",
+      "noMatch": "没有符合当前搜索或筛选条件的条目。",
+      "rowHint": "点击任意一行即可展开该条目的设置。",
+      "all": "全部",
+      "actions": "操作",
+      "expand": "展开设置",
+      "collapse": "收起设置"
+    },
+    "flow": {
+      "title": "当前生效的路由链路",
+      "request": "请求",
+      "requestNote": "客户端调用 /v1/chat/completions",
+      "rules": "关键词规则",
+      "rulesNote": "命中的第一条规则生效",
+      "ai": "AI 决策",
+      "aiNote": "决策模型判断请求意图",
+      "default": "默认模型",
+      "defaultNote": "前面都没有决定时使用",
+      "unused": "当前策略不使用",
+      "noModel": "未设置"
     }
   }
 }

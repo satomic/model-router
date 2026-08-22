@@ -919,7 +919,17 @@
         "azure": "https://your-resource.openai.azure.com/",
         "openai": "https://api.example.com/v1",
         "anthropic": "https://api.anthropic.com"
-      }
+      },
+      "searchPlaceholder": "이름 또는 주소",
+      "filterType": "인터페이스 유형",
+      "colName": "연결",
+      "colType": "유형",
+      "colAddress": "주소",
+      "colKey": "키",
+      "colModels": "연결된 모델",
+      "keySet": "입력됨",
+      "keyUnset": "비어 있음",
+      "noAddress": "입력되지 않음"
     },
     "models": {
       "title": "모델 카탈로그",
@@ -942,7 +952,18 @@
       "modelNameOverride": "업스트림 이름 재정의(model_name)",
       "modelNameOverrideHint": "비워 두면 위의 모델 이름을 사용합니다",
       "isDefault": "기본 모델(규칙에 걸리지 않거나 결정이 실패할 때 사용)",
-      "isReasoning": "추론형(max_completion_tokens, 샘플링 파라미터 제거)"
+      "isReasoning": "추론형(max_completion_tokens, 샘플링 파라미터 제거)",
+      "searchPlaceholder": "이름 또는 설명",
+      "filterConnection": "연결",
+      "filterTrait": "기능",
+      "traitResponses": "Responses API",
+      "colName": "모델",
+      "colConnection": "연결",
+      "colUpstream": "업스트림 이름",
+      "colTraits": "기능",
+      "colDescription": "설명",
+      "sameAsName": "모델 이름과 동일",
+      "noDescription": "설명 없음"
     },
     "strategy": {
       "title": "라우팅 전략",
@@ -996,7 +1017,16 @@
       "minPromptCharsHint": "비워 두면 사용하지 않습니다",
       "disabled": "사용하지 않음",
       "moveUp": "위로 이동",
-      "moveDown": "아래로 이동"
+      "moveDown": "아래로 이동",
+      "searchPlaceholder": "이름 또는 키워드",
+      "filterModel": "대상 모델",
+      "colOrder": "순서",
+      "colName": "규칙",
+      "colConditions": "조건",
+      "colModel": "대상 모델",
+      "noConditions": "모든 요청에 일치",
+      "minChars": "{{n}}자 이상",
+      "reorderLocked": "순서를 바꾸려면 검색과 필터를 먼저 지우세요"
     },
     "prompt": {
       "title": "AI 결정 프롬프트",
@@ -1031,6 +1061,30 @@
         "translate": "이 문장을 영어로 번역해 주세요",
         "proof": "증명하시오: 닫힌 구간에서 임의의 연속 함수는 균등 연속이다"
       }
+    },
+    "list": {
+      "search": "검색",
+      "clear": "필터 지우기",
+      "showing": "{{total}}개 중 {{shown}}개 표시",
+      "noMatch": "현재 검색 조건이나 필터에 맞는 항목이 없습니다.",
+      "rowHint": "행을 클릭하면 해당 항목의 설정이 열립니다.",
+      "all": "전체",
+      "actions": "작업",
+      "expand": "설정 열기",
+      "collapse": "설정 닫기"
+    },
+    "flow": {
+      "title": "현재 적용되는 라우팅 경로",
+      "request": "요청",
+      "requestNote": "클라이언트가 /v1/chat/completions 를 호출",
+      "rules": "키워드 규칙",
+      "rulesNote": "가장 먼저 일치한 규칙이 결정",
+      "ai": "AI 판단",
+      "aiNote": "판단 모델이 요청 의도를 읽음",
+      "default": "기본 모델",
+      "defaultNote": "앞에서 결정되지 않았을 때 사용",
+      "unused": "이 전략에서는 사용하지 않음",
+      "noModel": "설정되지 않음"
     }
   }
 }

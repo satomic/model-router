@@ -1,6 +1,7 @@
 import { Trans, useTranslation } from 'react-i18next'
 import { aiRouterActive } from './strategy'
 import DecisionPromptPanel from './DecisionPromptPanel'
+import RoutingFlow from './RoutingFlow'
 import type { SectionProps } from './types'
 
 /** Routing strategy: rule / ai / rule-then-ai, session stickiness, and the AI decision model's
@@ -24,6 +25,10 @@ export default function StrategySection({ cfg, set, notify, goto }: SectionProps
 
   return (
     <>
+      {/* The picture comes before the picker: what changes when the radio moves is the chain
+          below, and seeing it is what makes the three options comparable. */}
+      <RoutingFlow cfg={cfg} goto={goto} />
+
       <div className="panel">
         <div className="panel-head">{t('config.strategy.title')}</div>
         <div className="panel-body">

@@ -950,7 +950,17 @@
         "azure": "https://your-resource.openai.azure.com/",
         "openai": "https://api.example.com/v1",
         "anthropic": "https://api.anthropic.com"
-      }
+      },
+      "searchPlaceholder": "name or address",
+      "filterType": "Interface type",
+      "colName": "Connection",
+      "colType": "Type",
+      "colAddress": "Address",
+      "colKey": "Key",
+      "colModels": "Bound models",
+      "keySet": "set",
+      "keyUnset": "missing",
+      "noAddress": "not set"
     },
     "models": {
       "title": "Model catalog",
@@ -974,7 +984,18 @@
       "modelNameOverride": "Upstream name override (model_name)",
       "modelNameOverrideHint": "leave empty to use the model name above",
       "isDefault": "Default model (used when no rule matches or the decision fails)",
-      "isReasoning": "Reasoning model (max_completion_tokens, sampling parameters stripped)"
+      "isReasoning": "Reasoning model (max_completion_tokens, sampling parameters stripped)",
+      "searchPlaceholder": "name or description",
+      "filterConnection": "Connection",
+      "filterTrait": "Capability",
+      "traitResponses": "Responses API",
+      "colName": "Model",
+      "colConnection": "Connection",
+      "colUpstream": "Upstream name",
+      "colTraits": "Capabilities",
+      "colDescription": "Description",
+      "sameAsName": "same as the model name",
+      "noDescription": "no description"
     },
     "strategy": {
       "title": "Routing strategy",
@@ -1029,7 +1050,16 @@
       "minPromptCharsHint": "leave empty to disable",
       "disabled": "disabled",
       "moveUp": "Move up",
-      "moveDown": "Move down"
+      "moveDown": "Move down",
+      "searchPlaceholder": "name or keyword",
+      "filterModel": "Target model",
+      "colOrder": "Order",
+      "colName": "Rule",
+      "colConditions": "Conditions",
+      "colModel": "Target model",
+      "noConditions": "matches everything",
+      "minChars": "{{n}}+ characters",
+      "reorderLocked": "Clear the search and filter first to change the order"
     },
     "prompt": {
       "title": "AI decision prompt",
@@ -1066,6 +1096,30 @@
         "translate": "Translate this passage into English",
         "proof": "Prove: every continuous function on a closed interval is uniformly continuous"
       }
+    },
+    "list": {
+      "search": "Search",
+      "clear": "Clear filters",
+      "showing": "{{shown}} of {{total}} shown",
+      "noMatch": "Nothing matches the current search or filter.",
+      "rowHint": "Select any row to open its settings.",
+      "all": "All",
+      "actions": "Actions",
+      "expand": "Show settings",
+      "collapse": "Hide settings"
+    },
+    "flow": {
+      "title": "Routing chain in effect",
+      "request": "Request",
+      "requestNote": "a client calls /v1/chat/completions",
+      "rules": "Keyword rules",
+      "rulesNote": "the first rule that matches decides",
+      "ai": "AI decision",
+      "aiNote": "the decision model reads the intent",
+      "default": "Default model",
+      "defaultNote": "used when nothing above decided",
+      "unused": "not used",
+      "noModel": "not set"
     }
   }
 }
