@@ -4,7 +4,7 @@
 
 A walkthrough of the console for the two people who use it: the **administrator** who sets the
 router up and keeps it running, and the **standard user** who signs in, gets a key and points a
-client at it. Every screenshot below is the real console, taken at version 1.1.0 with the language
+client at it. Every screenshot below is the real console, taken at version 1.2.0 with the language
 set to English.
 
 Read it in order the first time. The administrator sections come first because a standard user has
