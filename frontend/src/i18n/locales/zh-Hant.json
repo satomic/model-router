@@ -754,6 +754,7 @@
     "list": {
       "title": "呼叫鏈路",
       "autoRefresh": "自動重新整理",
+      "autoRefreshFirstPage": "即時更新跟隨最新紀錄，因此僅在第一頁生效",
       "empty": "尚無呼叫記錄 — 到「測試台」發一條請求試試",
       "emptyFiltered": "沒有符合目前篩選條件的鏈路 — 放寬條件或清空篩選"
     },
@@ -767,8 +768,15 @@
     },
     "paging": {
       "count": "{{shown}} / {{total}} 筆",
-      "truncated": "（僅掃描了最近若干天的目錄）",
-      "loadMore_other": "再載入 {{count}} 筆"
+      "first": "首頁",
+      "last": "末頁",
+      "next": "下一頁",
+      "pageOf": "第 {{page}} / {{pages}} 頁",
+      "perPage": "每頁",
+      "prev": "上一頁",
+      "range": "第 {{from}}–{{to}} 筆，共 {{total}} 筆",
+      "total_other": "共 {{count}} 筆",
+      "truncated": "（僅掃描了最近若干天的目錄）"
     },
     "delete": {
       "one": "刪除這筆鏈路",

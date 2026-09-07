@@ -17,7 +17,9 @@ import {
   type TraceTurn,
 } from '../api'
 
-const PAGE_SIZE = 50
+const PAGE_SIZES = [25, 50, 100]
+const PAGE_SIZE_DEFAULT = 50
+const PAGE_SIZE_KEY = 'mr_traces_page_size'
 /** Where the split ratio is remembered. A dragged layout that resets on every navigation is
  *  worse than no drag at all. */
 const SPLIT_KEY = 'mr_traces_split'
@@ -469,6 +471,17 @@ export default function TracesPage({ user }: { user: SessionUser }) {
   const [traceFilter, setTraceFilter] = useState('')
   const [userFilter, setUserFilter] = useState('')
   const [applied, setApplied] = useState({ date: '', traceId: '', userId: '' })
+  // Mirrors `applied` for the debounce to compare against, without making the timer effect
+  // depend on it (which would restart the debounce on every applied change).
+  const appliedRef = useRef(applied)
+
+  // True pagination rather than an ever-growing list: one page is one request, and the cost of
+  // reading page 40 is the same as reading page 1.
+  const [page, setPage] = useState(0)
+  const [pageSize, setPageSize] = useState(() => {
+    const stored = Number(localStorage.getItem(PAGE_SIZE_KEY))
+    return PAGE_SIZES.includes(stored) ? stored : PAGE_SIZE_DEFAULT
+  })
 
   const [split, setSplit] = useState(() => {
     const stored = Number(localStorage.getItem(SPLIT_KEY))
@@ -537,45 +550,54 @@ export default function TracesPage({ user }: { user: SessionUser }) {
   // Debounce the text filters: a filter change refetches, and refetching on every keystroke of a
   // trace id would be one request per character.
   useEffect(() => {
-    const timer = setTimeout(
-      () => setApplied({ date, traceId: traceFilter.trim(), userId: userFilter.trim() }),
-      300,
-    )
+    const next = { date, traceId: traceFilter.trim(), userId: userFilter.trim() }
+    const timer = setTimeout(() => {
+      const prev = appliedRef.current
+      // The debounce fires once on mount with the values it already holds. Comparing rather than
+      // setting keeps `applied` identity stable, so that tick costs no request and no page reset.
+      if (prev.date === next.date && prev.traceId === next.traceId && prev.userId === next.userId)
+        return
+      appliedRef.current = next
+      // Both in one tick, so the loader sees the new filter and page 1 together; setting the page
+      // from its own effect fetched the stale page number first.
+      setApplied(next)
+      setPage(0)
+    }, 300)
     return () => clearTimeout(timer)
   }, [date, traceFilter, userFilter])
 
-  /** Load one page. `append` false replaces the list, which is what every filter change and every
-   *  auto-refresh does; true is only the "load more" button. */
-  const load = useCallback(
-    (offset: number, append: boolean) => {
-      setLoading(true)
-      getTraces({ ...applied, limit: PAGE_SIZE, offset })
-        .then((page) => {
-          setList((prev) => (append ? [...prev, ...page.items] : page.items))
-          setTotal(page.total)
-          setTruncated(page.truncated)
-          setError('')
-        })
-        .catch((e) => setError(String(e)))
-        .finally(() => setLoading(false))
-    },
-    [applied],
-  )
+  /** Load the current page, always replacing the list. */
+  const load = useCallback(() => {
+    setLoading(true)
+    getTraces({ ...applied, limit: pageSize, offset: page * pageSize })
+      .then((res) => {
+        setList(res.items)
+        setTotal(res.total)
+        setTruncated(res.truncated)
+        setError('')
+      })
+      .catch((e) => setError(String(e)))
+      .finally(() => setLoading(false))
+  }, [applied, page, pageSize])
 
-  // The first page, and a fresh first page whenever the filters change.
   useEffect(() => {
-    load(0, false)
+    load()
   }, [load])
 
-  // Auto refresh reloads **page 0 only**. Re-fetching an accumulated twenty pages every five
-  // seconds is exactly the cost this rework exists to remove. Kept in its own effect, keyed on
-  // `auto` alone: folding it into the one above would make toggling the checkbox reset the list to
-  // page 0, so turning the tail *off* to keep an appended page would have thrown that page away.
+  // The live tail follows the newest records, which is the first page by definition -- so it goes
+  // quiet while a later page is being read rather than shifting rows out from under the reader.
   useEffect(() => {
-    if (!auto) return
-    const timer = setInterval(() => load(0, false), 5000)
+    if (!auto || page !== 0) return
+    const timer = setInterval(load, 5000)
     return () => clearInterval(timer)
-  }, [auto, load])
+  }, [auto, page, load])
+
+  const pageCount = Math.max(1, Math.ceil(total / pageSize))
+
+  // A delete can shorten the result set past the page being viewed.
+  useEffect(() => {
+    if (page > 0 && page >= pageCount) setPage(pageCount - 1)
+  }, [page, pageCount])
 
   function onDrag(clientX: number) {
     const box = splitRef.current?.getBoundingClientRect()
@@ -598,7 +620,7 @@ export default function TracesPage({ user }: { user: SessionUser }) {
       await deleteTrace(id)
       // The detail pane would otherwise keep showing a trace that no longer exists.
       if (traceId === id) navigate('/traces')
-      load(0, false)
+      load()
     } catch (e) {
       setError(String(e))
     }
@@ -619,7 +641,8 @@ export default function TracesPage({ user }: { user: SessionUser }) {
     try {
       const { deleted } = await deleteTraces({ date: applied.date, userId: applied.userId })
       if (traceId) navigate('/traces')
-      load(0, false)
+      setPage(0)
+      load()
       setError('')
       await dialogs.alert({
         title: t('traces.delete.doneTitle'),
@@ -668,12 +691,17 @@ export default function TracesPage({ user }: { user: SessionUser }) {
         {t('traces.list.title')}
         <span className="dim" style={{ fontWeight: 400 }}>
           {' '}
-          {t('traces.paging.count', { shown: list.length, total })}
+          {t('traces.paging.total', { count: total })}
           {truncated ? ` ${t('traces.paging.truncated')}` : ''}
         </span>
         <span className="spacer" />
-        <label className="check">
-          <input type="checkbox" checked={auto} onChange={(e) => setAuto(e.target.checked)} />
+        <label className="check" title={page > 0 ? t('traces.list.autoRefreshFirstPage') : undefined}>
+          <input
+            type="checkbox"
+            checked={auto}
+            disabled={page > 0}
+            onChange={(e) => setAuto(e.target.checked)}
+          />
           {' '}
           {t('traces.list.autoRefresh')}
         </label>
@@ -682,7 +710,7 @@ export default function TracesPage({ user }: { user: SessionUser }) {
             {t('traces.delete.filtered')}
           </button>
         )}
-        <button className="btn ghost sm" onClick={() => load(0, false)}>
+        <button className="btn ghost sm" onClick={() => load()}>
           {t('common.refresh')}
         </button>
       </div>
@@ -816,24 +844,71 @@ export default function TracesPage({ user }: { user: SessionUser }) {
 
       {list.length > 0 && (
         <div className="list-footer">
-          <span className="dim">{t('traces.paging.count', { shown: list.length, total })}</span>
-          <span className="spacer" />
-          {list.length < total && (
-            <button
-              className="btn ghost sm"
+          <span className="dim">
+            {t('traces.paging.range', {
+              from: page * pageSize + 1,
+              to: page * pageSize + list.length,
+              total,
+            })}
+            {truncated ? ` ${t('traces.paging.truncated')}` : ''}
+          </span>
+          <label className="pager-size">
+            {t('traces.paging.perPage')}
+            <select
+              value={pageSize}
               disabled={loading}
-              onClick={() => {
-                // Paging and live-tail cannot both be on: the auto-refresh tick reloads page 0 and
-                // replaces the list, so an appended page would vanish a few seconds after arriving
-                // and the button would look broken. Unticking the box says why the tail stopped and
-                // leaves the user free to turn it back on, which returns to page 0.
-                setAuto(false)
-                load(list.length, true)
+              onChange={(e) => {
+                const next = Number(e.target.value)
+                localStorage.setItem(PAGE_SIZE_KEY, String(next))
+                // Page 7 of 25-row pages is not page 7 of 100-row pages, so the position goes
+                // back to the top rather than somewhere the reader did not ask for.
+                setPageSize(next)
+                setPage(0)
               }}
             >
-              {loading ? t('common.loading') : t('traces.paging.loadMore', { count: PAGE_SIZE })}
+              {PAGE_SIZES.map((n) => (
+                <option key={n} value={n}>{n}</option>
+              ))}
+            </select>
+          </label>
+          <span className="spacer" />
+          <div className="pager">
+            <button
+              className="btn ghost sm"
+              disabled={page === 0 || loading}
+              onClick={() => setPage(0)}
+              title={t('traces.paging.first')}
+              aria-label={t('traces.paging.first')}
+            >
+              «
             </button>
-          )}
+            <button
+              className="btn ghost sm"
+              disabled={page === 0 || loading}
+              onClick={() => setPage((p) => p - 1)}
+            >
+              ‹ {t('traces.paging.prev')}
+            </button>
+            <span className="dim nowrap">
+              {t('traces.paging.pageOf', { page: page + 1, pages: pageCount })}
+            </span>
+            <button
+              className="btn ghost sm"
+              disabled={page + 1 >= pageCount || loading}
+              onClick={() => setPage((p) => p + 1)}
+            >
+              {t('traces.paging.next')} ›
+            </button>
+            <button
+              className="btn ghost sm"
+              disabled={page + 1 >= pageCount || loading}
+              onClick={() => setPage(pageCount - 1)}
+              title={t('traces.paging.last')}
+              aria-label={t('traces.paging.last')}
+            >
+              »
+            </button>
+          </div>
         </div>
       )}
     </div>

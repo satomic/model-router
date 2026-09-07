@@ -776,6 +776,7 @@
     "list": {
       "title": "Traces",
       "autoRefresh": "Auto refresh",
+      "autoRefreshFirstPage": "The live tail follows the newest records, so it runs on the first page only",
       "empty": "No calls recorded yet — send one from the Playground",
       "emptyFiltered": "No traces match these filters — widen them or clear the filters"
     },
@@ -789,9 +790,16 @@
     },
     "paging": {
       "count": "{{shown}} of {{total}}",
-      "truncated": "(only the most recent days were scanned)",
-      "loadMore_one": "Load {{count}} more",
-      "loadMore_other": "Load {{count}} more"
+      "first": "First page",
+      "last": "Last page",
+      "next": "Next",
+      "pageOf": "Page {{page}} of {{pages}}",
+      "perPage": "Rows",
+      "prev": "Previous",
+      "range": "{{from}}–{{to}} of {{total}}",
+      "total_one": "{{count}} trace",
+      "total_other": "{{count}} traces",
+      "truncated": "(only the most recent days were scanned)"
     },
     "delete": {
       "one": "Delete this trace",

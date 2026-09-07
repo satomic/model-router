@@ -754,6 +754,7 @@
     "list": {
       "title": "호출 추적",
       "autoRefresh": "자동 새로 고침",
+      "autoRefreshFirstPage": "실시간 갱신은 최신 기록을 따라가므로 첫 페이지에서만 동작합니다",
       "empty": "아직 호출 기록이 없습니다 — 「플레이그라운드」에서 요청을 하나 보내 보세요",
       "emptyFiltered": "현재 필터 조건에 맞는 추적이 없습니다 — 조건을 넓히거나 필터를 비우세요"
     },
@@ -767,8 +768,15 @@
     },
     "paging": {
       "count": "{{total}}건 중 {{shown}}건",
-      "truncated": "(최근 날짜 디렉터리만 훑었습니다)",
-      "loadMore_other": "{{count}}건 더 불러오기"
+      "first": "첫 페이지",
+      "last": "마지막 페이지",
+      "next": "다음",
+      "pageOf": "{{pages}}페이지 중 {{page}}페이지",
+      "perPage": "페이지당",
+      "prev": "이전",
+      "range": "{{total}}건 중 {{from}}–{{to}}건",
+      "total_other": "총 {{count}}건",
+      "truncated": "(최근 날짜 디렉터리만 훑었습니다)"
     },
     "delete": {
       "one": "이 추적 기록 삭제",

@@ -754,6 +754,7 @@
     "list": {
       "title": "トレース",
       "autoRefresh": "自動更新",
+      "autoRefreshFirstPage": "ライブ更新は最新の記録を追うため、1 ページ目でのみ動作します",
       "empty": "呼び出し記録がまだありません — 「プレイグラウンド」から 1 件送ってみてください",
       "emptyFiltered": "この絞り込み条件に一致するトレースはありません — 条件を緩めるか、絞り込みを解除してください"
     },
@@ -767,8 +768,15 @@
     },
     "paging": {
       "count": "{{total}} 件中 {{shown}} 件",
-      "truncated": "（直近の日付ディレクトリのみを走査しました）",
-      "loadMore_other": "さらに {{count}} 件読み込む"
+      "first": "最初のページ",
+      "last": "最後のページ",
+      "next": "次へ",
+      "pageOf": "{{pages}} ページ中 {{page}} ページ目",
+      "perPage": "表示件数",
+      "prev": "前へ",
+      "range": "{{total}} 件中 {{from}}–{{to}} 件",
+      "total_other": "全 {{count}} 件",
+      "truncated": "（直近の日付ディレクトリのみを走査しました）"
     },
     "delete": {
       "one": "このトレースを削除",

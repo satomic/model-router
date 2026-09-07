@@ -530,6 +530,24 @@ body.dragging { user-select: none; cursor: col-resize; }
   font-size: 12.5px;
 }
 .list-footer .spacer { margin-left: auto; }
+.list-footer { flex-wrap: wrap; }
+/* The page-size control. Small enough to read as part of the footer rather than a form field,
+   and sized to its three two/three-digit options rather than the default select width. */
+.pager-size {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-dim);
+}
+.pager-size select {
+  width: auto;
+  height: 26px;
+  padding: 2px 6px;
+  font-size: 12.5px;
+}
+.pager { display: inline-flex; align-items: center; gap: 4px; }
+/* The first/last jumps are single glyphs, so they get a square rather than the label padding. */
+.pager .btn.sm { min-width: 30px; }
 
 /* ── JSON tree (components/JsonView) ─────────────────────────────────── */
 .json-view {
