@@ -211,6 +211,11 @@
     "running": "Running",
     "signOut": "Sign out",
     "sourceRepo": "Source repository",
+    "timezone": {
+      "auto": "Follow this browser ({{zone}})",
+      "hint": "applies to you only · now {{zone}}",
+      "label": "Time zone"
+    },
     "toggleTheme": "Toggle theme",
     "unreachable": "Service unreachable",
     "update": {

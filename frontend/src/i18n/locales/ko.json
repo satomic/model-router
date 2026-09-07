@@ -203,6 +203,11 @@
     "running": "실행 중",
     "signOut": "로그아웃",
     "sourceRepo": "소스 저장소",
+    "timezone": {
+      "auto": "이 브라우저 따르기({{zone}})",
+      "hint": "본인에게만 적용 · 현재 {{zone}}",
+      "label": "시간대"
+    },
     "toggleTheme": "테마 전환",
     "unreachable": "서비스에 연결할 수 없습니다",
     "update": {

@@ -203,6 +203,11 @@
     "running": "稼働中",
     "signOut": "サインアウト",
     "sourceRepo": "ソースリポジトリ",
+    "timezone": {
+      "auto": "ブラウザに合わせる（{{zone}}）",
+      "hint": "あなたにのみ適用 · 現在 {{zone}}",
+      "label": "タイムゾーン"
+    },
     "toggleTheme": "テーマを切り替える",
     "unreachable": "サービスに到達できません",
     "update": {

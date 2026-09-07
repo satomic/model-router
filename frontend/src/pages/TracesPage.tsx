@@ -3,6 +3,8 @@ import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useDialogs } from '../components/Dialog'
 import JsonView from '../components/JsonView'
+import { formatClock, formatStamp } from '../i18n/format'
+import { effectiveTimeZone } from '../i18n/timezone'
 import {
   deleteTrace,
   deleteTraces,
@@ -22,6 +24,21 @@ const SPLIT_KEY = 'mr_traces_split'
 const SPLIT_DEFAULT = 70
 const SPLIT_MIN = 25
 const SPLIT_MAX = 85
+
+/** Resizable column widths, remembered for the same reason as the split ratio. Prompt is
+ *  deliberately absent: it is the column that absorbs whatever the others leave, so the table
+ *  still fills the pane at any split. The admin delete column is a fixed 40px icon.
+ *
+ *  Versioned: Time gained a date, so widths stored against the old time-only column are stale
+ *  rather than a preference worth honouring. */
+const COLS_KEY = 'mr_traces_cols_v2'
+const COL_DEFAULTS: Record<string, number> = {
+  // Content width plus the 24px of cell padding. Time carries a full `2026-09-07 14:30:05`,
+  // which is what makes a list spanning several days readable at a glance.
+  time: 156, user: 112, model: 104, decision: 116, turns: 52, latency: 66, status: 62,
+}
+const COL_MIN = 44
+const COL_MAX = 480
 
 function AnalysisView({ analysis }: { analysis: RoutingAnalysis }) {
   const { t } = useTranslation()
@@ -173,7 +190,7 @@ function TurnRow({ turn, total }: { turn: TraceTurn; total: number }) {
       <button className="turn-head" type="button" aria-expanded={open} onClick={() => setOpen(!open)}>
         <span className="json-toggle" aria-hidden>{open ? '▾' : '▸'}</span>
         <span className="turn-index mono">{t('traces.turns.nth', { index: turn.index, total })}</span>
-        <span className="mono dim">{turn.ts?.slice(11, 19)}</span>
+        <span className="mono dim">{formatClock(turn.ts)}</span>
         {/* The model is named on every turn precisely so it is visible that it did not change:
             one routing decision for the whole interaction is the point of the record. */}
         <span className="badge model">{turn.model}</span>
@@ -252,7 +269,12 @@ function DetailView({ trace }: { trace: TraceDetail }) {
         <div className="panel-body">
           <dl className="kv">
             <dt>{t('traces.detail.time')}</dt>
-            <dd>{trace.ts}</dd>
+            <dd>
+              <span className="mono">{formatStamp(trace.ts)}</span>{' '}
+              {/* Named, because the record itself is UTC and the reader's zone is a preference:
+                  a bare wall-clock time would be unresolvable from a screenshot. */}
+              <span className="faint">{effectiveTimeZone()}</span>
+            </dd>
             <dt>{t('traces.detail.user')}</dt>
             <dd>{trace.user_id ?? '—'}</dd>
             <dt>{t('traces.detail.apiKey')}</dt>
@@ -453,6 +475,64 @@ export default function TracesPage({ user }: { user: SessionUser }) {
     return stored >= SPLIT_MIN && stored <= SPLIT_MAX ? stored : SPLIT_DEFAULT
   })
   const splitRef = useRef<HTMLDivElement>(null)
+
+  const [cols, setCols] = useState<Record<string, number>>(() => {
+    try {
+      const stored = JSON.parse(localStorage.getItem(COLS_KEY) ?? '{}') as Record<string, unknown>
+      const out = { ...COL_DEFAULTS }
+      for (const key of Object.keys(COL_DEFAULTS)) {
+        const w = Number(stored[key])
+        if (w >= COL_MIN && w <= COL_MAX) out[key] = w
+      }
+      return out
+    } catch {
+      // A hand-edited or stale entry should cost the defaults, not the page.
+      return { ...COL_DEFAULTS }
+    }
+  })
+
+  /** Drag the right edge of a header cell. Listeners go on `document` for the same reason as the
+   *  splitter's: the pointer leaves the 6px strip almost immediately. */
+  function beginColResize(key: string, e: React.MouseEvent) {
+    e.preventDefault()
+    const startX = e.clientX
+    const startWidth = cols[key] ?? COL_DEFAULTS[key]
+    document.body.classList.add('dragging')
+    let width = startWidth
+    const move = (ev: MouseEvent) => {
+      width = Math.min(COL_MAX, Math.max(COL_MIN, Math.round(startWidth + ev.clientX - startX)))
+      setCols((prev) => ({ ...prev, [key]: width }))
+    }
+    const up = () => {
+      document.removeEventListener('mousemove', move)
+      document.removeEventListener('mouseup', up)
+      document.body.classList.remove('dragging')
+      // `cols` is the value from drag start, and this drag only ever changed `key`.
+      localStorage.setItem(COLS_KEY, JSON.stringify({ ...cols, [key]: width }))
+    }
+    document.addEventListener('mousemove', move)
+    document.addEventListener('mouseup', up)
+  }
+
+  /** Double-click restores one column, so a drag that went wrong does not need a pixel-perfect
+   *  drag back. */
+  function resetCol(key: string) {
+    setCols((prev) => {
+      const next = { ...prev, [key]: COL_DEFAULTS[key] }
+      localStorage.setItem(COLS_KEY, JSON.stringify(next))
+      return next
+    })
+  }
+
+  const colHandle = (key: string) => (
+    <span
+      className="col-resize"
+      role="separator"
+      aria-orientation="vertical"
+      onMouseDown={(e) => beginColResize(key, e)}
+      onDoubleClick={() => resetCol(key)}
+    />
+  )
 
   // Debounce the text filters: a filter change refetches, and refetching on every keystroke of a
   // trace id would be one request per character.
@@ -661,29 +741,30 @@ export default function TracesPage({ user }: { user: SessionUser }) {
            through the gaps between the detail pane's cards. */
         <div className="table-scroll">
         <table>
-          {/* Widths are content width plus the 24px of cell padding: 60px for an 8-character
-              mono timestamp leaves 36px, which ellipsises every row to "09:0…". Prompt takes
-              what is left, and the narrow-viewport rule drops the pane to one column. */}
+          {/* Widths come from `cols`, which the header handles drag. Prompt is left unsized so it
+              takes what is left, and the narrow-viewport rule drops the pane to one column. */}
           <colgroup>
-            <col style={{ width: 88 }} />
-            <col style={{ width: 112 }} />
-            <col style={{ width: 104 }} />
-            <col style={{ width: 116 }} />
-            <col style={{ width: 52 }} />
-            <col style={{ width: 66 }} />
-            <col style={{ width: 62 }} />
+            <col style={{ width: cols.time }} />
+            <col style={{ width: cols.user }} />
+            <col style={{ width: cols.model }} />
+            <col style={{ width: cols.decision }} />
+            <col style={{ width: cols.turns }} />
+            <col style={{ width: cols.latency }} />
+            <col style={{ width: cols.status }} />
             <col />
             {user.is_admin && <col style={{ width: 40 }} />}
           </colgroup>
           <thead>
             <tr>
-              <th>{t('traces.table.time')}</th>
-              <th>{t('traces.table.user')}</th>
-              <th>{t('traces.table.model')}</th>
-              <th>{t('traces.table.decision')}</th>
-              <th title={t('traces.table.turnsHint')}>{t('traces.table.turns')}</th>
-              <th>{t('traces.table.latency')}</th>
-              <th>{t('common.status')}</th>
+              <th>{t('traces.table.time')}{colHandle('time')}</th>
+              <th>{t('traces.table.user')}{colHandle('user')}</th>
+              <th>{t('traces.table.model')}{colHandle('model')}</th>
+              <th>{t('traces.table.decision')}{colHandle('decision')}</th>
+              <th title={t('traces.table.turnsHint')}>
+                {t('traces.table.turns')}{colHandle('turns')}
+              </th>
+              <th>{t('traces.table.latency')}{colHandle('latency')}</th>
+              <th>{t('common.status')}{colHandle('status')}</th>
               <th>Prompt</th>
               {user.is_admin && <th />}
             </tr>
@@ -697,7 +778,7 @@ export default function TracesPage({ user }: { user: SessionUser }) {
                 className={traceId === row.id ? 'selected' : ''}
                 onClick={() => navigate(`/traces/${row.id}`)}
               >
-                <td className="mono truncate dim">{row.ts?.slice(11, 19)}</td>
+                <td className="mono truncate dim">{formatStamp(row.ts)}</td>
                 <td className="mono truncate dim">{row.user_id ?? '—'}</td>
                 <td className="truncate"><span className="badge model">{row.model}</span></td>
                 <td className="mono truncate dim">{row.reason}</td>
@@ -771,6 +852,20 @@ export default function TracesPage({ user }: { user: SessionUser }) {
       {listPanel}
       <Splitter onDrag={onDrag} />
       <div className="split-pane">
+        {/* Outside the `selected` branch: closing has to be reachable from the loading and
+            not-found states too, which is where a stale link lands. */}
+        <div className="detail-topbar">
+          <span className="mono dim truncate">{traceId}</span>
+          <span className="spacer" />
+          <button
+            className="btn ghost sm"
+            title={t('common.close')}
+            aria-label={t('common.close')}
+            onClick={() => navigate('/traces')}
+          >
+            ✕
+          </button>
+        </div>
         {selected ? (
           <DetailView trace={selected} />
         ) : (

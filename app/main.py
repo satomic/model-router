@@ -762,10 +762,44 @@ async def _sse_anthropic(chunks, trace: dict, t_start: float, model: str):
         yield encoder.error(str(e))
 
 
+def _responses_input(messages: list[dict]) -> list[dict]:
+    """Chat-completions messages -> Responses API input items.
+
+    The two protocols disagree about tool calls, and the Responses API rejects the chat shape
+    outright: an assistant tool call is `content: null` plus `tool_calls` there and a
+    `function_call` item here, and a result is a `role: tool` message there and a
+    `function_call_output` item here. Without this, every agentic loop routed to a
+    Responses-only model (o3-pro, gpt-5.4-pro) died on its second call.
+    """
+    items: list[dict] = []
+    for msg in messages:
+        if msg.get("role") == "tool":
+            items.append({
+                "type": "function_call_output",
+                "call_id": msg.get("tool_call_id"),
+                "output": msg.get("content") or "",
+            })
+            continue
+        calls = msg.get("tool_calls") or []
+        content = msg.get("content")
+        # A tool-call turn carries no text, and an empty message item is not worth sending.
+        if content or not calls:
+            items.append({"role": msg.get("role"), "content": content or ""})
+        for call in calls:
+            fn = call.get("function") or {}
+            items.append({
+                "type": "function_call",
+                "call_id": call.get("id"),
+                "name": fn.get("name"),
+                "arguments": fn.get("arguments") or "{}",
+            })
+    return items
+
+
 async def _complete_via_responses_api(client, model: str, payload: dict) -> dict:
     """Adapt a chat request to the Responses API and convert the result back to the
     chat.completion shape."""
-    kwargs = {"model": model, "input": payload["messages"]}
+    kwargs = {"model": model, "input": _responses_input(payload["messages"])}
     max_out = payload.get("max_completion_tokens") or payload.get("max_tokens")
     if max_out:
         kwargs["max_output_tokens"] = max_out
@@ -1378,7 +1412,10 @@ async def usage(request: Request, days: int = 7, user_id: str | None = None):
     """Non-admins see only their own data; admins see everything or one named user."""
     user = _user(request)
     scope = user["login"] if not user["is_admin"] else user_id
-    records = traces.scan(days=days, user_login=scope)
+    # An admin's scan stays unfiltered even when focused on one user: `by_user` is what the
+    # console's scope picker is built from, and deriving it from a scan already narrowed to the
+    # focused user is what made every other user disappear from the list after one was picked.
+    records = traces.scan(days=days, user_login=None if user["is_admin"] else scope)
 
     by_model: Counter = Counter()
     by_day: defaultdict[str, dict] = defaultdict(
@@ -1395,6 +1432,12 @@ async def usage(request: Request, days: int = 7, user_id: str | None = None):
         u = r.get("usage") or {}
         day = (r.get("ts") or "")[:10]
         is_error = r.get("status") == "error"
+        owner = r.get("user_id") or "anonymous"
+        # Counted before the focus filter, so the roster spans everyone regardless of scope.
+        by_user[owner]["requests"] += 1
+        by_user[owner]["total_tokens"] += u.get("total_tokens") or 0
+        if scope and owner != scope:
+            continue
         totals["requests"] += 1
         totals["errors"] += int(is_error)
         for f in ("prompt_tokens", "completion_tokens", "total_tokens"):
@@ -1403,9 +1446,6 @@ async def usage(request: Request, days: int = 7, user_id: str | None = None):
         by_day[day]["requests"] += 1
         by_day[day]["total_tokens"] += u.get("total_tokens") or 0
         by_day[day]["errors"] += int(is_error)
-        owner = r.get("user_id") or "anonymous"
-        by_user[owner]["requests"] += 1
-        by_user[owner]["total_tokens"] += u.get("total_tokens") or 0
         if r.get("total_ms") is not None:
             latency_samples.append(r["total_ms"])
 

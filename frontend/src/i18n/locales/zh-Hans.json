@@ -203,6 +203,11 @@
     "running": "运行中",
     "signOut": "退出登录",
     "sourceRepo": "源码仓库",
+    "timezone": {
+      "auto": "跟随浏览器（{{zone}}）",
+      "hint": "仅对你生效 · 当前 {{zone}}",
+      "label": "时区"
+    },
     "toggleTheme": "切换主题",
     "unreachable": "服务不可达",
     "update": {

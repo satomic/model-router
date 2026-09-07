@@ -43,6 +43,7 @@ node_modules/
 # directory is excluded rather than filtered file by file.
 tmp/
 *.tmp
+*tmp*
 *.bak
 *.orig
 
@@ -59,3 +60,4 @@ Thumbs.db
 desktop.ini
 
 perf/
+diagrams/

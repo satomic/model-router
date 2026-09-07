@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { NavLink } from 'react-router-dom'
 import { logout, type Health, type ReleaseStatus, type SessionUser } from '../api'
+import { systemTimeZone, zoneIds, zoneOffset, type TimeZone } from '../i18n/timezone'
 import LocalePicker from './LocalePicker'
 
 /** Where the project lives, for the builds that predate /healthz reporting it. The server is the
@@ -31,6 +32,8 @@ export default function Shell({
   release,
   theme,
   onToggleTheme,
+  timeZone,
+  onTimeZoneChange,
   onLoggedOut,
   title,
   subtitle,
@@ -45,6 +48,9 @@ export default function Shell({
   release?: ReleaseStatus | null
   theme: 'light' | 'dark'
   onToggleTheme: () => void
+  /** The reader's zone preference; '' means follow the browser. */
+  timeZone: TimeZone
+  onTimeZoneChange: (next: TimeZone) => void
   onLoggedOut: () => void
   title: string
   subtitle?: string
@@ -175,6 +181,27 @@ export default function Shell({
                     {user.is_admin ? t('shell.roleAdmin') : t('shell.roleUser')}
                   </span>
                 </div>
+                {/* Held in this browser only, like the theme and the language: timestamps still
+                    travel as UTC, and one reader's clock is not everybody's. */}
+                <label className="field" style={{ marginBottom: 12 }}>
+                  <span className="field-name">
+                    {t('shell.timezone.label')}
+                    <span className="field-hint">
+                      {t('shell.timezone.hint', { zone: timeZone || systemTimeZone() })}
+                    </span>
+                  </span>
+                  <select
+                    value={timeZone}
+                    onChange={(e) => onTimeZoneChange(e.target.value)}
+                  >
+                    <option value="">
+                      {t('shell.timezone.auto', { zone: systemTimeZone() })}
+                    </option>
+                    {zoneIds().map((id) => (
+                      <option key={id} value={id}>{`${id} (${zoneOffset(id)})`}</option>
+                    ))}
+                  </select>
+                </label>
                 <button
                   className="btn ghost sm"
                   style={{ width: '100%' }}

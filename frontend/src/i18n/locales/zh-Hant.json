@@ -203,6 +203,11 @@
     "running": "執行中",
     "signOut": "登出",
     "sourceRepo": "原始碼儲存庫",
+    "timezone": {
+      "auto": "跟隨瀏覽器（{{zone}}）",
+      "hint": "僅對你生效 · 目前 {{zone}}",
+      "label": "時區"
+    },
     "toggleTheme": "切換主題",
     "unreachable": "服務無法連線",
     "update": {

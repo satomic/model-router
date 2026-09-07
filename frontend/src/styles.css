@@ -339,6 +339,11 @@ a.icon-btn {
 }
 .menu-pop .who { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; }
 .menu-pop .who .name { font-weight: 600; }
+/* The zone list is long and its entries carry an offset, so the popover is sized for the
+   control rather than the control squeezed into a popover sized for a name. */
+.menu-pop { min-width: 272px; }
+.menu-pop .field-name { display: block; }
+.menu-pop .field-hint { display: block; margin-left: 0; }
 
 /* ── Left navigation ──────────────────────────────────────────────────── */
 .shell { display: flex; min-height: calc(100vh - 48px); align-items: stretch; }
@@ -465,6 +470,20 @@ a.icon-btn {
    footer stay put, which a scrollbar on the panel itself would not allow. */
 .table-scroll { overflow-x: auto; }
 .split-pane { min-width: 0; padding-left: 10px; }
+/* The detail pane's own header: the trace id and the close button, above the stack of cards.
+   Sticky, so closing stays in reach after scrolling down a long interaction. */
+.detail-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 0 8px;
+  background: var(--bg);
+}
+.detail-topbar .spacer { margin-left: auto; }
+.detail-topbar .truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .splitter {
   /* Full-height hit area with a hairline down the middle: 6px is comfortable to grab, while a
      1px rule is all the layout should show. */
@@ -747,7 +766,30 @@ th {
   white-space: nowrap;
   overflow: hidden;
   background: var(--bg-subtle);
+  position: relative;
 }
+/* The grab strip on a resizable column's trailing edge. It straddles the cell border so the
+   whole visible rule is grabbable, and `overflow: hidden` on <th> is why it stays inside it. */
+.col-resize {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  width: 7px;
+  cursor: col-resize;
+  user-select: none;
+}
+.col-resize::after {
+  content: '';
+  position: absolute;
+  top: 5px;
+  bottom: 5px;
+  right: 2px;
+  width: 1px;
+  background: var(--line-hi);
+}
+.col-resize:hover::after,
+body.dragging .col-resize:active::after { background: var(--accent); width: 2px; }
 td {
   padding: 9px 12px;
   border-bottom: 1px solid var(--line);

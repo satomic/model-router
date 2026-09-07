@@ -11,6 +11,7 @@ import {
   type Health,
   type ReleaseStatus,
 } from './api'
+import { storeTimeZone, timeZone, type TimeZone } from './i18n/timezone'
 import AccessPage from './pages/AccessPage'
 import ChangePasswordPage from './pages/ChangePasswordPage'
 import ConfigPage from './pages/ConfigPage'
@@ -75,6 +76,20 @@ function useTheme(): [Theme, () => void] {
   return [theme, () => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))]
 }
 
+/** The reader's time zone. Held here rather than beside the picker because the formatters read
+ *  it from a module variable: re-rendering from the root is what puts every already-rendered
+ *  timestamp on the new clock. */
+function useTimeZone(): [TimeZone, (next: TimeZone) => void] {
+  const [tz, setTz] = useState<TimeZone>(() => timeZone())
+  return [
+    tz,
+    (next: TimeZone) => {
+      storeTimeZone(next)
+      setTz(timeZone())
+    },
+  ]
+}
+
 /** Shown for a path no route claims. The server cannot know the client's route list, so it
  *  hands over the shell and this is where an unknown URL actually lands. */
 function NotFound() {
@@ -96,6 +111,7 @@ export default function App() {
   const [health, setHealth] = useState<Health | null>(null)
   const [rel, setRel] = useState<ReleaseStatus | null>(null)
   const [theme, toggleTheme] = useTheme()
+  const [tz, setTz] = useTimeZone()
   const navigate = useNavigate()
   const location = useLocation()
   const [params, setParams] = useSearchParams()
@@ -213,6 +229,8 @@ export default function App() {
       release={rel}
       theme={theme}
       onToggleTheme={toggleTheme}
+      timeZone={tz}
+      onTimeZoneChange={setTz}
       onLoggedOut={refreshStatus}
       title={current?.title ?? t('app.notFound.title')}
       subtitle={current?.subtitle}
