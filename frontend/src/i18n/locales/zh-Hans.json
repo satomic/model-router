@@ -264,6 +264,13 @@
     "drillDown": "下钻",
     "loading": "统计中…",
     "noRecords": "该区间没有调用记录",
+    "rollup": {
+      "builtAt": "统计于 {{at}}",
+      "building": "统计中…",
+      "explain": "这些数字由后台任务每小时预先统计，页面不会再扫描链路文件。点“刷新”可立即重算。",
+      "never": "尚未统计",
+      "recomputing": "统计中…"
+    },
     "scope": "视图范围",
     "range": {
       "today": "今天",

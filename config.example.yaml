@@ -19,6 +19,12 @@ session:
   ttl_seconds: 1800
   max_sessions: 10000
 
+# The Usage page reads a rollup that is recomputed in the background, so it never scans the
+# trace directory itself. Its Refresh button recomputes on demand.
+usage:
+  rollup_interval_seconds: 3600  # How often the background rebuild runs (minimum 60)
+  rollup_days: 90                # How far back it reaches; must cover the longest range shown
+
 # Sign-in and authorization
 auth:
   github:

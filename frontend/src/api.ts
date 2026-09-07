@@ -337,6 +337,15 @@ export interface UsageReport {
   by_model: { model: string; requests: number }[]
   by_day: { date: string; requests: number; total_tokens: number; errors: number }[]
   by_user: { user_id: string; requests: number; total_tokens: number }[]
+  /** When the background rollup these figures come from was last computed; null before the
+   *  first one has run. The page reads a precomputed file, never the trace directory. */
+  built_at: number | null
+  /** A rollup is being recomputed right now, possibly by another worker. */
+  building: boolean
+  /** How long the last rollup took, and how many trace records it folded in. */
+  build_ms?: number | null
+  traces?: number | null
+  error?: string | null
 }
 
 /** The dedicated error thrown on a 401, so callers can switch back to the signed-out state. */
@@ -841,6 +850,12 @@ export async function getUsage(days = 7, userId?: string): Promise<UsageReport> 
   const q = new URLSearchParams({ days: String(days) })
   if (userId) q.set('user_id', userId)
   return json<UsageReport>(`/v1/usage?${q}`)
+}
+
+/** Recompute the rollup now. Resolves when the rebuild has finished (or immediately, with
+ *  started=false, when another one was already running). */
+export async function refreshUsage(): Promise<{ started: boolean; building: boolean }> {
+  return json('/v1/usage/refresh', { method: 'POST' })
 }
 
 // ── Playground ───────────────────────────────────────────────────

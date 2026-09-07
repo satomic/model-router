@@ -264,6 +264,13 @@
     "drillDown": "下探",
     "loading": "統計中…",
     "noRecords": "該區間沒有呼叫記錄",
+    "rollup": {
+      "builtAt": "統計於 {{at}}",
+      "building": "統計中…",
+      "explain": "這些數字由背景工作每小時預先統計，頁面不會再掃描鏈路檔案。點「重新整理」可立即重算。",
+      "never": "尚未統計",
+      "recomputing": "統計中…"
+    },
     "scope": "檢視範圍",
     "range": {
       "today": "今天",

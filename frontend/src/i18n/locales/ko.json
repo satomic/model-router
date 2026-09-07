@@ -264,6 +264,13 @@
     "drillDown": "상세 분석",
     "loading": "집계 중…",
     "noRecords": "이 기간에는 호출 기록이 없습니다",
+    "rollup": {
+      "builtAt": "{{at}}에 집계",
+      "building": "집계 중…",
+      "explain": "이 수치는 백그라운드에서 매시간 집계되므로 페이지가 트레이스 파일을 훑지 않습니다. 새로 고침을 누르면 즉시 다시 계산합니다.",
+      "never": "아직 집계되지 않음",
+      "recomputing": "집계 중…"
+    },
     "scope": "표시 범위",
     "range": {
       "today": "오늘",

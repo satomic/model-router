@@ -17,7 +17,6 @@ import json
 import logging
 import time
 import uuid
-from collections import Counter, defaultdict
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 
@@ -70,6 +69,7 @@ from .routing import (
 )
 from .sessions import SessionStore
 from .traces import TraceStore
+from . import usagestats
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s"
@@ -136,10 +136,34 @@ async def _cache_refresh_loop() -> None:
         await asyncio.sleep(delay)
 
 
+# Long enough that a restart does not spend its first seconds scanning the trace directory
+# while the first requests are arriving.
+_USAGE_WARMUP_DELAY = 5.0
+# The loop wakes at least this often regardless of the configured interval, so a rollup that
+# went stale while this worker held no lease is picked up promptly.
+_USAGE_POLL_DELAY = 300.0
+
+
+async def _usage_rollup_loop() -> None:
+    """Keep data/usage_rollup.json fresh, so the Usage page never scans trace files itself."""
+    await asyncio.sleep(_USAGE_WARMUP_DELAY)
+    while True:
+        interval = cfg.usage_rollup_seconds
+        try:
+            if time.time() - usagestats.built_at() >= interval:
+                await usagestats.refresh(traces, cfg.usage_rollup_days)
+        except asyncio.CancelledError:
+            raise
+        except Exception as e:  # noqa: BLE001 the loop must outlive any single failure
+            logger.warning("usage rollup refresh failed: %s", e)
+        await asyncio.sleep(min(interval, _USAGE_POLL_DELAY))
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     tasks = [
         asyncio.create_task(_cache_refresh_loop()),
+        asyncio.create_task(_usage_rollup_loop()),
         asyncio.create_task(release.loop()),
     ]
     yield
@@ -1409,65 +1433,27 @@ async def list_signed_in_users(request: Request, eligibility: bool = False):
 # -- Usage statistics ---------------------------------------------------------
 @app.get("/v1/usage")
 async def usage(request: Request, days: int = 7, user_id: str | None = None):
-    """Non-admins see only their own data; admins see everything or one named user."""
+    """Non-admins see only their own data; admins see everything or one named user.
+
+    Served entirely from the background rollup (app/usagestats.py) -- no trace file is opened
+    here, which is what keeps the page fast once the trace directory is large.
+    """
     user = _user(request)
     scope = user["login"] if not user["is_admin"] else user_id
-    # An admin's scan stays unfiltered even when focused on one user: `by_user` is what the
-    # console's scope picker is built from, and deriving it from a scan already narrowed to the
-    # focused user is what made every other user disappear from the list after one was picked.
-    records = traces.scan(days=days, user_login=None if user["is_admin"] else scope)
+    return usagestats.report(days=days, scope=scope, is_admin=user["is_admin"])
 
-    by_model: Counter = Counter()
-    by_day: defaultdict[str, dict] = defaultdict(
-        lambda: {"requests": 0, "total_tokens": 0, "errors": 0}
-    )
-    by_user: defaultdict[str, dict] = defaultdict(
-        lambda: {"requests": 0, "total_tokens": 0}
-    )
-    totals = {"requests": 0, "errors": 0, "prompt_tokens": 0,
-              "completion_tokens": 0, "total_tokens": 0}
-    latency_samples: list[float] = []
 
-    for r in records:
-        u = r.get("usage") or {}
-        day = (r.get("ts") or "")[:10]
-        is_error = r.get("status") == "error"
-        owner = r.get("user_id") or "anonymous"
-        # Counted before the focus filter, so the roster spans everyone regardless of scope.
-        by_user[owner]["requests"] += 1
-        by_user[owner]["total_tokens"] += u.get("total_tokens") or 0
-        if scope and owner != scope:
-            continue
-        totals["requests"] += 1
-        totals["errors"] += int(is_error)
-        for f in ("prompt_tokens", "completion_tokens", "total_tokens"):
-            totals[f] += u.get(f) or 0
-        by_model[r.get("model") or "unknown"] += 1
-        by_day[day]["requests"] += 1
-        by_day[day]["total_tokens"] += u.get("total_tokens") or 0
-        by_day[day]["errors"] += int(is_error)
-        if r.get("total_ms") is not None:
-            latency_samples.append(r["total_ms"])
+@app.post("/v1/usage/refresh")
+async def usage_refresh(request: Request):
+    """Recompute the rollup now, for the console's Refresh button.
 
-    latency_samples.sort()
-    return {
-        "scope": scope or "all",
-        "is_admin": user["is_admin"],
-        "days": days,
-        "totals": {
-            **totals,
-            "avg_ms": round(sum(latency_samples) / len(latency_samples), 1)
-            if latency_samples else None,
-            "p95_ms": latency_samples[int(len(latency_samples) * 0.95) - 1]
-            if latency_samples else None,
-        },
-        "by_model": [{"model": m, "requests": c} for m, c in by_model.most_common()],
-        "by_day": [{"date": d, **v} for d, v in sorted(by_day.items())],
-        "by_user": sorted(
-            [{"user_id": k, **v} for k, v in by_user.items()],
-            key=lambda x: x["requests"], reverse=True,
-        ),
-    }
+    Open to any signed-in user rather than admins only: a regular user reads their own numbers
+    from the same file and has the same reason to want them current. The single-flight lease in
+    usagestats is what bounds the cost -- a second request while one is running is a no-op.
+    """
+    _user(request)
+    started = await usagestats.refresh(traces, cfg.usage_rollup_days)
+    return {**usagestats.status(), "started": started}
 
 
 # -- Configuration (administrators only) --------------------------------------

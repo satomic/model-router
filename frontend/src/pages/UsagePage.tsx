@@ -1,8 +1,8 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useSearchParams } from 'react-router-dom'
-import { getUsage, type SessionUser, type UsageReport } from '../api'
-import { formatInt } from '../i18n/format'
+import { getUsage, refreshUsage, type SessionUser, type UsageReport } from '../api'
+import { formatDateTime, formatInt } from '../i18n/format'
 
 /**
  * Abbreviate large counts so a tile's value never wraps. K/M are kept unlocalised on
@@ -33,6 +33,11 @@ export default function UsagePage({ user }: { user: SessionUser }) {
   const [report, setReport] = useState<UsageReport | null>(null)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
+  const [rebuilding, setRebuilding] = useState(false)
+  // The rebuild can outlive the page: a setState on an unmounted component is a leak warning
+  // and, worse, hides the real error behind it.
+  const alive = useRef(true)
+  useEffect(() => () => { alive.current = false }, [])
 
   // An unparsable or unoffered ?days= falls back rather than asking the backend for nonsense.
   const asked = Number(params.get('days'))
@@ -52,7 +57,7 @@ export default function UsagePage({ user }: { user: SessionUser }) {
 
   const load = useCallback(() => {
     setLoading(true)
-    getUsage(days, focusUser || undefined)
+    return getUsage(days, focusUser || undefined)
       .then(setReport)
       .catch((e) => setError(String(e)))
       .finally(() => setLoading(false))
@@ -61,6 +66,25 @@ export default function UsagePage({ user }: { user: SessionUser }) {
   useEffect(() => {
     void load()
   }, [load])
+
+  // A rebuild running when the page opened (started by the hourly loop or by somebody else)
+  // is still a rebuild this page is waiting on, so the button reflects it too.
+  const building = rebuilding || Boolean(report?.building)
+
+  /** Recompute the rollup, then show the fresh numbers. The request itself resolves only when
+   *  the rebuild has finished, so there is nothing to poll. */
+  const rebuild = async () => {
+    setRebuilding(true)
+    try {
+      await refreshUsage()
+      await load()
+      setError('')
+    } catch (e) {
+      setError(String(e))
+    } finally {
+      if (alive.current) setRebuilding(false)
+    }
+  }
 
   if (error) return <div className="toast error">{error}</div>
   if (!report) {
@@ -100,7 +124,18 @@ export default function UsagePage({ user }: { user: SessionUser }) {
             </select>
           </>
         )}
-        <button className="btn subtle sm" onClick={load}>{t('common.refresh')}</button>
+        {/* The numbers come from an hourly background rollup, so the page says how old they
+            are -- a stat card cannot be read without knowing whether it is live. */}
+        <span className="dim" style={{ fontSize: 12.5 }} title={t('usage.rollup.explain')}>
+          {building
+            ? t('usage.rollup.building')
+            : report.built_at
+              ? t('usage.rollup.builtAt', { at: formatDateTime(report.built_at * 1000) })
+              : t('usage.rollup.never')}
+        </span>
+        <button className="btn subtle sm" onClick={rebuild} disabled={building}>
+          {building ? t('usage.rollup.recomputing') : t('common.refresh')}
+        </button>
       </div>
 
       <div className="tiles">

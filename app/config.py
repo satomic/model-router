@@ -274,6 +274,9 @@ class RouterConfig:
         # an existing deployment does not suddenly restrict anybody.
         self.model_policy: dict = dict(raw.get("model_policy") or {})
 
+        # Background rollup of the Usage page's statistics; see app/usagestats.py.
+        self.usage: dict = dict(raw.get("usage") or {})
+
         auth = raw.get("auth") or {}
         gh = auth.get("github") or {}
         self.gh_client_id: str = (gh.get("client_id") or "").strip()
@@ -299,6 +302,27 @@ class RouterConfig:
     @property
     def oauth_configured(self) -> bool:
         return bool(self.gh_client_id and self.gh_client_secret)
+
+    @property
+    def usage_rollup_seconds(self) -> float:
+        """How often the Usage statistics are recomputed in the background."""
+        from .usagestats import DEFAULT_INTERVAL
+
+        try:
+            return max(60.0, float(self.usage.get("rollup_interval_seconds") or DEFAULT_INTERVAL))
+        except (TypeError, ValueError):
+            return DEFAULT_INTERVAL
+
+    @property
+    def usage_rollup_days(self) -> int:
+        """How far back the rollup reaches. Must cover the longest range the console offers,
+        or that button would show a window the data does not contain."""
+        from .usagestats import DEFAULT_DAYS
+
+        try:
+            return max(1, int(self.usage.get("rollup_days") or DEFAULT_DAYS))
+        except (TypeError, ValueError):
+            return DEFAULT_DAYS
 
     @property
     def local_admin_enabled(self) -> bool:

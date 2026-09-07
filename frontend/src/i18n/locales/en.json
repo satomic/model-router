@@ -272,6 +272,13 @@
     "drillDown": "Drill down",
     "loading": "Aggregating…",
     "noRecords": "No calls in this range",
+    "rollup": {
+      "builtAt": "Computed {{at}}",
+      "building": "Computing…",
+      "explain": "These figures are rolled up in the background every hour, so the page never scans the trace files. Refresh recomputes them now.",
+      "never": "Not computed yet",
+      "recomputing": "Computing…"
+    },
     "scope": "View scope",
     "range": {
       "today": "Today",
