@@ -194,124 +194,6 @@ export default function CreditsPage() {
         </div>
       )}
 
-      {/* -- Pool state -- */}
-      <div className="panel">
-        <div className="panel-head">
-          {t('credits.poolTitle')}
-          {status?.fetched_at ? (
-            <span className={`badge ${status.stale ? 'warn' : 'ok'}`}>
-              {status.stale ? t('credits.stale') : t('credits.fresh')}
-            </span>
-          ) : (
-            <span className="badge warn">{t('credits.neverFetched')}</span>
-          )}
-          <span className="spacer" />
-          <button className="btn ghost sm" onClick={refresh} disabled={refreshing || !status?.token_configured}>
-            {refreshing ? t('credits.refreshing') : t('credits.refreshNow')}
-          </button>
-        </div>
-        <div className="panel-body">
-          <p className="panel-note" style={{ marginTop: 0 }}>
-            <Trans i18nKey="credits.poolLead" components={{ strong: <strong /> }} />
-          </p>
-          <div className="credits-runs">
-            <span>
-              {t('credits.lastFetched')}: <b>{status?.fetched_at ? formatDateTime(status.fetched_at * 1000) : '—'}</b>
-            </span>
-            <span>
-              {t('credits.nextRun')}:{' '}
-              <b>
-                {!status?.settings.enabled
-                  ? t('credits.pollingOff')
-                  : status.due
-                    ? t('credits.dueNow')
-                    : status.next_run_at
-                      ? formatDateTime(status.next_run_at * 1000)
-                      : '—'}
-              </b>
-            </span>
-            {status?.token_changed && <span className="credits-warn">{t('credits.tokenChanged')}</span>}
-            {(status?.missing_enterprises.length ?? 0) > 0 && (
-              <span className="credits-warn">
-                {t('credits.missingEnterprises', { list: status!.missing_enterprises.join(', ') })}
-              </span>
-            )}
-          </div>
-
-          {status && status.enterprises.length === 0 && status.fetched_at && (
-            <div className="empty">{t('credits.noEnterprises')}</div>
-          )}
-          {status?.enterprises.map((e) => (
-            <EnterpriseCard key={e.slug} ent={e} perUser={status.snapshot_per_user} />
-          ))}
-        </div>
-      </div>
-
-      {/* -- Polling schedule -- */}
-      <div className="panel">
-        <div className="panel-head">
-          {t('credits.scheduleTitle')}
-          {pollOn ? (
-            <span className="badge ok">{t('credits.on')}</span>
-          ) : (
-            <span className="badge warn">{t('credits.off')}</span>
-          )}
-        </div>
-        <div className="panel-body">
-          <label className="check">
-            <input type="checkbox" checked={pollOn} onChange={(e) => set({ enabled: e.target.checked })} />
-            {t('credits.pollToggle')}
-          </label>
-          <p className="panel-note" style={{ marginTop: 10 }}>
-            <Trans i18nKey="credits.pollNote" components={{ strong: <strong />, code: <code /> }} />
-          </p>
-
-          <div className="credits-form">
-            <ScheduleField
-              value={draft.schedule ?? DEFAULT_SCHEDULE}
-              onChange={(schedule) => set({ schedule })}
-            />
-
-            <div className="field">
-              <span className="field-name">
-                {t('credits.enterprises')}
-                <span className="field-hint">{t('credits.enterprisesHint')}</span>
-              </span>
-              {slugs.length === 0 ? (
-                <div className="dim" style={{ fontSize: 12.5 }}>
-                  {t('credits.noKnownEnterprises')}
-                </div>
-              ) : (
-                <div className="credits-ent-list">
-                  {slugs.map((slug) => (
-                    <label key={slug} className="check">
-                      <input
-                        type="checkbox"
-                        checked={selected.includes(slug)}
-                        onChange={(ev) =>
-                          set({
-                            enterprises: ev.target.checked
-                              ? [...selected, slug]
-                              : selected.filter((s) => s !== slug),
-                          })
-                        }
-                      />
-                      <span className="credits-ent-option">
-                        <span>{nameOf(slug)}</span>
-                        <span className="mono dim">{slug}</span>
-                      </span>
-                    </label>
-                  ))}
-                </div>
-              )}
-              <p className="panel-note credits-form-foot">
-                {selected.length === 0 ? t('credits.allEnterprises') : t('credits.someEnterprises', { count: selected.length })}
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* -- The gate -- */}
       <div className="panel">
         <div className="panel-head">
@@ -409,6 +291,124 @@ export default function CreditsPage() {
               </p>
             </>
           )}
+        </div>
+      </div>
+
+      {/* -- Polling schedule -- */}
+      <div className="panel">
+        <div className="panel-head">
+          {t('credits.scheduleTitle')}
+          {pollOn ? (
+            <span className="badge ok">{t('credits.on')}</span>
+          ) : (
+            <span className="badge warn">{t('credits.off')}</span>
+          )}
+        </div>
+        <div className="panel-body">
+          <label className="check">
+            <input type="checkbox" checked={pollOn} onChange={(e) => set({ enabled: e.target.checked })} />
+            {t('credits.pollToggle')}
+          </label>
+          <p className="panel-note" style={{ marginTop: 10 }}>
+            <Trans i18nKey="credits.pollNote" components={{ strong: <strong />, code: <code /> }} />
+          </p>
+
+          <div className="credits-form">
+            <ScheduleField
+              value={draft.schedule ?? DEFAULT_SCHEDULE}
+              onChange={(schedule) => set({ schedule })}
+            />
+
+            <div className="field">
+              <span className="field-name">
+                {t('credits.enterprises')}
+                <span className="field-hint">{t('credits.enterprisesHint')}</span>
+              </span>
+              {slugs.length === 0 ? (
+                <div className="dim" style={{ fontSize: 12.5 }}>
+                  {t('credits.noKnownEnterprises')}
+                </div>
+              ) : (
+                <div className="credits-ent-list">
+                  {slugs.map((slug) => (
+                    <label key={slug} className="check">
+                      <input
+                        type="checkbox"
+                        checked={selected.includes(slug)}
+                        onChange={(ev) =>
+                          set({
+                            enterprises: ev.target.checked
+                              ? [...selected, slug]
+                              : selected.filter((s) => s !== slug),
+                          })
+                        }
+                      />
+                      <span className="credits-ent-option">
+                        <span>{nameOf(slug)}</span>
+                        <span className="mono dim">{slug}</span>
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              )}
+              <p className="panel-note credits-form-foot">
+                {selected.length === 0 ? t('credits.allEnterprises') : t('credits.someEnterprises', { count: selected.length })}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* -- Pool state -- */}
+      <div className="panel">
+        <div className="panel-head">
+          {t('credits.poolTitle')}
+          {status?.fetched_at ? (
+            <span className={`badge ${status.stale ? 'warn' : 'ok'}`}>
+              {status.stale ? t('credits.stale') : t('credits.fresh')}
+            </span>
+          ) : (
+            <span className="badge warn">{t('credits.neverFetched')}</span>
+          )}
+          <span className="spacer" />
+          <button className="btn ghost sm" onClick={refresh} disabled={refreshing || !status?.token_configured}>
+            {refreshing ? t('credits.refreshing') : t('credits.refreshNow')}
+          </button>
+        </div>
+        <div className="panel-body">
+          <p className="panel-note" style={{ marginTop: 0 }}>
+            <Trans i18nKey="credits.poolLead" components={{ strong: <strong /> }} />
+          </p>
+          <div className="credits-runs">
+            <span>
+              {t('credits.lastFetched')}: <b>{status?.fetched_at ? formatDateTime(status.fetched_at * 1000) : '—'}</b>
+            </span>
+            <span>
+              {t('credits.nextRun')}:{' '}
+              <b>
+                {!status?.settings.enabled
+                  ? t('credits.pollingOff')
+                  : status.due
+                    ? t('credits.dueNow')
+                    : status.next_run_at
+                      ? formatDateTime(status.next_run_at * 1000)
+                      : '—'}
+              </b>
+            </span>
+            {status?.token_changed && <span className="credits-warn">{t('credits.tokenChanged')}</span>}
+            {(status?.missing_enterprises.length ?? 0) > 0 && (
+              <span className="credits-warn">
+                {t('credits.missingEnterprises', { list: status!.missing_enterprises.join(', ') })}
+              </span>
+            )}
+          </div>
+
+          {status && status.enterprises.length === 0 && status.fetched_at && (
+            <div className="empty">{t('credits.noEnterprises')}</div>
+          )}
+          {status?.enterprises.map((e) => (
+            <EnterpriseCard key={e.slug} ent={e} perUser={status.snapshot_per_user} />
+          ))}
         </div>
       </div>
     </div>
