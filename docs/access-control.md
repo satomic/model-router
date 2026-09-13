@@ -64,15 +64,16 @@ the saved configuration. The default overview lists policies with incoming/outgo
 counts. It does not attempt to connect every policy to every identity and model at once.
 No users, user bindings or issued keys are loaded or rendered initially.
 
-- Click an overview item to open its immediate relationships: incoming nodes above, the current
-  node in the center, outgoing nodes below. Click a neighbor to continue exploring; use **Back**
+- Click an overview item to open its immediate relationships: incoming nodes and the current node
+  lead into a left-to-right, wrapping grid of outgoing nodes. Click a neighbor to continue exploring; use **Back**
   or the path history to return. The current node and the info button open its details below the
   canvas, without squeezing the graph. Connections are also clickable; hover highlights a single
   relationship. **Open configuration** takes you to the existing editor.
-- Each graph page shows at most three incoming and three outgoing neighbors (one of each on
-  narrow screens, keeping labels readable). Explicit page
-  controls expose the remainder; no relation is silently lost. Search filters the current
-  neighborhood. Zoom and **Fit graph** operate on the current page, not the entire global graph.
+- All neighbors in the current relationship graph are displayed without pagination. Columns adapt
+  to the actual canvas width, including sidebar changes; narrower screens wrap the stages and
+  nodes while retaining readable card sizes. Scroll vertically for additional rows. Connections
+  follow the gaps between cards. Search filters this neighborhood; zoom and **Fit graph** operate
+  on this relationship graph, not the entire global topology.
 - The overview has searchable **Policies**, **Identities** and **Models** indexes, with 24 items
   per page. The identity index includes discovered but unbound scopes. An enterprise's local
   graph exposes its organizations and Enterprise Teams, without fabricated org-to-team links.

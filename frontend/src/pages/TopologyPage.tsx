@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
-import { Background, Handle, MarkerType, Position, ReactFlow, ReactFlowProvider, useReactFlow, type NodeProps, type Node } from '@xyflow/react'
+import { Background, BaseEdge, Handle, MarkerType, Position, ReactFlow, ReactFlowProvider, useReactFlow, type EdgeProps, type NodeProps, type Node } from '@xyflow/react'
 import { ArrowLeft, ArrowRight, ArrowUpRight, Building2, ChevronLeft, ChevronRight, CircleUserRound, Focus, GitBranch, Info, KeyRound, Layers, Network, RefreshCw, Search, ShieldCheck, Users, X, ZoomIn, ZoomOut } from 'lucide-react'
 import { discoverEnterprises, getCacheStatus, getConfig, getTopologyMembers, getTopologyUser, type TopologyMembers } from '../api'
 import { formatDateTime } from '../i18n/format'
-import { buildGraph, neighborhoodPositions, policyNeighborhood, type Category, type GraphNode, type Snapshot } from './topology/graph'
+import { buildGraph, neighborhoodPositions, NODE_HEIGHT, policyNeighborhood, relationshipPath, type Category, type GraphNode, type Snapshot } from './topology/graph'
 import { dataIssues, type DataIssue } from './topology/status'
 import '@xyflow/react/dist/style.css'
 import './topology/topology.css'
@@ -17,14 +17,19 @@ function TopologyCard({ data, selected }: NodeProps<TopologyNode>) {
   const Icon = ICONS[data.kind as keyof typeof ICONS] ?? Layers
   return (
     <div className={`topology-node tone-${data.kind} ${data.faded ? 'faded' : ''} ${data.inactive ? 'inactive' : ''} ${selected ? 'chosen' : ''}`}>
-      <Handle type="target" position={Position.Top} isConnectable={false} />
+      <Handle type="target" position={Position.Left} isConnectable={false} />
       <div className="topology-node-title"><Icon size={18} /><strong title={data.label}>{data.label}</strong></div>
       <div className="topology-node-summary" title={data.summary}>{data.summary}</div>
-      <Handle type="source" position={Position.Bottom} isConnectable={false} />
+      <Handle type="source" position={Position.Right} isConnectable={false} />
     </div>
   )
 }
 const nodeTypes = { topology: TopologyCard }
+function RelationshipEdge(props: EdgeProps) {
+  const route = relationshipPath(props.sourceX, props.sourceY, props.targetX, props.targetY)
+  return <BaseEdge id={props.id} path={route.path} labelX={route.labelX} labelY={route.labelY} label={props.label} style={props.style} markerEnd={props.markerEnd} interactionWidth={props.interactionWidth} labelStyle={props.labelStyle} labelBgStyle={props.labelBgStyle} />
+}
+const edgeTypes = { relationship: RelationshipEdge }
 const categories: Category[] = ['access', 'scope', 'models', 'keys']
 
 function TopologyView() {
@@ -42,7 +47,7 @@ function TopologyView() {
   const [hovered, setHovered] = useState<string | null>(null)
   const [relationPage, setRelationPage] = useState(0)
   const [tab, setTab] = useState<'policies' | 'identities' | 'models'>('policies')
-  const [compact, setCompact] = useState(() => window.innerWidth < 700)
+  const [canvasWidth, setCanvasWidth] = useState(0)
   const [memberTarget, setMemberTarget] = useState<{ kind: string; name: string; id: string; label: string } | null>(null)
   const [members, setMembers] = useState<TopologyMembers | null>(null)
   const [memberLoading, setMemberLoading] = useState(false)
@@ -51,6 +56,7 @@ function TopologyView() {
   const memberRequest = useRef<AbortController | null>(null)
   const userRequest = useRef<AbortController | null>(null)
   const canvas = useRef<HTMLDivElement>(null)
+  const scrollArea = useRef<HTMLDivElement>(null)
   const inspector = useRef<HTMLElement>(null)
   const { fitView, setViewport, zoomIn, zoomOut } = useReactFlow()
 
@@ -161,7 +167,6 @@ function TopologyView() {
   }
 
   useEffect(() => { void load(); return () => { memberRequest.current?.abort(); userRequest.current?.abort() } }, [])
-  useEffect(() => { setRelationPage(0) }, [compact])
   useEffect(() => {
     if (!selection) return
     const frame = requestAnimationFrame(() => inspector.current?.scrollIntoView({ block: 'nearest' }))
@@ -179,45 +184,33 @@ function TopologyView() {
   const center = graph.nodes.find(node => node.id === centerId)
   const neighborhood = center ? policyNeighborhood(graph, center.id) : { nodes: [], edges: [] }
   const neighbors = neighborhood.nodes.filter(node => node.id !== centerId && (!needle || `${node.label} ${node.summary} ${node.details.flat().join(' ')}`.toLowerCase().includes(needle)))
-  const incomingIds = new Set(neighborhood.edges.filter(edge => edge.target === centerId).map(edge => edge.source))
-  const upstream = neighbors.filter(node => incomingIds.has(node.id))
-  const downstream = neighbors.filter(node => !incomingIds.has(node.id))
-  const pageSize = compact ? 1 : 3
-  const pageCount = Math.max(1, Math.ceil(upstream.length / pageSize), Math.ceil(downstream.length / pageSize))
-  const pageIndex = Math.min(relationPage, pageCount - 1)
-  const pageSide = (items: GraphNode[]) => {
-    const start = Math.min(pageIndex, Math.max(0, Math.ceil(items.length / pageSize) - 1)) * pageSize
-    return items.slice(start, start + pageSize)
-  }
-  const visible = center ? [center, ...pageSide(upstream), ...pageSide(downstream)] : []
+  const visible = center ? [center, ...neighbors] : []
   const visibleIds = new Set(visible.map(node => node.id))
   const filteredEdges = neighborhood.edges.filter(edge => visibleIds.has(edge.source) && visibleIds.has(edge.target))
   const selectedNode = graph.nodes.find(node => selection?.kind === 'node' && node.id === selection.id)
   const selectedEdge = selection?.kind === 'edge' ? neighborhood.edges.find(edge => edge.id === selection.id) ?? graph.edges.find(edge => edge.id === selection.id) : undefined
-  const positions = neighborhoodPositions({ nodes: visible, edges: filteredEdges }, centerId)
+  const positions = neighborhoodPositions({ nodes: visible, edges: filteredEdges }, centerId, canvasWidth)
   const nodes: TopologyNode[] = visible.map(node => {
-    return { id: node.id, type: 'topology', data: { ...node, faded: false }, position: positions.get(node.id)!, width: 220, height: 82, measured: { width: 220, height: 82 }, handles: [{ type: 'target', position: Position.Top, x: 107, y: -3, width: 6, height: 6 }, { type: 'source', position: Position.Bottom, x: 107, y: 79, width: 6, height: 6 }], selected: node.id === centerId, ariaLabel: `${node.label}, ${node.summary}`, draggable: false }
+    return { id: node.id, type: 'topology', data: { ...node, faded: false }, position: positions.get(node.id)!, width: 220, height: 82, measured: { width: 220, height: 82 }, handles: [{ type: 'target', position: Position.Left, x: -3, y: 38, width: 6, height: 6 }, { type: 'source', position: Position.Right, x: 217, y: 38, width: 6, height: 6 }], selected: node.id === centerId, ariaLabel: `${node.label}, ${node.summary}`, draggable: false }
   })
   const edges = filteredEdges.map(edge => {
     const active = hovered === edge.id || hovered === edge.source || hovered === edge.target || selectedEdge?.id === edge.id
-    return { ...edge, type: 'default', label: active ? edge.label : undefined, className: `topology-edge edge-${edge.kind}`, style: { strokeWidth: active ? 2.5 : 1.5, strokeDasharray: edge.inactive ? '5 5' : undefined, opacity: hovered && !active ? 0.18 : edge.inactive ? 0.45 : 0.65 }, markerEnd: { type: MarkerType.ArrowClosed, color: 'var(--line-strong)' }, labelStyle: { fill: 'var(--text)', fontSize: 11 }, labelBgStyle: { fill: 'var(--bg-panel)' }, interactionWidth: 20, ariaLabel: `${edge.label}: ${graph.nodes.find(node => node.id === edge.source)?.label} → ${graph.nodes.find(node => node.id === edge.target)?.label}` }
+    return { ...edge, type: 'relationship', label: active ? edge.label : undefined, className: `topology-edge edge-${edge.kind}`, style: { strokeWidth: active ? 2.5 : 1.5, strokeDasharray: edge.inactive ? '5 5' : undefined, opacity: hovered && !active ? 0.18 : edge.inactive ? 0.45 : 0.65 }, markerEnd: { type: MarkerType.ArrowClosed, color: 'var(--line-strong)' }, labelStyle: { fill: 'var(--text)', fontSize: 11 }, labelBgStyle: { fill: 'var(--bg-panel)' }, interactionWidth: 20, ariaLabel: `${edge.label}: ${graph.nodes.find(node => node.id === edge.source)?.label} → ${graph.nodes.find(node => node.id === edge.target)?.label}` }
   })
+  useEffect(() => {
+    if (!centerId || !scrollArea.current) return
+    const measure = () => setCanvasWidth(scrollArea.current?.clientWidth ?? 0)
+    const observer = new ResizeObserver(measure)
+    observer.observe(scrollArea.current)
+    measure()
+    return () => observer.disconnect()
+  }, [centerId])
   const layoutKey = [...positions].map(([id, position]) => `${id}:${position.x}:${position.y}`).join('|')
   useEffect(() => {
-    if (!center || !canvas.current) return
-    const reset = () => {
-      if (!canvas.current) return
-      setCompact(canvas.current.clientWidth < 560)
-      const width = Math.max(...[...positions.values()].map(position => position.x + 220), 220)
-      const height = Math.max(...[...positions.values()].map(position => position.y + 82), 82)
-      const zoom = Math.min(1, Math.max(0.45, (canvas.current.clientWidth - 64) / width), Math.max(0.6, (canvas.current.clientHeight - 64) / height))
-      void setViewport({ x: Math.max(24, (canvas.current.clientWidth - width * zoom) / 2), y: 32, zoom })
-    }
-    const observer = new ResizeObserver(reset)
-    observer.observe(canvas.current)
-    reset()
-    return () => observer.disconnect()
-  }, [centerId, layoutKey, setViewport])
+    if (!centerId) return
+    const frame = requestAnimationFrame(() => { void fitView({ padding: 0.08, maxZoom: 1, duration: 0 }) })
+    return () => cancelAnimationFrame(frame)
+  }, [centerId, canvasWidth, layoutKey, fitView])
 
   const matching = graph.nodes.filter(node => {
     const layer = tab === 'policies' ? 'policy' : tab === 'identities' ? 'identity' : 'model'
@@ -278,19 +271,17 @@ function TopologyView() {
             })}
             {!matching.length && <div className="empty">{text(loading ? 'loading' : 'noResults')}</div>}
           </div> : <>
-          <div className="topology-trail">{trail.slice(Math.max(0, trail.length - 3), -1).map((id, index) => <span className="topology-history" key={`${id}:${index}`}><button onClick={() => { setTrail(previous => previous.slice(0, Math.max(0, trail.length - 3) + index + 1)); setSelection(null); setQuery(''); setRelationPage(0) }}>{graph.nodes.find(node => node.id === id)?.label ?? id}</button><ChevronRight size={14} /></span>)}<strong>{center.label}</strong><span className="dim">{center.summary}</span><span className="spacer" /><button className="icon-btn" title={text('details')} aria-label={text('details')} onClick={() => setSelection({ kind: 'node', id: center.id })}><Info size={17} /></button></div>
+          <div className="topology-trail">{trail.slice(Math.max(0, trail.length - 3), -1).map((id, index) => <span className="topology-history" key={`${id}:${index}`}><button onClick={() => { setTrail(previous => previous.slice(0, Math.max(0, trail.length - 3) + index + 1)); setSelection(null); setQuery(''); setRelationPage(0) }}>{graph.nodes.find(node => node.id === id)?.label ?? id}</button><ChevronRight size={14} /></span>)}<strong>{center.label}</strong><span className="dim">{center.summary}</span><span className="spacer" /><span className="topology-controls"><button title={text('zoomIn')} aria-label={text('zoomIn')} onClick={() => void zoomIn()}><ZoomIn size={17} /></button><button title={text('zoomOut')} aria-label={text('zoomOut')} onClick={() => void zoomOut()}><ZoomOut size={17} /></button><button title={text('fit')} aria-label={text('fit')} onClick={() => { void fitView({ padding: 0.08, maxZoom: 1 }) }}><Focus size={17} /></button></span><button className="icon-btn" title={text('details')} aria-label={text('details')} onClick={() => setSelection({ kind: 'node', id: center.id })}><Info size={17} /></button></div>
+          <div className="topology-graph-area">
+          <div className="topology-scroll" ref={scrollArea}>
           <div className="topology-canvas" ref={canvas}>
-            <ReactFlow nodes={nodes} edges={edges} nodeTypes={nodeTypes} nodesConnectable={false} nodesDraggable={false} minZoom={0.05} maxZoom={1.6} panOnScroll zoomOnScroll={false} onNodeClick={(_event, node) => { setQuery(''); selectNode(node.data) }} onNodeMouseEnter={(_event, node) => setHovered(node.id === centerId ? null : node.id)} onNodeMouseLeave={() => setHovered(null)} onEdgeMouseEnter={(_event, edge) => setHovered(edge.id)} onEdgeMouseLeave={() => setHovered(null)} onEdgeClick={(_event, edge) => setSelection({ kind: 'edge', id: edge.id })} onPaneClick={() => setSelection(null)}>
+            <ReactFlow nodes={nodes} edges={edges} nodeTypes={nodeTypes} edgeTypes={edgeTypes} nodesConnectable={false} nodesDraggable={false} minZoom={0.05} maxZoom={1.6} panOnScroll zoomOnScroll={false} zoomOnPinch onNodeClick={(_event, node) => { setQuery(''); selectNode(node.data) }} onNodeMouseEnter={(_event, node) => setHovered(node.id === centerId ? null : node.id)} onNodeMouseLeave={() => setHovered(null)} onEdgeMouseEnter={(_event, edge) => setHovered(edge.id)} onEdgeMouseLeave={() => setHovered(null)} onEdgeClick={(_event, edge) => setSelection({ kind: 'edge', id: edge.id })} onPaneClick={() => setSelection(null)}>
               <Background color="var(--line-hi)" gap={20} size={1} />
             </ReactFlow>
             {!neighbors.length && <div className="topology-empty" role="status">{text(needle ? 'noResults' : 'noConnections')}</div>}
-            <div className="topology-controls">
-              <button title={text('zoomIn')} aria-label={text('zoomIn')} onClick={() => void zoomIn()}><ZoomIn size={18} /></button>
-              <button title={text('zoomOut')} aria-label={text('zoomOut')} onClick={() => void zoomOut()}><ZoomOut size={18} /></button>
-              <button title={text('fit')} aria-label={text('fit')} onClick={() => void fitView({ padding: 0.15 })}><Focus size={18} /></button>
-            </div>
+          </div></div>
           </div></>}
-          {(center ? pageCount : indexPages) > 1 && <div className="topology-pagination"><button className="icon-btn" title={text('previous')} aria-label={text('previous')} disabled={(center ? pageIndex : indexPage) === 0} onClick={() => setRelationPage(previous => previous - 1)}><ChevronLeft size={18} /></button><span>{(center ? pageIndex : indexPage) + 1} / {center ? pageCount : indexPages}</span><button className="icon-btn" title={text('next')} aria-label={text('next')} disabled={(center ? pageIndex : indexPage) + 1 === (center ? pageCount : indexPages)} onClick={() => setRelationPage(previous => previous + 1)}><ChevronRight size={18} /></button></div>}
+          {!center && indexPages > 1 && <div className="topology-pagination"><button className="icon-btn" title={text('previous')} aria-label={text('previous')} disabled={indexPage === 0} onClick={() => setRelationPage(previous => previous - 1)}><ChevronLeft size={18} /></button><span>{indexPage + 1} / {indexPages}</span><button className="icon-btn" title={text('next')} aria-label={text('next')} disabled={indexPage + 1 === indexPages} onClick={() => setRelationPage(previous => previous + 1)}><ChevronRight size={18} /></button></div>}
         </div>
         {selection && <aside className="topology-detail" aria-label={text('details')} ref={inspector}>
           <div className="topology-detail-heading"><span>{text('details')}</span><button className="icon-btn" aria-label={t('common.close')} title={t('common.close')} onClick={() => setSelection(null)}><X size={18} /></button></div>

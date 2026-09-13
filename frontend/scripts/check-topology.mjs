@@ -4,7 +4,7 @@ import ts from 'typescript'
 
 const source = readFileSync(new URL('../src/pages/topology/graph.ts', import.meta.url), 'utf8')
 const compiled = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2020 } }).outputText
-const { buildGraph, policyNeighborhood, neighborhoodPositions } = await import(`data:text/javascript;base64,${Buffer.from(compiled).toString('base64')}`)
+const { buildGraph, policyNeighborhood, neighborhoodPositions, relationshipPath } = await import(`data:text/javascript;base64,${Buffer.from(compiled).toString('base64')}`)
 const snapshot = {
   config: {
     models: { cheap: { provider: 'primary' }, premium: { provider: 'other' } },
@@ -32,13 +32,43 @@ const graph = buildGraph(snapshot, key => key)
 const neighborhood = policyNeighborhood(graph, 'group:starter')
 assert.ok(neighborhood.edges.every(edge => edge.source === 'group:starter' || edge.target === 'group:starter'))
 assert.ok(!neighborhood.nodes.some(item => item.id === 'model:premium'))
-const localPositions = neighborhoodPositions(neighborhood, 'group:starter')
-assert.ok(localPositions.get('user:alice').y < localPositions.get('group:starter').y)
-assert.ok(localPositions.get('model:cheap').y > localPositions.get('group:starter').y)
+const localPositions = neighborhoodPositions(neighborhood, 'group:starter', 1500)
+assert.ok(localPositions.get('user:alice').x < localPositions.get('group:starter').x)
+assert.ok(localPositions.get('model:cheap').x > localPositions.get('group:starter').x)
 const boxes = [...localPositions.values()]
 for (let first = 0; first < boxes.length; first++) for (let second = first + 1; second < boxes.length; second++) {
   assert.ok(Math.abs(boxes[first].x - boxes[second].x) >= 220 || Math.abs(boxes[first].y - boxes[second].y) >= 82)
 }
+const manyModels = Array.from({ length: 37 }, (_, index) => ({ id: `model:test-${index}`, layer: 'model', kind: 'model', label: `test-${index}`, summary: '', details: [] }))
+const largeGraph = { nodes: [neighborhood.nodes.find(item => item.id === 'group:starter'), ...manyModels], edges: manyModels.map(item => ({ source: 'group:starter', target: item.id, kind: 'models', label: 'grant' })) }
+for (const width of [280, 600, 1100, 1900]) {
+  const layout = neighborhoodPositions(largeGraph, 'group:starter', width)
+  assert.equal(layout.size, 38)
+  const placed = [...layout.values()]
+  assert.ok(placed.every(position => position.x >= 0 && position.y >= 0))
+  for (let first = 0; first < placed.length; first++) for (let second = first + 1; second < placed.length; second++) {
+    assert.ok(Math.abs(placed[first].x - placed[second].x) >= 220 || Math.abs(placed[first].y - placed[second].y) >= 82)
+  }
+  for (const edge of largeGraph.edges) {
+    const source = layout.get(edge.source)
+    const target = layout.get(edge.target)
+    const { points } = relationshipPath(source.x + 220, source.y + 41, target.x, target.y + 41)
+    for (let index = 1; index < points.length; index++) {
+      const start = points[index - 1], end = points[index]
+      for (const [id, box] of layout) {
+        if (id === edge.source || id === edge.target) continue
+        const spansX = Math.max(start.x, end.x) > box.x && Math.min(start.x, end.x) < box.x + 220
+        const spansY = Math.max(start.y, end.y) > box.y && Math.min(start.y, end.y) < box.y + 82
+        assert.ok(!(spansX && spansY), `Edge to ${edge.target} crosses ${id} at width ${width}`)
+      }
+    }
+  }
+}
+const wide = neighborhoodPositions(largeGraph, 'group:starter', 1900)
+const targetXs = new Set(manyModels.map(item => wide.get(item.id).x))
+assert.equal(targetXs.size, 1, 'targets form a single column')
+assert.ok([...targetXs][0] > wide.get('group:starter').x, 'targets sit right of the current node')
+assert.equal(new Set(manyModels.map(item => wide.get(item.id).y)).size, 37, 'one target per row')
 const organizationView = policyNeighborhood(graph, 'organization:engineering')
 assert.equal(organizationView.edges.filter(edge => edge.source === 'enterprise:acme').length, 1)
 assert.ok(organizationView.edges.find(edge => edge.source === 'enterprise:acme').label.includes('configuredScope'))

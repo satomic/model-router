@@ -44,23 +44,54 @@ export function policyNeighborhood(graph: Graph, id: string): Graph {
   return { nodes: graph.nodes.filter(node => ids.has(node.id)), edges }
 }
 
-export function neighborhoodPositions(graph: Graph, id: string): Map<string, { x: number; y: number }> {
+export const NODE_WIDTH = 220
+export const NODE_HEIGHT = 82
+const GAP_X = 96
+const STRIDE = NODE_WIDTH + GAP_X
+const ROW_HEIGHT = NODE_HEIGHT + 20
+const GRID_LEFT = 16
+
+/** Three columns left to right: sources | current | targets, one node per row in each column, each
+ *  column vertically centred on the tallest one. `width` is accepted for call-site compatibility. */
+export function neighborhoodPositions(graph: Graph, id: string, _width = 1200): Map<string, { x: number; y: number }> {
   const incoming = new Set(graph.edges.filter(edge => edge.target === id).map(edge => edge.source))
   const before = graph.nodes.filter(node => node.id !== id && incoming.has(node.id))
   const after = graph.nodes.filter(node => node.id !== id && !incoming.has(node.id))
-  const columns = Math.max(1, Math.min(3, Math.max(before.length, after.length)))
+  const centerX = GRID_LEFT + (before.length ? STRIDE : 0)
+  const totalRows = Math.max(1, before.length, after.length)
+  const columnTop = (rows: number) => ((totalRows - rows) * ROW_HEIGHT) / 2
   const positions = new Map<string, { x: number; y: number }>()
-  const place = (nodes: GraphNode[], start: number) => nodes.forEach((node, index) => {
-    const rowCount = Math.min(columns, nodes.length - Math.floor(index / columns) * columns)
-    positions.set(node.id, { x: (columns - rowCount) * 130 + index % columns * 260, y: start + Math.floor(index / columns) * 110 })
-  })
-  place(before, 0)
-  const centerY = Math.ceil(before.length / columns) * 110 + (before.length ? 70 : 0)
-  positions.set(id, { x: (columns - 1) * 130, y: centerY })
-  place(after, centerY + 160)
+  before.forEach((node, index) => positions.set(node.id, { x: GRID_LEFT, y: columnTop(before.length) + index * ROW_HEIGHT }))
+  positions.set(id, { x: centerX, y: columnTop(1) })
+  after.forEach((node, index) => positions.set(node.id, { x: centerX + STRIDE, y: columnTop(after.length) + index * ROW_HEIGHT }))
   return positions
 }
 type Translate = (key: string) => string
+
+/** Right side of the source → left side of the target, bending in the empty gutter between the
+ *  two columns. Nothing sits in the gutter, so the route crosses no card. */
+export function relationshipPath(sourceX: number, sourceY: number, targetX: number, targetY: number) {
+  const gutter = (sourceX + targetX) / 2
+  const corners = Math.abs(sourceY - targetY) < 0.5
+    ? [{ x: sourceX, y: sourceY }, { x: targetX, y: targetY }]
+    : [{ x: sourceX, y: sourceY }, { x: gutter, y: sourceY }, { x: gutter, y: targetY }, { x: targetX, y: targetY }]
+  return { path: roundedPath(corners), points: corners, labelX: gutter, labelY: (sourceY + targetY) / 2 }
+}
+
+function roundedPath(points: { x: number; y: number }[], radius = 10) {
+  let path = `M ${points[0].x},${points[0].y}`
+  for (let index = 1; index < points.length - 1; index++) {
+    const previous = points[index - 1], corner = points[index], next = points[index + 1]
+    const inbound = Math.hypot(corner.x - previous.x, corner.y - previous.y)
+    const outbound = Math.hypot(next.x - corner.x, next.y - corner.y)
+    const bend = Math.min(radius, inbound / 2, outbound / 2)
+    const start = { x: corner.x - (corner.x - previous.x) / inbound * bend, y: corner.y - (corner.y - previous.y) / inbound * bend }
+    const end = { x: corner.x + (next.x - corner.x) / outbound * bend, y: corner.y + (next.y - corner.y) / outbound * bend }
+    path += ` L ${start.x},${start.y} Q ${corner.x},${corner.y} ${end.x},${end.y}`
+  }
+  const last = points[points.length - 1]
+  return `${path} L ${last.x},${last.y}`
+}
 
 export function buildGraph(snapshot: Snapshot, text: Translate): Graph {
   const { config, enterprises, users, keys } = snapshot

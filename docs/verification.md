@@ -83,13 +83,16 @@ administrator guards. The tests do not modify the live configuration or query Gi
 Open `/topology` in the integrated browser with an administrator session. Check the Management
 navigation entry and the policy index. Open a policy and verify nonempty visible nodes and SVG
 edges, node/edge details and editor links, neighbor navigation, Back and path history, search
-(including no results), policy filters, index/relationship pagination, zoom/pan/fit, reload,
+(including no results), policy filters, index pagination, graph scrolling, zoom/pan/fit, reload,
 and light/dark rendering at desktop and mobile widths. A normal user's
 navigation must omit the entry and a direct visit must show the existing administrator-only refusal.
 
 Assert that initial network traffic contains no user, member, or key-list requests and no user/key
 items appear. Overview indexes have at most 24 items per page. A local graph contains only the
-current node and at most three incoming/three outgoing neighbors, with no overlapping node boxes.
+current node and all matching neighbors, with no relationship pagination or overlapping node boxes.
+Test at least 37 model nodes at desktop, wide desktop and mobile widths: node counts must stay
+unchanged, columns must adapt to width, and the last node must be reachable and clickable by scrolling.
+Check left-to-right flow on desktop and that edges do not pass through unrelated cards.
 The former fixed column headings must be absent. Check that colors distinguish node types and
 that opening details does not reduce canvas width. Exercise a policy-to-model-to-policy round trip.
 Click a scope: exactly one member page is requested and no user evaluation runs. Click a member:

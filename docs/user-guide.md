@@ -38,11 +38,12 @@ can be inspected afterwards.
 Open **Management > Policy topology** (`/topology`). The overview lists policies and their
 relationship counts, without loading users, user bindings or keys. Search the Policies, Identities
 or Models index (24 items per page), then click an item for its immediate relationship graph.
-Incoming neighbors appear above the current node and outgoing neighbors below it. Each page shows
-at most three of each (one of each on narrow screens); use pagination for the rest. Click neighbors to explore, use Back or the
+The graph flows left to right and wraps its nodes into rows based on available canvas width.
+All related nodes are rendered without relationship pagination; scroll for more rows on narrow
+screens or large graphs. Click neighbors to explore, use Back or the
 path history to return, and click the current node or an edge for details below the canvas.
 Semantic node colors and icons replace fixed column headings. Hover emphasizes one relationship;
-zoom and Fit graph apply to the current page.
+zoom and Fit graph apply to the current relationship graph. Member and overview-index pagination remain separate.
 
 Enterprise Teams belong directly to their enterprise. Click an organization or Enterprise Team
 to load members in pages of 50; **Known users** loads registered/configured accounts instead.
