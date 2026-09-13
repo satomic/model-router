@@ -6,7 +6,7 @@
 # than something the operator has to remember: an image cannot go out with a stale bundle.
 
 # ---------- stage 1: the console ----------
-FROM node:22-alpine AS frontend
+FROM --platform=$BUILDPLATFORM node:22-alpine AS frontend
 
 # Optional mirrors, for building on a network that cannot reach the public registries.
 # Empty by default, so an unset build arg means "use registry.npmjs.org / pypi.org" and CI
@@ -21,7 +21,42 @@ WORKDIR /build
 # change, not on every source edit. `npm ci` (not `install`) installs the exact
 # package-lock.json tree, so an image built today and one built next month are identical.
 COPY frontend/package.json frontend/package-lock.json ./
-RUN npm ci ${NPM_REGISTRY:+--registry "$NPM_REGISTRY"}
+RUN set -eu; \
+    logs_dir="${HOME:-/root}/.npm/_logs"; \
+    status=0; \
+    npm ci \
+      --no-audit \
+      --foreground-scripts \
+      --loglevel=info \
+      --replace-registry-host=always \
+      --timing \
+      --fetch-timeout=120000 \
+      --fetch-retries=2 \
+      --fetch-retry-factor=2 \
+      --fetch-retry-mintimeout=10000 \
+      --fetch-retry-maxtimeout=60000 \
+      ${NPM_REGISTRY:+--registry "$NPM_REGISTRY"} \
+    || status=$?; \
+    if [ "$status" -ne 0 ]; then \
+      echo "npm ci failed; showing sanitized npm logs"; \
+      found=0; \
+      for log in "$logs_dir"/*.log; do \
+        [ -f "$log" ] || continue; \
+        found=1; \
+        echo "----- $(basename "$log") -----"; \
+        sed -E \
+          -e 's#(//)[^/@[:space:]]+:[^/@[:space:]]+@#\1***:***@#g' \
+          -e 's#([?&]_authToken=)[^&[:space:]]+#\1***#g' \
+          -e 's#(//[^[:space:]]+/:_authToken=)[^[:space:]]+#\1***#g' \
+          -e 's#(Authorization: (Bearer|Basic) )[[:graph:]]+#\1***#g' \
+          -e 's#(npm_[A-Za-z0-9_-]*=)[^[:space:]]+#\1***#g' \
+          "$log"; \
+      done; \
+      if [ "$found" -eq 0 ]; then \
+        echo "No npm logs found under $logs_dir"; \
+      fi; \
+      exit "$status"; \
+    fi
 
 COPY frontend/ ./
 RUN npm run build
