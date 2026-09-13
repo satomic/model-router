@@ -93,6 +93,24 @@ current node and all matching neighbors, with no relationship pagination or over
 Test at least 37 model nodes at desktop, wide desktop and mobile widths: node counts must stay
 unchanged, columns must adapt to width, and the last node must be reachable and clickable by scrolling.
 Check left-to-right flow on desktop and that edges do not pass through unrelated cards.
+
+### Copilot AI credits
+
+Run `python verify/verify_ai_credits.py` for offline tests of the cron parser (steps, ranges, names,
+the Sunday-as-7 and day-OR rules, never-firing schedules), the pool derivation (exact size once
+metered, seat estimate before that, no-seat and unknown cases) and the gate's decisions (off,
+missing / stale / foreign-token snapshot, `min_remaining_credits`, per-user seat and budget
+headroom, custom message placeholders). No GitHub calls are made.
+
+Live, with an enterprise administrator token configured: open `/credits`, press **Refresh now** and
+check each enterprise card shows a state, the covered / metered SKU figures and -- when the seats
+endpoint is available -- a seat breakdown; a very large enterprise shows the "seat list unavailable"
+warning and no size. Save with polling and the gate on, then send a request through
+`/v1/chat/completions` (streamed and not) and `/v1/messages` with a key whose owner's pool is
+`available`: all three must return `200` with the note as the assistant message and
+`x-router-reason: ai-credits-gate`, and the row must appear in Traces under that name. Restrict
+polling to an exhausted enterprise and repeat: the same requests must now route normally. Set the
+schedule to `* * * * *`, wait 90 s and confirm **Last fetched** advances, then restore it.
 The former fixed column headings must be absent. Check that colors distinguish node types and
 that opening details does not reduce canvas width. Exercise a policy-to-model-to-policy round trip.
 Click a scope: exactly one member page is requested and no user evaluation runs. Click a member:

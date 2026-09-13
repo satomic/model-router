@@ -23,6 +23,9 @@
 | `POST /v1/auth/local/password` | change that password, and optionally the username (`{current_password, new_password, new_username?}`) |
 | `POST /v1/auth/local/enabled` | enable / disable the local account (administrators) |
 | `GET /v1/usage?days=&user_id=` | usage statistics: request count, tokens, error rate, latency, and the distribution by model / date / user |
+| `GET /v1/credits` | the Copilot AI-credit pool snapshot per enterprise (size, used, remaining, state, seats, per-user budget rows when per-user mode is on) plus the polling / gate settings, freshness and the next scheduled poll (administrators). Never returns the token; per-user rows carry budget figures, not consumption details. See [Copilot AI credits](ai-credits.md) |
+| `POST /v1/credits/refresh` | poll GitHub for the pool state now regardless of the schedule and return the fresh snapshot (administrators; `409` when another worker holds the refresh lease, `502` when GitHub could not be read) |
+| `POST /v1/credits/schedule/preview` | validate a cron expression, `{schedule}`, and return its next five firing times as epoch seconds: `{valid, error, next}` (administrators). Rendered by the same parser the scheduler uses |
 | `GET /v1/config` / `PUT /v1/config` | read / update the configuration (administrators; hot reload + write-back to config.yaml) |
 | `GET /v1/traces?offset=&limit=&date=&user_id=&session_id=&trace_id=` | a page of trace summaries, `{total, items, offset, limit, truncated}`, read straight off disk, filterable by date / user / session / trace-id fragment. Each summary carries `interaction_id` and `turn_count`, so a row that took several upstream calls says so. `limit` is clamped to 500; `truncated` says the date-directory cap was reached, so a shortened `total` is not mistaken for "that is all there is" |
 | `GET /v1/traces/{id}` | one full interaction: the complete message chain, the single routing decision, the backend call, the model response, and `turns[]`, one entry per upstream call with its tool calls, latency and tokens |
@@ -35,6 +38,14 @@
 
 Which identity each endpoint requires is tabulated in
 [the permission matrix](authentication.md#permission-matrix).
+
+## The AI-credit gate
+
+When the [BYOK gate](ai-credits.md) is on and the caller's enterprise pool still has credits, both
+`POST /v1/chat/completions` and `POST /v1/messages` answer **without routing**: a `200` in the
+caller's protocol and streaming mode whose single assistant message is the configured note, zero
+tokens in `usage`, and `x-routed-model: ai-credits-gate` / `x-router-reason: ai-credits-gate` in the
+response headers. A trace is still written under that name.
 
 ## Both protocols reach every model
 

@@ -32,7 +32,7 @@ export interface RuleStep {
 }
 
 export interface RoutingAnalysis {
-  type: 'rule' | 'ai' | 'session' | 'rule-then-ai'
+  type: 'rule' | 'ai' | 'session' | 'rule-then-ai' | 'gate'
   /** `rule-then-ai` only: which of the two strategies actually produced the model, and the two
    *  sub-analyses. Each keeps the `type` its single-strategy counterpart emits, so the console
    *  renders them with the same code rather than a third copy of it. `ai` is absent when a rule
@@ -268,7 +268,29 @@ export interface RouterConfig {
    *  (which posts every non-auth key) carries them automatically. */
   model_groups?: ModelGroups
   model_policy?: ModelPolicy
+  /** Copilot AI-credit polling and the BYOK gate. Its own first-level page, saved alone. */
+  ai_credits?: AICreditsConfig
   auth?: AuthConfig
+}
+
+export interface AICreditsConfig {
+  /** Whether the cron poll of GitHub runs at all. */
+  enabled?: boolean
+  /** Five-field cron expression, UTC. */
+  schedule?: string
+  /** Enterprise slugs to poll; empty = every enterprise the admin token can see. */
+  enterprises?: string[]
+  /** Treat the pool as used up while this many credits (or fewer) remain, so the gate lifts a
+   *  little before GitHub itself starts metering -- the billing figures lag. */
+  min_remaining_credits?: number
+  gate?: {
+    enabled?: boolean
+    /** Also honour each user's user-level budget and seat: a user GitHub would block is let
+     *  through to BYOK. */
+    per_user?: boolean
+    /** The note returned instead of a model answer. Empty = the built-in bilingual default. */
+    message?: string
+  }
 }
 
 export interface SessionUser {
@@ -531,6 +553,82 @@ export async function putModelPolicyConfig(payload: {
   model_policy?: ModelPolicy
 }): Promise<void> {
   await ensureOk(await req('/v1/config', jsonBody('PUT', payload)))
+}
+
+/** Write back the ai_credits section only, for the same reason as the two above. */
+export async function putAICreditsConfig(ai_credits: AICreditsConfig): Promise<void> {
+  await ensureOk(await req('/v1/config', jsonBody('PUT', { ai_credits })))
+}
+
+// ── Copilot AI credits ───────────────────────────────────────────
+export type PoolState = 'available' | 'exhausted' | 'unknown' | 'none'
+
+export interface CreditsUserRow {
+  login: string
+  plan: string | null
+  target_usd: number | null
+  consumed_usd: number | null
+  headroom_usd: number | null
+  blocked_on_copilot: boolean
+}
+
+export interface CreditsEnterprise {
+  slug: string
+  name: string
+  pool_total: number | null
+  /** 'exact' once the pool is exhausted (GitHub caps the covered quantity at the pool size),
+   *  'seats' while it is being estimated from the seat list. */
+  pool_total_source: 'exact' | 'seats' | null
+  consumed: number
+  metered: number
+  gross: number
+  remaining: number | null
+  state: PoolState
+  seats: Record<string, number> | null
+  seat_count: number | null
+  universal_budget_usd: number | null
+  skus: { sku: string; gross: number; covered: number; metered: number }[]
+  users: CreditsUserRow[]
+  warnings: string[]
+  error: string | null
+}
+
+export interface CreditsStatus {
+  settings: {
+    enabled: boolean
+    schedule: string
+    enterprises: string[]
+    min_remaining_credits: number
+    gate_enabled: boolean
+    per_user: boolean
+    message: string
+  }
+  token_configured: boolean
+  default_message: string
+  included_credits: Record<string, number>
+  fetched_at: number | null
+  stale: boolean
+  token_changed: boolean
+  next_run_at: number | null
+  due: boolean
+  snapshot_per_user: boolean
+  missing_enterprises: string[]
+  enterprises: CreditsEnterprise[]
+}
+
+export async function getCredits(): Promise<CreditsStatus> {
+  return json<CreditsStatus>('/v1/credits')
+}
+
+export async function refreshCredits(): Promise<CreditsStatus> {
+  return json<CreditsStatus>('/v1/credits/refresh', { method: 'POST' })
+}
+
+export async function previewSchedule(
+  schedule: string,
+  signal?: AbortSignal,
+): Promise<{ valid: boolean; error: string | null; next: number[] }> {
+  return json('/v1/credits/schedule/preview', { ...jsonBody('POST', { schedule }), signal })
 }
 
 // ── Traces ───────────────────────────────────────────────────────

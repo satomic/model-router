@@ -67,6 +67,10 @@ from `127.0.0.1`, which is why a container uses the local administrator instead.
 - **Visualizes policy relationships** through an administrator-only policy overview and focused
   relationship graphs, with semantic colors, progressive exploration and on-demand user access.
   See [Global policy topology](docs/access-control.md#global-policy-topology).
+- **Keeps BYOK from wasting Copilot's own AI credits.** The enterprise's shared AI-credit pool is
+  polled from GitHub on a cron schedule, and an optional gate answers requests with a note instead of
+  routing them while the pool still has credits -- per enterprise, or per user against seats and
+  user-level budgets. See [Copilot AI credits](docs/ai-credits.md).
 
 ## Documentation
 
@@ -82,6 +86,7 @@ from `127.0.0.1`, which is why a container uses the local administrator instead.
 | [Configuration](docs/configuration.md) | `config.yaml`, the console's configuration pages, hot reload |
 | [Access control](docs/access-control.md) | the key-creation policy and the local GitHub structure/member cache |
 | [Model policy](docs/model-policy.md) | model groups, and which models each user / team / organization may use |
+| [Copilot AI credits](docs/ai-credits.md) | polling the enterprise AI-credit pool, and the gate that holds BYOK back while credits remain |
 | [API](docs/api.md) | every endpoint |
 | [Full-chain logging](docs/traces.md) | the trace format, turns, and how the listing stays cheap at scale |
 | [Verification scripts](docs/verification.md) | the `verify/` suite and the frontend gates |

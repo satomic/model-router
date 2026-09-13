@@ -45,7 +45,7 @@ const COL_MAX = 480
 function AnalysisView({ analysis }: { analysis: RoutingAnalysis }) {
   const { t } = useTranslation()
 
-  if (analysis.type === 'session') {
+  if (analysis.type === 'session' || analysis.type === 'gate') {
     return (
       <>
         <div className="mono dim">{analysis.note}</div>

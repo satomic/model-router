@@ -30,6 +30,7 @@ Model Router 同时接收兼容 OpenAI 协议的 `POST /v1/chat/completions` 请
 | 按 GitHub Enterprise / 组织 / Enterprise Team 控制谁可以创建密钥 | Access control → Key policy |
 | 控制每个用户、团队、组织分别可以调用哪些模型 | Model policy |
 | 全局查看 GitHub 主体、权限策略、Key Scope 与模型之间的连线 | 策略视图 / Policy topology（仅管理员） |
+| 定时读取企业 Copilot AI Credits 共享池，共享池未用尽时拦截 BYOK 请求并返回提示 | AI Credits（仅管理员） |
 | 查看请求、决策过程、后端调用和响应 | Traces |
 | 按模型、按天、按用户看调用量、Token、错误率和延迟 | Usage |
 
@@ -411,7 +412,37 @@ Organizations，就等于允许这些组织里的所有人。同一张表内命�
 
 完整语义：[谁可以收窄一个密钥的作用域](access-control.md#who-may-narrow-a-keys-scope)。
 
-### 2.8 监控：用量、调用链、Playground
+### 2.8 AI Credits：别让 BYOK 把 Copilot 自带的额度浪费掉
+
+每个 Copilot Business / Enterprise 席位每月自带一笔 AI Credits，**在企业范围内汇成一个共享池，月底
+清零**。如果用户一直走 BYOK 用第三方模型，花的是客户的 Azure / OpenAI 账单，而订阅里已经付过钱的额度
+却过期作废。左侧导航「管理」分组末尾的「AI Credits」打开 `/credits`，专门解决这件事。它复用「访问控制
+→ 密钥策略」里配置的企业管理员 token，不需要额外凭据。
+
+**共享池面板**：每个企业一张卡，显示状态（仍有余额 / 池已用尽 / 未知 / 无席位）、池总量、已从池中使
+用、剩余、计量超额、席位构成，以及每个 SKU 的明细。GitHub 在池子用尽之前不公布总量，所以这里按席位
+列表估算（Enterprise 席位 3,900、Business 席位 1,900）；一旦出现计量超额，`discountQuantity` 就是精确
+总量，卡片会标注「精确总量」。超大企业 GitHub 不提供席位列表，此时只能判断「是否用尽」而不知道总量，
+卡片会给出说明。**立即刷新**跳过计划立刻拉一次数据。
+
+**轮询计划**：开关加一个五段式 cron 表达式（UTC），页面即时预览接下来五次执行时间，并提供 15 分钟到
+每天的预设。GitHub 的账单数据本身滞后数小时，高于 15 分钟的频率没有意义。可勾选只轮询部分企业；不勾
+选即 token 可见的全部企业。
+
+**BYOK 拦截**：开启后，所属企业共享池仍有余额的用户发来的请求**既不路由，也不经过决策模型**，而是以
+普通 assistant 消息返回一段提示（默认英文，可自定义，支持 `{enterprise}`、`{remaining}` 等占位
+符），流式与非流式、OpenAI 与 Anthropic 协议都一样。共享池用尽、快照过期或轮询停止后自动放行——任何
+不确定的情况都放行，拦截是为了省钱，不能成为开发者干不了活的原因。「剩余额度低于此值即解除拦截」可以让
+拦截在 GitHub 真正开始计费之前稍早一点松开，抵消账单数据的滞后。
+
+勾上**同时逐用户判断**后，轮询还会读取席位列表和 GitHub 的用户级预算：在该企业没有席位的用户、或已
+经用尽自己用户级预算的用户（无论池子如何 GitHub 都会拦下他们），会被放行到 BYOK 而不是劝回 Copilot。
+每个企业的卡片下会列出所有席位持有者的预算、消耗、剩余空间和判定结果，可按登录名筛选。
+
+被拦截的请求仍会写入调用链，模型与决策两列都显示 `ai-credits-gate`，详情里写明是哪个企业、剩余多少。
+详细推导与 GitHub API 的能力边界见 [Copilot AI credits](ai-credits.md)。
+
+### 2.9 监控：用量、调用链、Playground
 
 #### 用量（Usage）
 
@@ -429,7 +460,8 @@ Organizations，就等于允许这些组织里的所有人。同一张表内命�
 这个列表从磁盘读取并分页，所以它不局限于最近的活动：表头显示 `50 of 516`，底部可以加载更多。可以按
 **Date** 过滤，按 **Trace ID** 的任意片段过滤，管理员还可以按 **User** 过滤。**Auto refresh** 只重新
 加载第一页。`Decision` 列是这个模型被选中的原因：某条规则自己的名字、`default`、`ai-decision`、
-`ai-fallback-default`，或者 `interaction-sticky` / `session-sticky`。`Calls` 大于 1 表示这是一个智能
+`ai-fallback-default`，或者 `interaction-sticky` / `session-sticky`；`ai-credits-gate` 表示该请求被
+AI Credits 拦截直接回复，没有路由。`Calls` 大于 1 表示这是一个智能
 体工具循环。管理员可以用行上的 `✕` 删除单条记录，也可以删除符合当前过滤条件的全部记录；两者都会要求
 确认，并给出条数。
 
@@ -464,7 +496,7 @@ Token 数。当某条规则命中时，AI 阶段干脆不存在，而这本身�
 Playground 调用的就是任何其他客户端调用的那个 `/v1/chat/completions`，用的也是同一个密钥，所以它显示
 什么，真实调用方拿到的就是什么。
 
-### 2.9 新部署检查清单
+### 2.10 新部署检查清单
 
 1. 用本地管理员登录并修改密码。
 2. 添加一个后端连接并设为默认。*（步骤 1）*
@@ -474,8 +506,9 @@ Playground 调用的就是任何其他客户端调用的那个 `/v1/chat/complet
 6. 配置 GitHub OAuth 并列出管理员登录名，让除你之外的人也能登录。
 7. 决定密钥策略：企业令牌、允许的组织和团队，或者干脆不启用。
 8. 视需要定义模型组并授予。如果所有人都可以用所有模型，就把策略关着。
-9. 在 API keys 页面创建一个密钥，并从 Playground 发一个请求。
-10. 打开调用链记录，确认决策过程和你预期的一致。
+9. 如果用户有 Copilot 订阅，在 AI Credits 页面打开轮询，按需打开 BYOK 拦截。
+10. 在 API keys 页面创建一个密钥，并从 Playground 发一个请求。
+11. 打开调用链记录，确认决策过程和你预期的一致。
 
 ---
 

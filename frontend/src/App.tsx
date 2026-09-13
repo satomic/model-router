@@ -24,6 +24,7 @@ import SetupPage from './pages/SetupPage'
 import TracesPage from './pages/TracesPage'
 import UsagePage from './pages/UsagePage'
 import TopologyPage from './pages/TopologyPage'
+import CreditsPage from './pages/CreditsPage'
 
 type Page =
   | 'usage'
@@ -35,6 +36,7 @@ type Page =
   | 'policy'
   | 'playground'
   | 'topology'
+  | 'credits'
 type Theme = 'dark' | 'light'
 
 /** The page '/' lands on. Also the fallback used while <Navigate> is settling. */
@@ -66,6 +68,8 @@ const NAV: {
   // different config keys.
   { key: 'policy', icon: '◧', group: 'manage', admin: true },
   { key: 'access', icon: '⛨', group: 'manage', admin: true },
+  // Copilot's own budget, not this router's: whether BYOK should wait while the pool has credits.
+  { key: 'credits', icon: '◍', group: 'manage', admin: true },
 ]
 
 function useTheme(): [Theme, () => void] {
@@ -258,6 +262,7 @@ export default function App() {
         <Route path="/config/:section" element={admin(<ConfigPage />)} />
         <Route path="/policy" element={admin(<PolicyPage />)} />
         <Route path="/topology" element={admin(<TopologyPage />)} />
+        <Route path="/credits" element={admin(<CreditsPage />)} />
         <Route path="/access" element={admin(<Navigate to="/access/policy" replace />)} />
         <Route path="/access/:section" element={admin(<AccessPage />)} />
         <Route path="*" element={<NotFound />} />

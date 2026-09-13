@@ -139,11 +139,12 @@ export default function ConfigPage() {
     setSaving(true)
     setToast(null)
     try {
-      // Three keys this page loads but does not own are dropped rather than echoed back: `auth`
-      // belongs to Access control, `model_groups`/`model_policy` to Model policy. The backend
-      // merges a PUT by top-level key, so anything sent here would overwrite whatever those pages
-      // saved while this one sat open -- with a value this page loaded before their edit.
-      const { auth: _auth, model_groups: _g, model_policy: _p, ...rest } = cfg
+      // Four keys this page loads but does not own are dropped rather than echoed back: `auth`
+      // belongs to Access control, `model_groups`/`model_policy` to Model policy, `ai_credits` to
+      // AI credits. The backend merges a PUT by top-level key, so anything sent here would
+      // overwrite whatever those pages saved while this one sat open -- with a value this page
+      // loaded before their edit.
+      const { auth: _auth, model_groups: _g, model_policy: _p, ai_credits: _c, ...rest } = cfg
       await putConfig(rest as RouterConfig)
       setSaved(structuredClone(cfg))
       setToast({ kind: 'ok', msg: t('config.saved') })

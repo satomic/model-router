@@ -31,6 +31,8 @@ from fastapi.responses import (
 
 from . import auth as authlib
 from . import (
+    aicredits,
+    cronexpr,
     ghadmin,
     ghcache,
     keypolicy,
@@ -159,11 +161,41 @@ async def _usage_rollup_loop() -> None:
         await asyncio.sleep(min(interval, _USAGE_POLL_DELAY))
 
 
+# How often the scheduler checks whether the cron schedule has come due. The schedule itself
+# has minute resolution, so a poll this frequent fires within a minute of the intended time.
+_CREDITS_POLL_DELAY = 30.0
+_CREDITS_WARMUP_DELAY = 15.0
+
+
+async def _ai_credits_loop() -> None:
+    """Poll GitHub for the AI-credit pool state on the configured cron schedule.
+
+    Same shape as the other two loops: every iteration wrapped so one GitHub failure cannot
+    kill it, and a lease so N workers do not all poll at once. When the lease is lost the
+    snapshot another worker wrote is what this one reads, which is the point of the file.
+    """
+    await asyncio.sleep(_CREDITS_WARMUP_DELAY)
+    while True:
+        try:
+            if aicredits.settings(cfg)["enabled"] and cfg.gh_admin_token and aicredits.due(cfg):
+                if aicredits.acquire_lease():
+                    try:
+                        await aicredits.refresh(cfg)
+                    finally:
+                        aicredits.release_lease()
+        except asyncio.CancelledError:
+            raise
+        except Exception as e:  # noqa: BLE001 the loop must outlive any single failure
+            logger.warning("AI credits refresh failed: %s", e)
+        await asyncio.sleep(_CREDITS_POLL_DELAY)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     tasks = [
         asyncio.create_task(_cache_refresh_loop()),
         asyncio.create_task(_usage_rollup_loop()),
+        asyncio.create_task(_ai_credits_loop()),
         asyncio.create_task(release.loop()),
     ]
     yield
@@ -397,6 +429,8 @@ async def chat_completions(
     if not body.get("messages"):
         raise HTTPException(status_code=400, detail="messages is required")
     ctx = await _prepare_call(request, body, key, x_session_id, t_start, "openai")
+    if ctx.get("gated"):
+        return _serve_gated(ctx)
     return await _serve(ctx)
 
 
@@ -418,6 +452,8 @@ async def anthropic_messages(
         raise HTTPException(status_code=400, detail="messages is required")
     body = wire.anthropic_request_to_openai(raw)
     ctx = await _prepare_call(request, body, key, x_session_id, t_start, "anthropic")
+    if ctx.get("gated"):
+        return _serve_gated(ctx)
     return await _serve(ctx)
 
 
@@ -438,6 +474,16 @@ async def _prepare_call(
     messages = body.get("messages") or []
     prompt = extract_user_prompt(messages)
     interaction_id = _interaction_id(request)
+    # The AI-credit gate comes before everything else on purpose: while the caller's Copilot
+    # pool still has credits the request is answered with a note and is neither routed nor
+    # shown to the decision model, so it costs nothing on any upstream. Administrators are
+    # gated too -- the point is the customer's budget, not a privilege boundary.
+    gated = aicredits.gate(cfg, user_id)
+    if gated:
+        return _gated_context(
+            request, body, key, x_session_id, t_start, client_protocol, gated,
+            prompt, interaction_id,
+        )
     # The caller's effective model set, resolved before anything routes. An empty list is a
     # configured outcome rather than an error -- an operator can bind a scope to an empty group,
     # which is how "this user gets nothing yet" is expressed -- so it is refused here with the
@@ -550,6 +596,115 @@ async def _prepare_call(
         "t_start": t_start,
         "client_protocol": client_protocol,
     }
+
+
+def _gated_context(
+    request: Request, body: dict, key: dict, x_session_id: str | None,
+    t_start: float, client_protocol: str, gated: dict,
+    prompt: str, interaction_id: str | None,
+) -> dict:
+    """The context for a request the AI-credit gate answers itself.
+
+    A trace is still written -- an operator asking "why did nobody route through the router
+    this morning" needs to find the answer in the trace list -- with the gate's name in the
+    model and reason columns so it neither counts as a backend call nor as an error.
+    """
+    messages = body.get("messages") or []
+    trace = {
+        "id": str(uuid.uuid4())[:8],
+        "ts": datetime.now(timezone.utc).isoformat(),
+        "user_id": key["user_login"],
+        "api_key_id": key["id"],
+        "api_key_name": key.get("name"),
+        "api_key_scope": keyscope.describe(key.get("scope")),
+        "session_id": x_session_id,
+        "interaction_id": interaction_id,
+        "request_id": request.headers.get("x-request-id"),
+        "initiator": request.headers.get("x-initiator"),
+        "client_ip": request.client.host if request.client else None,
+        "client_protocol": client_protocol,
+        "strategy": cfg.strategy,
+        "sticky": cfg.sticky,
+        "prompt_preview": prompt[:120],
+        "request": {
+            "headers": _sanitized_headers(request),
+            "messages": messages,
+            "params": {k: v for k, v in body.items() if k != "messages"},
+            "stream": bool(body.get("stream")),
+        },
+        "routing": {
+            "model": aicredits.GATE_REASON,
+            "reason": aicredits.GATE_REASON,
+            "decision_ms": 0.0,
+            "analysis": {
+                "type": "gate",
+                "note": (
+                    f"answered by the AI-credit gate: the Copilot pool of "
+                    f"{gated.get('enterprise')} still has credits, so the request was neither "
+                    f"routed nor sent to the decision model"
+                ),
+                "enterprise": gated.get("enterprise"),
+                "remaining_credits": gated.get("remaining"),
+                "pool_total": gated.get("pool_total"),
+            },
+        },
+        "backend": {
+            "deployment": None, "api": None, "protocol": None,
+            "provider": None, "base_url": None, "api_type": None, "sent_params": {},
+        },
+        "response": None,
+        "status": "pending",
+        "total_ms": None,
+    }
+    traces.resolve_interaction(trace)
+    logger.info(
+        "gated id=%s user=%s enterprise=%s remaining=%s",
+        trace["id"], key["user_login"], gated.get("enterprise"), gated.get("remaining"),
+    )
+    headers = {
+        "x-trace-id": trace["id"],
+        "x-routed-model": aicredits.GATE_REASON,
+        "x-router-reason": aicredits.GATE_REASON,
+        "x-router-decision-ms": "0.0",
+    }
+    if interaction_id:
+        headers["x-router-interaction-id"] = interaction_id
+    return {
+        "gated": True,
+        "message": gated["message"],
+        "model": str(body.get("model") or aicredits.GATE_REASON),
+        "payload": {"stream": bool(body.get("stream"))},
+        "trace": trace,
+        "headers": headers,
+        "t_start": t_start,
+        "client_protocol": client_protocol,
+    }
+
+
+def _serve_gated(ctx: dict):
+    """Answer a gated request with the note as a normal assistant message, in the caller's
+    protocol and streaming mode. A 200 rather than a 4xx because the note is meant to be read
+    in the chat window, and Copilot shows an error status as a bare failure."""
+    completion = {
+        "id": f"chatcmpl-{ctx['trace']['id']}",
+        "object": "chat.completion",
+        "created": int(time.time()),
+        "model": ctx["model"],
+        "choices": [{
+            "index": 0,
+            "message": {"role": "assistant", "content": ctx["message"]},
+            "finish_reason": "stop",
+        }],
+        "usage": {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0},
+    }
+    if ctx["payload"].get("stream"):
+        chunks = _chunks_from_completion(completion)
+        if ctx["client_protocol"] == "anthropic":
+            body_iter = _sse_anthropic(chunks, ctx["trace"], ctx["t_start"], ctx["model"])
+        else:
+            body_iter = _sse_openai(chunks, ctx["trace"], ctx["t_start"])
+        return StreamingResponse(body_iter, media_type="text/event-stream", headers=ctx["headers"])
+    return _finish_and_render(completion, ctx)
 
 
 async def _serve(ctx: dict):
@@ -1503,6 +1658,56 @@ async def usage_refresh(request: Request):
     return {**usagestats.status(), "started": started}
 
 
+# -- Copilot AI credits (administrators only) -----------------------------------
+@app.get("/v1/credits")
+async def credits_status(request: Request):
+    """The last pool snapshot plus the gate settings and schedule state."""
+    _admin(request)
+    return aicredits.status(cfg)
+
+
+@app.post("/v1/credits/refresh")
+async def credits_refresh(request: Request):
+    """Poll GitHub now, regardless of the schedule. Runs inline so the caller gets the fresh
+    figures (or the error) back in the same response."""
+    _admin(request)
+    if not cfg.gh_admin_token:
+        raise HTTPException(
+            status_code=400,
+            detail="configure the GitHub enterprise administrator token under "
+                   "Access control -> Key policy first",
+        )
+    if not aicredits.acquire_lease():
+        raise HTTPException(status_code=409, detail="a refresh is already running on another worker")
+    try:
+        await aicredits.refresh(cfg)
+    except aicredits.AICreditsError as e:
+        raise HTTPException(status_code=502, detail=str(e))
+    finally:
+        aicredits.release_lease()
+    return aicredits.status(cfg)
+
+
+@app.post("/v1/credits/schedule/preview")
+async def credits_schedule_preview(request: Request, payload: dict = Body(default={})):
+    """Validate a cron expression and list its next few firing times, so the console can show
+    what a schedule means before it is saved."""
+    _admin(request)
+    expr = str(payload.get("schedule") or "").strip()
+    problem = cronexpr.validate(expr)
+    if problem:
+        return {"valid": False, "error": problem, "next": []}
+    runs = []
+    t = datetime.now(timezone.utc)
+    try:
+        for _ in range(5):
+            t = cronexpr.next_after(expr, t)
+            runs.append(t.timestamp())
+    except cronexpr.CronError as e:
+        return {"valid": False, "error": str(e), "next": []}
+    return {"valid": True, "error": None, "next": runs}
+
+
 # -- Configuration (administrators only) --------------------------------------
 def _without_password_hash(raw: dict) -> dict:
     """Echo the configuration with the local administrator's password digest blanked.
@@ -1683,6 +1888,9 @@ async def put_config(request: Request):
         # produced them.
         await ghadmin.invalidate_cache()
         ghcache.invalidate()
+        if cfg.gh_admin_token != str((old_policy or {}).get("github_token") or "").strip():
+            # A pool snapshot fetched under another token's visibility must not keep gating.
+            aicredits.invalidate()
     authstore.refresh_admin_flags(cfg.is_admin_login)
     logger.info(
         "config updated: strategy=%s sticky=%s providers=%s",

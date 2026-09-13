@@ -276,6 +276,9 @@ class RouterConfig:
 
         # Background rollup of the Usage page's statistics; see app/usagestats.py.
         self.usage: dict = dict(raw.get("usage") or {})
+        # Copilot AI-credit pool polling and the BYOK gate; see app/aicredits.py. Absent means
+        # off on both counts, so upgrading changes nothing.
+        self.ai_credits: dict = dict(raw.get("ai_credits") or {})
 
         auth = raw.get("auth") or {}
         gh = auth.get("github") or {}
@@ -549,6 +552,10 @@ def validate_raw(raw: dict) -> list[str]:
         errors.append("session.sticky must be a boolean")
 
     errors.extend(_validate_ai_router(raw.get("ai_router"), providers))
+    if "ai_credits" in raw:
+        from .aicredits import validate as _validate_ai_credits  # local: aicredits imports config
+
+        errors.extend(_validate_ai_credits(raw.get("ai_credits")))
     errors.extend(_validate_model_groups(raw.get("model_groups"), raw.get("models")))
     errors.extend(
         _validate_model_policy(raw.get("model_policy"), raw.get("model_groups"))

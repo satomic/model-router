@@ -30,6 +30,7 @@ can be inspected afterwards.
 | Gate who may create a key, by GitHub Enterprise / organization / Enterprise Team | Access control → Key policy |
 | Curate which models each user, team or organization may call | Model policy |
 | Inspect GitHub identities, policy bindings and key scopes together | Policy topology (administrators only) |
+| Poll the enterprise's Copilot AI-credit pool on a schedule, and hold BYOK back while it still has credits | AI credits (administrators only) |
 | Inspect the request, the decision, the backend call and the response | Traces |
 | Counts, tokens, error rate and latency, per model, per day, per user | Usage |
 
@@ -464,7 +465,48 @@ still be widened back to everything, which is never refused.
 
 Full semantics: [Who may narrow a key's scope](access-control.md#who-may-narrow-a-keys-scope).
 
-### 2.8 Monitoring: usage, traces, playground
+### 2.8 AI credits: do not let BYOK waste what Copilot already includes
+
+Every Copilot Business / Enterprise seat comes with a monthly allowance of AI credits that is
+**pooled across the enterprise and forfeited at month end**. A user who routes everything through
+BYOK spends the customer's Azure / OpenAI bill while credits the subscription already paid for
+expire unused. **AI credits**, the last entry of the *Management* group, opens `/credits` and exists
+for exactly this. It reuses the enterprise administrator token configured under *Access control →
+Key policy*; no further credential is needed.
+
+**Shared pool panel**: one card per enterprise with its state (credits remaining / pool exhausted /
+unknown / no seats), pool size, used, remaining, metered overage, the seat breakdown and the per-SKU
+figures. GitHub does not publish the pool size until the pool is exhausted, so it is estimated from
+the seat list (3,900 credits per Enterprise seat, 1,900 per Business seat); once anything has been
+metered the covered quantity *is* the exact size and the card says so. On very large enterprises
+GitHub returns no seat list, so only "exhausted or not" is known and the card explains that.
+**Refresh now** polls immediately regardless of the schedule.
+
+**Polling schedule**: a switch plus a five-field cron expression (UTC). The page previews the next
+five firings and offers presets from every 15 minutes to daily; GitHub's billing figures lag by
+hours, so anything more frequent buys nothing. Tick enterprises to poll only some of them; none
+ticked means every enterprise the token can see.
+
+**BYOK gate**: once on, a request from a user whose enterprise pool still has credits is **neither
+routed nor shown to the decision model**. It is answered with a note as a normal assistant message
+(English by default, editable, with `{enterprise}`, `{remaining}` and other placeholders), the
+same way streamed or not, on the OpenAI and the Anthropic endpoint alike. The gate lifts on its own
+once the pool is exhausted, the snapshot goes stale or polling stops -- every uncertainty lets the
+request through, because the gate saves money and must never be why a developer cannot work.
+**Lift the gate when fewer than N credits remain** opens it a little before GitHub starts metering,
+to absorb the billing lag.
+
+With **Also consider each user individually** ticked, the poll additionally reads the seat list and
+GitHub's user-level budgets: a user without a seat in that enterprise, or one who has used up their
+own user-level budget (GitHub blocks them on Copilot regardless of the pool), is let through to BYOK
+rather than sent back to Copilot. Each card then lists every seat holder with budget, consumption,
+headroom and the verdict, filterable by login.
+
+Gated requests are still traced, with `ai-credits-gate` in both the model and the decision column and
+the enterprise and remaining credits in the detail. The derivation and the limits of GitHub's API
+are written up in [Copilot AI credits](ai-credits.md).
+
+### 2.9 Monitoring: usage, traces, playground
 
 #### Usage
 
@@ -484,7 +526,8 @@ The list is read from disk and paged, so it is not limited to recent activity: t
 `50 of 516` and a footer loads more. Filter by **Date**, by any part of the **Trace ID**, and, as an
 administrator, by **User**. **Auto refresh** reloads the first page only. The `Decision` column is
 the reason the model was chosen: a rule's own name, `default`, `ai-decision`, `ai-fallback-default`,
-or `interaction-sticky` / `session-sticky`. `Calls` greater than 1 means an agent tool loop.
+or `interaction-sticky` / `session-sticky`; `ai-credits-gate` means the AI-credit gate answered the
+request itself and nothing was routed. `Calls` greater than 1 means an agent tool loop.
 Administrators can delete a single trace with the row's `✕`, or every trace matching the current
 filters; both ask for confirmation and state the count.
 
@@ -526,7 +569,7 @@ latency, the response is shown below it, and **View the full trace** jumps to th
 The playground calls the same `/v1/chat/completions` as any other client, through the same key, so
 whatever it shows is what a real caller gets.
 
-### 2.9 A checklist for a new deployment
+### 2.10 A checklist for a new deployment
 
 1. Sign in as the local administrator and change the password.
 2. Add a backend connection and mark it default. *(Step 1)*
@@ -536,8 +579,9 @@ whatever it shows is what a real caller gets.
 6. Configure GitHub OAuth and list the administrator logins, so people other than you can sign in.
 7. Decide the key policy: enterprise token, allowed organizations and teams, or leave it off.
 8. Optionally define model groups and grant them. Leave the policy off if everyone may use everything.
-9. Create a key on the API keys page and send one request from the Playground.
-10. Open the trace and confirm the decision reads the way you expect.
+9. If your users hold Copilot seats, turn polling on under AI credits, and the BYOK gate if wanted.
+10. Create a key on the API keys page and send one request from the Playground.
+11. Open the trace and confirm the decision reads the way you expect.
 
 ---
 

@@ -40,5 +40,10 @@ The 3 sub-pages of "Access control" (see [access control](access-control.md)):
 | GitHub OAuth | `auth.github` | Client ID / Secret / callback URL, **editable in the UI** (getting it wrong locks everybody out, and only editing `config.yaml` gets you back) |
 | Key policy | `auth.key_policy` | the Enterprise administrator token, and control over who may create API keys by Enterprise / Team / Organization |
 
+A third first-level page, **AI credits**, owns the `ai_credits` section alone: the cron schedule on
+which the enterprise's Copilot AI-credit pool is polled from GitHub, which enterprises to poll, and
+the BYOK gate (its switch, the per-user mode, the early-lift threshold and the note returned). See
+[Copilot AI credits](ai-credits.md).
+
 `.env` still works as a compatibility fallback: when `providers` is missing, a `foundry` connection
 is synthesized from the `AZURE_OPENAI_*` variables.

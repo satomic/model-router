@@ -135,7 +135,7 @@ identity that can delete traces.
 | `POST /v1/auth/local/login` | public (the local super administrator's sign-in) |
 | `POST /v1/auth/local/password` | the local super administrator itself (reachable even while the forced password change is pending) |
 | `POST /v1/auth/local/enabled` | administrators only |
-| `GET/PUT /v1/config`, `GET /v1/access/token`, `POST /v1/access/verify-token`, `GET /v1/access/discover`, `GET /v1/access/cache`, `POST /v1/access/cache/refresh` | administrators only (otherwise 403) |
+| `GET/PUT /v1/config`, `GET /v1/access/token`, `POST /v1/access/verify-token`, `GET /v1/access/discover`, `GET /v1/access/cache`, `POST /v1/access/cache/refresh`, `GET /v1/credits`, `POST /v1/credits/refresh`, `POST /v1/credits/schedule/preview` | administrators only (otherwise 403) |
 
 A normal user sees only "Usage / API keys / Traces / Playground", with the data scope locked to
 themselves; an administrator additionally gets the "Routing configuration" and "Access control"

@@ -188,6 +188,21 @@ model_policy:
   teams: {}                    # {'<enterprise slug>/<team id>': group}, e.g. {'your-enterprise/14501973': full}
   organizations: {}            # {organization login: group}, e.g. {your-org: starter}
 
+# Copilot AI credits: poll the enterprise's shared AI-credit pool from GitHub (with the
+# key_policy.github_token above) and, optionally, hold BYOK back while the pool still has credits
+# so the credits the customer already paid for are not forfeited at month end. Every uncertainty
+# (unknown pool size, stale snapshot, a user GitHub itself blocks) lets the request through.
+# Edited from the console's "AI credits" page; see docs/ai-credits.md.
+ai_credits:
+  enabled: false                # poll GitHub on the schedule below
+  schedule: '*/30 * * * *'      # five-field cron expression, evaluated in UTC
+  enterprises: []               # enterprise slugs to poll; empty = every one the token administers
+  min_remaining_credits: 0      # treat the pool as used up while this many (or fewer) credits remain
+  gate:
+    enabled: false              # answer with a note instead of routing while the pool has credits
+    per_user: false             # also honour each user's Copilot seat and user-level budget
+    message: ''                 # empty = the built-in English note
+
 # Keyword matching is a plain substring test, so list every language your users write in --
 # the examples below cover both English and Chinese.
 rules:
