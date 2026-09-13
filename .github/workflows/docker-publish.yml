@@ -30,6 +30,7 @@ env:
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     permissions:
       contents: read
       # Required for pushing to GHCR with the automatic GITHUB_TOKEN, so no PAT has to be
@@ -87,6 +88,7 @@ jobs:
           # instead and `latest` keeps pointing at the last real release.
 
       - name: Build and push
+        timeout-minutes: 55
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -115,6 +117,7 @@ jobs:
       # execute the arm64 image without paying emulation for a whole boot.
       - name: Smoke-test the published image
         if: github.event_name != 'pull_request'
+        timeout-minutes: 5
         run: |
           set -euo pipefail
           IMAGE=$(echo "${{ steps.meta.outputs.tags }}" | head -n1)
