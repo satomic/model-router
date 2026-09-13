@@ -64,6 +64,9 @@ from `127.0.0.1`, which is why a container uses the local administrator instead.
   which grant made it available.
 - **Records the full chain**: request, routing decision, backend call, response, and per-turn tool
   calls, readable in the console as a collapsible JSON tree.
+- **Visualizes policy relationships** through an administrator-only policy overview and focused
+  relationship graphs, with semantic colors, progressive exploration and on-demand user access.
+  See [Global policy topology](docs/access-control.md#global-policy-topology).
 
 ## Documentation
 

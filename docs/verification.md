@@ -69,6 +69,36 @@ carries an inline comment saying so.
 cd frontend
 npx tsc --noEmit                  # types
 node scripts/check-locales.mjs    # all five catalogs must have identical key sets
+node scripts/check-topology.mjs   # graph semantics, key scopes, privacy and path traversal
 npm run build                     # mandatory: FastAPI serves frontend/dist, so a stale bundle
                                   # is the likeliest way a change lands looking broken
 ```
+
+### Policy topology browser checks
+
+Run `python verify/verify_topology.py` for offline backend tests covering trusted-cache pagination,
+single-page live fallback, per-user evaluation, unavailable results, secret-free key retrieval and
+administrator guards. The tests do not modify the live configuration or query GitHub.
+
+Open `/topology` in the integrated browser with an administrator session. Check the Management
+navigation entry and the policy index. Open a policy and verify nonempty visible nodes and SVG
+edges, node/edge details and editor links, neighbor navigation, Back and path history, search
+(including no results), policy filters, index/relationship pagination, zoom/pan/fit, reload,
+and light/dark rendering at desktop and mobile widths. A normal user's
+navigation must omit the entry and a direct visit must show the existing administrator-only refusal.
+
+Assert that initial network traffic contains no user, member, or key-list requests and no user/key
+items appear. Overview indexes have at most 24 items per page. A local graph contains only the
+current node and at most three incoming/three outgoing neighbors, with no overlapping node boxes.
+The former fixed column headings must be absent. Check that colors distinguish node types and
+that opening details does not reduce canvas width. Exercise a policy-to-model-to-policy round trip.
+Click a scope: exactly one member page is requested and no user evaluation runs. Click a member:
+only that login's policy is requested. Check next/previous pages, rapid user switching, clearing back
+to global policies, empty/error/retry states, and the one-user-at-a-time graph. No fabricated
+organization-to-Enterprise-Team edges should appear.
+
+Use browser-only response fixtures for disabled enterprises, empty model groups, multi-level scope
+rules, unknown eligibility, disabled scoped keys and missing GitHub data. Do not overwrite the live
+configuration for these cases. In particular, assert that API-type key scopes do not link to other
+providers' types, keys do not expose plaintext, and missing auxiliary data leaves configured nodes
+visible with a warning. Actual policy enforcement remains covered by the backend verification suite.

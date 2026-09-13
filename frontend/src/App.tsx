@@ -23,6 +23,7 @@ import PolicyPage from './pages/PolicyPage'
 import SetupPage from './pages/SetupPage'
 import TracesPage from './pages/TracesPage'
 import UsagePage from './pages/UsagePage'
+import TopologyPage from './pages/TopologyPage'
 
 type Page =
   | 'usage'
@@ -33,6 +34,7 @@ type Page =
   | 'access'
   | 'policy'
   | 'playground'
+  | 'topology'
 type Theme = 'dark' | 'light'
 
 /** The page '/' lands on. Also the fallback used while <Navigate> is settling. */
@@ -57,6 +59,7 @@ const NAV: {
   { key: 'keys', icon: '⚿', group: 'overview' },
   { key: 'traces', icon: '☰', group: 'monitor' },
   { key: 'playground', icon: '▷', group: 'monitor' },
+  { key: 'topology', icon: '⋈', group: 'manage', admin: true },
   { key: 'config', icon: '⚙', group: 'manage', admin: true },
   // A first-level page rather than a Routing configuration tab: it answers "which models may this
   // caller ask for", which is a different question from "which model serves this request", on
@@ -254,6 +257,7 @@ export default function App() {
             sub-page switch -- which nested <Outlet> routes would not give for free. */}
         <Route path="/config/:section" element={admin(<ConfigPage />)} />
         <Route path="/policy" element={admin(<PolicyPage />)} />
+        <Route path="/topology" element={admin(<TopologyPage />)} />
         <Route path="/access" element={admin(<Navigate to="/access/policy" replace />)} />
         <Route path="/access/:section" element={admin(<AccessPage />)} />
         <Route path="*" element={<NotFound />} />

@@ -1,7 +1,7 @@
 {
   "name": "model-router-console",
   "private": true,
-  "version": "1.3.0",
+  "version": "1.4.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -10,7 +10,9 @@
     "check-locales": "node scripts/check-locales.mjs"
   },
   "dependencies": {
+    "@xyflow/react": "^12.8.0",
     "i18next": "^23.16.8",
+    "lucide-react": "^0.468.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-i18next": "^14.1.3",

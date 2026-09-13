@@ -712,8 +712,9 @@ export async function verifyToken(token?: string): Promise<TokenOwner> {
 
 export async function discoverEnterprises(
   refresh = false,
+  signal?: AbortSignal,
 ): Promise<{ enterprises: DiscoveredEnterprise[]; cached?: boolean; fetched_at?: number }> {
-  return json(`/v1/access/discover${refresh ? '?refresh=1' : ''}`)
+  return json(`/v1/access/discover${refresh ? '?refresh=1' : ''}`, { signal })
 }
 
 /** The state of the on-disk GitHub cache. Deliberately carries counts and never logins: an org's
@@ -841,8 +842,32 @@ export interface SignedInUsers {
 
 /** `eligibility` costs a key-policy evaluation per user, so only the page that filters by it asks
  *  for it. */
-export async function getSignedInUsers(eligibility = false): Promise<SignedInUsers> {
-  return json(`/v1/access/users${eligibility ? '?eligibility=1' : ''}`)
+export async function getSignedInUsers(eligibility = false, signal?: AbortSignal): Promise<SignedInUsers> {
+  return json(`/v1/access/users${eligibility ? '?eligibility=1' : ''}`, { signal })
+}
+
+export interface TopologyMembers {
+  users: Pick<KnownUser, 'login' | 'name' | 'kind'>[]
+  page: number
+  has_more: boolean
+  source: string
+}
+
+export interface TopologyUser {
+  login: string
+  is_admin: boolean
+  access: Pick<AccessVerdict, 'allowed' | 'reason' | 'detail'> | null
+  key_scope: KeyScopeVerdict | null
+  model_policy: Pick<AvailableModels, 'models' | 'contributions' | 'reason' | 'unrestricted'> | null
+  keys: ApiKey[]
+}
+
+export function getTopologyMembers(kind: string, name: string, page: number, signal: AbortSignal): Promise<TopologyMembers> {
+  return json(`/v1/access/topology/members?${new URLSearchParams({ kind, name, page: String(page) })}`, { signal })
+}
+
+export function getTopologyUser(login: string, signal: AbortSignal): Promise<TopologyUser> {
+  return json(`/v1/access/topology/user?${new URLSearchParams({ login })}`, { signal })
 }
 
 // ── Usage ────────────────────────────────────────────────────────

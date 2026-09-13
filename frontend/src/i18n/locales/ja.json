@@ -1,4 +1,25 @@
 {
+  "topology": {
+    "statusOrgTruncated": "組織一覧が省略されています：{{total}} 件中 {{loaded}} 件を取得済み。残りは今回の取得データに含まれず、主体一覧と企業の関係図に表示されない場合があります。",
+    "statusOrgError": "組織の取得に失敗：{{loaded}} 件を取得済みですが、完全な一覧ではありません。",
+    "statusTeamError": "Enterprise Team の取得に失敗：{{loaded}} 件を取得済み。完全な一覧は不明であり、チームが存在しないとは判断できません。",
+    "statusNoToken": "GitHub Enterprise トークンが未設定です。組織、チーム、メンバーを照会できません。アクセス制御でトークンを設定して保存してください。",
+    "statusTokenMismatch": "GitHub キャッシュと現在のトークンが一致しません。古いメンバーキャッシュは権限判定に利用できません。キーポリシーページでキャッシュを更新してください。",
+    "statusStale": "バックエンドは GitHub キャッシュを期限切れまたは未作成と報告しています。更新間隔は {{interval}} 秒です。構造データの取得時刻を以下に示します。キーポリシーページで確認し更新してください。",
+    "statusCacheError": "GitHub キャッシュの状態にエラーがあります。詳細な理由は以下のとおりです。",
+    "statusStructureError": "GitHub 企業構造キャッシュにエラーがあり、構造データが完全か確認できません。",
+    "statusMembersTruncated": "メンバーキャッシュが省略されています：{{loaded}} 人を保存済み、総数は不明です。この一覧にないユーザーを非メンバーとは判断できません。",
+    "statusMembersError": "メンバーキャッシュにエラーがあります：現在 {{loaded}} 人を保存済みですが、完全な一覧ではありません。",
+    "statusRequestError": "このデータ API のリクエストが失敗しました。状態は不明ですが、保存済みのポリシー設定は表示できます。",
+    "statusReason": "具体的な理由", "statusFetched": "データ取得時刻",
+    "overview": "ポリシー概要", "back": "戻る", "upstream": "接続元", "downstream": "接続先", "dataWarnings": "データの状態", "noConnections": "設定された接続はありません",
+    "member": "メンバー", "members": "メンバー一覧", "knownUsers": "既知のユーザー", "globalView": "全体のポリシー", "closeMembers": "メンバー一覧を閉じる", "noMembers": "このページにメンバーはいません", "previous": "前のページ", "next": "次のページ", "effectiveModels": "実効モデル権限",
+    "unboundScopes": "未割り当ての GitHub 範囲",
+    "title": "ポリシー全体図", "search": "主体、ポリシー、モデルを検索", "clear": "検索をクリア", "filter": "ポリシーの種類", "allPolicies": "すべてのポリシー", "focus": "選択した経路のみ", "savedSnapshot": "保存済みの設定", "identities": "主体", "policies": "ポリシー", "models": "モデル", "details": "詳細", "connections": "接続", "openConfig": "設定を開く", "loading": "トポロジーを読み込み中...", "noResults": "該当するノードがありません", "zoomIn": "拡大", "zoomOut": "縮小", "fit": "全体を表示", "configurationOnly": "設定上の関係であり、実効権限ではありません",
+    "access": "アクセス / キー作成", "scope": "キースコープ", "modelPolicy": "モデルポリシー", "keys": "発行済みキー", "structure": "Enterprise 構造", "configuredScope": "設定された範囲", "enabled": "有効", "disabled": "無効", "configured": "設定済み", "identifier": "識別子", "dataState": "GitHub データ", "truncated": "省略あり", "discovered": "検出済み", "enterprise": "Enterprise", "organization": "Organization", "team": "Enterprise チーム", "user": "ユーザー", "everyone": "すべてのログインユーザー", "admins": "管理者", "administrator": "管理者", "localAdmin": "ローカル管理者", "name": "名前", "accountType": "アカウント種別", "allowed": "許可", "denied": "拒否", "unknown": "不明", "createKey": "API キー作成", "login": "GitHub ログイン", "adminsOnly": "管理者のみ", "allGithub": "すべての GitHub アカウント", "adminBypass": "管理者の例外", "unrestricted": "制限なし", "semantics": "評価規則", "status": "状態", "open": "開放", "allOrgs": "Enterprise 内の任意の組織", "scopePermission": "スコープ制限の権限", "grantsNobody": "一般ユーザーへの許可なし", "description": "説明", "provider": "プロバイダー", "deployment": "デプロイ", "api": "API", "default": "既定", "none": "なし", "union": "和集合", "binding": "割り当て", "defaultGroup": "既定のグループ", "modelFallback": "モデルポリシーのフォールバック", "noBinding": "適用される割り当てがない場合のみ", "policyOff": "ポリシー無効", "owner": "所有者", "allOwnerModels": "所有者が利用可能な全モデル", "scopeCandidate": "スコープ候補（積集合）", "relationship": "関係", "source": "接続元", "target": "接続先",
+    "bypassDetail": "管理者はキー作成、スコープ編集、モデルポリシーの制限を免除されます。キー自身のスコープは適用されます。", "createDetail": "有効な Enterprise 内の許可された組織またはチームのいずれかに一致すれば許可されます。無効な規則は適用されません。管理者は例外です。GitHub トークンが利用できない場合、一般ユーザーは拒否されます。", "scopeDetail": "設定済みのユーザー、チーム、組織のレベル間は AND、各レベル内は OR。空のレベルは評価対象外。無効または全項目が空なら管理者のみ許可されます。", "groupDetail": "既定のグループと一致する全割り当ての和集合。無効な割り当てはモデルを制限しません。", "emptyGroup": "このグループはモデルを追加しません。適用される全グループが空の場合のみ利用可能なモデルがなくなります。", "fallbackDetail": "ポリシー無効、管理者、適用割り当てなしの場合は全モデル。既定のグループは空でも割り当てに含まれます。メンバー照会の失敗時はバックエンドの fail-open 規則に従います。", "keyDetail": "接続はスコープでありアクセス許可ではありません。実効モデルは所有者のモデルポリシーとキースコープの積集合。無効なキーは API を呼べません。編集権限の撤回は既存のスコープを変更しません。",
+    "githubUnavailable": "GitHub 構造を取得できません。設定済みの主体は表示されます。", "usersUnavailable": "ユーザー一覧を取得できません。", "keysUnavailable": "発行済みキーを取得できません。", "cacheUnavailable": "キャッシュの鮮度は不明です。", "incomplete": "GitHub 構造が不完全または省略されています。", "eligibilityTruncated": "一部ユーザーのキー作成権限は未評価です。", "staleCache": "GitHub キャッシュが古い、不完全、またはトークン不一致です。所属関係は推測しません。"
+  },
   "app": {
     "connecting": "サービスに接続中…",
     "notFound": {
@@ -44,6 +65,7 @@
     "valueRequired": "値を入力してください"
   },
   "nav": {
+    "topology": { "label": "ポリシー全体図", "title": "ポリシー全体図", "subtitle": "GitHub 主体、アクセスポリシーとモデル割り当て" },
     "group": {
       "overview": "概要",
       "monitor": "モニタリング",

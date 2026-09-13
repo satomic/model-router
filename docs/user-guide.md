@@ -29,8 +29,31 @@ can be inspected afterwards.
 | Attribute every call to a real person | API keys (a key's owner becomes the caller's identity) |
 | Gate who may create a key, by GitHub Enterprise / organization / Enterprise Team | Access control → Key policy |
 | Curate which models each user, team or organization may call | Model policy |
+| Inspect GitHub identities, policy bindings and key scopes together | Policy topology (administrators only) |
 | Inspect the request, the decision, the backend call and the response | Traces |
 | Counts, tokens, error rate and latency, per model, per day, per user | Usage |
+
+#### Policy topology
+
+Open **Management > Policy topology** (`/topology`). The overview lists policies and their
+relationship counts, without loading users, user bindings or keys. Search the Policies, Identities
+or Models index (24 items per page), then click an item for its immediate relationship graph.
+Incoming neighbors appear above the current node and outgoing neighbors below it. Each page shows
+at most three of each (one of each on narrow screens); use pagination for the rest. Click neighbors to explore, use Back or the
+path history to return, and click the current node or an edge for details below the canvas.
+Semantic node colors and icons replace fixed column headings. Hover emphasizes one relationship;
+zoom and Fit graph apply to the current page.
+
+Enterprise Teams belong directly to their enterprise. Click an organization or Enterprise Team
+to load members in pages of 50; **Known users** loads registered/configured accounts instead.
+Click a user to load only their policies and keys and open their effective-model graph. The path
+history returns to that user's other policy relationships. Selecting another user replaces the
+path. **Policy overview** clears it. The selected user's **Effective model access**
+comes from the backend evaluator, with unknown results kept unknown. Global links show configuration,
+not inferred GitHub memberships. Key-to-model edges mean scope candidates: actual access is the owner's model policy
+intersected with the key scope. Missing or stale auxiliary data is indicated, and **Reload** reads
+saved state without forcing a cache rebuild. See [Global policy topology](access-control.md#global-policy-topology)
+for colors, policy semantics and data boundaries.
 
 ### 1.2 How it works
 

@@ -57,6 +57,65 @@ The rules:
 > results and the `allow_all_orgs` fallback probe at 30, and **the UI states plainly when a list was
 > truncated** — nothing is dropped silently.
 
+## Global policy topology
+
+Administrators can open **Management > Policy topology** (`/topology`) for a read-only view of
+the saved configuration. The default overview lists policies with incoming/outgoing relationship
+counts. It does not attempt to connect every policy to every identity and model at once.
+No users, user bindings or issued keys are loaded or rendered initially.
+
+- Click an overview item to open its immediate relationships: incoming nodes above, the current
+  node in the center, outgoing nodes below. Click a neighbor to continue exploring; use **Back**
+  or the path history to return. The current node and the info button open its details below the
+  canvas, without squeezing the graph. Connections are also clickable; hover highlights a single
+  relationship. **Open configuration** takes you to the existing editor.
+- Each graph page shows at most three incoming and three outgoing neighbors (one of each on
+  narrow screens, keeping labels readable). Explicit page
+  controls expose the remainder; no relation is silently lost. Search filters the current
+  neighborhood. Zoom and **Fit graph** operate on the current page, not the entire global graph.
+- The overview has searchable **Policies**, **Identities** and **Models** indexes, with 24 items
+  per page. The identity index includes discovered but unbound scopes. An enterprise's local
+  graph exposes its organizations and Enterprise Teams, without fabricated org-to-team links.
+- Click an organization or Enterprise Team to load a member panel, 50 accounts per page, without
+  evaluating their policies. **Known users** offers a separately paged registry/configured-login
+  list for users whose scope is unavailable. It is not a full GitHub roster.
+- Click a member to evaluate only that user's access, scope-editing permission and model policy,
+  and load only their keys. The graph opens that user's **Effective model access** immediately;
+  the path history leads back to their other policy relationships. The
+  **Effective model access** node uses the backend's actual model-policy result; group links
+  retain their configured meanings. Switching users replaces the path, rather than accumulating
+  users. **Policy overview**, changing member pages/scopes, or closing the member panel clears it.
+- Node colors encode type: enterprises blue, organizations teal, teams rose, users blue-gray,
+  policies amber and models green. Icons provide a second cue. The centered node has a strong
+  outline. Dashed connections are inactive. Enterprise Teams are not assumed to belong to an
+  organization, and no user membership links are invented from the discovery response.
+
+The global view is a **configuration topology**. Key creation is OR
+across eligible organization/team rules; scope editing is AND across configured levels and OR
+within a level; model groups combine as a union. Key-to-model links are scope candidates, with
+effective access still restricted to `owner model policy intersect key scope`. Empty groups,
+the no-binding fallback, policy switches and the administrator exemption remain explicit.
+
+Selected-user results come from the existing backend policy evaluators; failed evaluations remain
+**Unknown**, never Denied. Initially the page reads only `/v1/config`, `/v1/access/discover` and
+`/v1/access/cache`. Clicking a scope calls `/v1/access/topology/members`; clicking a user calls
+`/v1/access/topology/user`. These are administrator-only endpoints. Neither the graph nor the
+single-user endpoint exposes API-key plaintext. Provider credentials and GitHub tokens are never
+put in graph nodes or details.
+
+The saved configuration appears before auxiliary data finishes loading. GitHub discovery
+requests time out after 15 seconds; membership and individual policy evaluations are bounded to
+20 seconds on the backend. Missing, stale or truncated data is indicated
+without hiding configured bindings. **Reload** reads the latest saved state; it does not force a
+GitHub cache rebuild. Use the existing Key policy cache controls for that operation.
+
+Expand **Data availability** for individual diagnostics, not a combined incomplete-data warning.
+Each item names the enterprise, cache scope or failed endpoint. Organization truncation includes
+the loaded and total counts; team and organization failures retain GitHub's specific error.
+Member-cache errors/truncation name the affected scope and cached count, without inventing a total.
+Token mismatch, missing token and stale cache are separate states. Fetch timestamps are shown when
+available, and each message describes the impact on the displayed data or cache trust.
+
 ## The local GitHub cache
 
 Asking GitHub about one login at a time made every key creation, and every permission panel, wait on

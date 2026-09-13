@@ -1,4 +1,25 @@
 {
+  "topology": {
+    "statusOrgTruncated": "组织列表已截断：已加载 {{loaded}} / {{total}} 个组织。其余组织未包含在本次发现数据中，主体索引与企业关系图可能缺项。",
+    "statusOrgError": "组织列表查询失败：已返回 {{loaded}} 个组织，不能视为完整清单。",
+    "statusTeamError": "Enterprise Team 列表查询失败：已返回 {{loaded}} 个团队。无法确认完整团队清单，不能据此判断该企业没有团队。",
+    "statusNoToken": "未配置 GitHub Enterprise Token，无法通过 GitHub 查询组织、团队或成员。请在访问控制中配置并保存 Token。",
+    "statusTokenMismatch": "GitHub 缓存与当前 Token 不匹配，旧成员缓存不能用于权限判断。请在访问控制的 Key 策略页刷新缓存。",
+    "statusStale": "后端将 GitHub 缓存标记为过期或尚未建立，当前配置的刷新周期为 {{interval}} 秒。以下为结构数据的获取时间；请在 Key 策略页检查并刷新缓存。",
+    "statusCacheError": "GitHub 缓存状态异常，具体原因见下方。",
+    "statusStructureError": "GitHub 企业结构缓存报告错误，无法确认结构数据完整。",
+    "statusMembersTruncated": "成员缓存已截断：仅缓存 {{loaded}} 个成员，总人数未知。不能将不在此列表中的用户判定为非成员。",
+    "statusMembersError": "成员缓存报告错误：当前缓存 {{loaded}} 个成员，不能作为完整成员清单。",
+    "statusRequestError": "该数据接口请求失败，相关状态暂不可用。已保存的策略配置仍可查看。",
+    "statusReason": "具体原因", "statusFetched": "数据获取时间",
+    "overview": "策略总览", "back": "返回上一步", "upstream": "关联来源", "downstream": "关联目标", "dataWarnings": "数据状态", "noConnections": "暂无配置关系",
+    "member": "成员", "members": "成员列表", "knownUsers": "已知用户", "globalView": "返回全局策略", "closeMembers": "关闭成员列表", "noMembers": "本页没有成员", "previous": "上一页", "next": "下一页", "effectiveModels": "有效模型权限",
+    "unboundScopes": "未绑定的 GitHub 范围",
+    "title": "策略视图", "search": "搜索主体、策略或模型", "clear": "清除搜索", "filter": "策略类型", "allPolicies": "全部策略", "focus": "仅所选路径", "savedSnapshot": "已保存的配置", "identities": "主体", "policies": "策略", "models": "模型", "details": "详情", "connections": "关联关系", "openConfig": "打开配置", "loading": "正在加载拓扑…", "noResults": "没有匹配的节点", "zoomIn": "放大", "zoomOut": "缩小", "fit": "适应画布", "configurationOnly": "配置关系，非用户最终有效权限",
+    "access": "访问 / Key 创建", "scope": "Key Scope", "modelPolicy": "模型策略", "keys": "已签发 Key", "structure": "企业结构", "configuredScope": "配置的范围", "enabled": "已启用", "disabled": "未生效", "configured": "已配置", "identifier": "标识", "dataState": "GitHub 数据", "truncated": "已截断", "discovered": "已发现", "enterprise": "企业", "organization": "组织", "team": "企业团队", "user": "用户", "everyone": "所有已登录用户", "admins": "管理员", "administrator": "管理员", "localAdmin": "本地管理员", "name": "名称", "accountType": "账号类型", "allowed": "允许", "denied": "拒绝", "unknown": "未知", "createKey": "创建 API Key", "login": "GitHub 登录", "adminsOnly": "仅管理员", "allGithub": "所有 GitHub 账号", "adminBypass": "管理员豁免", "unrestricted": "不受限", "semantics": "计算规则", "status": "状态", "open": "开放", "allOrgs": "企业内任意组织", "scopePermission": "收窄 Scope 权限", "grantsNobody": "不授权普通用户", "description": "描述", "provider": "提供商", "deployment": "部署", "api": "API", "default": "默认", "none": "无", "union": "并集", "binding": "绑定", "defaultGroup": "默认组", "modelFallback": "模型策略回退", "noBinding": "仅无任何匹配绑定时", "policyOff": "策略关闭", "owner": "所有者", "allOwnerModels": "所有者可用的全部模型", "scopeCandidate": "Scope 候选（取交集）", "relationship": "关系", "source": "来源", "target": "目标",
+    "bypassDetail": "管理员豁免 Key 创建、Scope 编辑和模型策略限制。Key 自身的 Scope 仍然生效。", "createDetail": "启用的企业内，匹配任意允许的组织或企业团队即可。关闭的企业规则不生效。管理员豁免；GitHub Token 不可用时，普通用户请求被拒绝。", "scopeDetail": "已配置的用户、团队、组织层级之间取 AND，同层级内取 OR。空层级不参与判断。策略关闭或全部为空时，仅管理员可收窄 Scope。", "groupDetail": "默认组与所有匹配的用户、团队、组织绑定取并集。关闭的绑定不限制模型。", "emptyGroup": "此组不贡献任何模型。仅当所有适用组都为空时，最终无模型可用。", "fallbackDetail": "策略关闭、管理员或无适用绑定时可用完整模型目录。设置默认组后始终存在绑定，即使该组为空。成员查询失败遵循后端的 fail-open 语义。", "keyDetail": "模型连线表示 Key Scope，不是访问授权。有效模型 = 所有者模型策略 ∩ Key Scope。禁用 Key 无法调用 API。撤销 Scope 编辑权限不改变已有 Key 的范围。",
+    "githubUnavailable": "GitHub 发现不可用，仍显示配置中的主体。", "usersUnavailable": "已知用户清单不可用。", "keysUnavailable": "已签发 Key 清单不可用。", "cacheUnavailable": "缓存新鲜度未知。", "incomplete": "GitHub 结构不完整或已截断。", "eligibilityTruncated": "部分用户的 Key 创建权限尚未评估。", "staleCache": "GitHub 缓存过期、不完整或与 Token 不匹配，不据此推测成员关系。"
+  },
   "app": {
     "connecting": "连接服务中…",
     "notFound": {
@@ -44,6 +65,7 @@
     "valueRequired": "请输入内容"
   },
   "nav": {
+    "topology": { "label": "策略视图", "title": "策略视图", "subtitle": "GitHub 主体、访问策略与模型绑定" },
     "group": {
       "overview": "概览",
       "monitor": "监控",

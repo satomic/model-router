@@ -210,6 +210,41 @@ def _probe_answers(key: str, login: str) -> bool | None:
     return member
 
 
+async def scope_members_page(cfg, kind: str, name: str, page: int) -> dict:
+    size = 50
+    if not cfg.gh_admin_token:
+        raise ghadmin.GitHubAdminError("no GitHub Enterprise token configured")
+    key = _org_key(name) if kind == "organization" else f"team:{name.lower()}"
+    data = _load_members()
+    entry = (data.get("entries") or {}).get(key) or {}
+    fresh = _now() - float(entry.get("fetched_at") or 0) <= refresh_seconds(cfg) * _MEMBERS_TTL_SLACK
+    if (data.get("token_fp") == token_fp(cfg.gh_admin_token) and fresh
+            and not entry.get("error") and not entry.get("truncated")
+            and isinstance(entry.get("logins"), list)):
+        logins = sorted(set(entry["logins"]))
+        offset = (page - 1) * size
+        return {"users": [{"login": login, "name": login, "kind": "github"}
+                          for login in logins[offset:offset + size]],
+                "page": page, "has_more": offset + size < len(logins), "source": SOURCE_CACHE}
+    if kind == "organization":
+        path = f"/orgs/{name}/members"
+    else:
+        slug, team_id = name.split("/", 1)
+        path = f"/enterprises/{slug}/teams/{team_id}/memberships"
+    status, body = await ghadmin._rest(cfg.gh_admin_token, f"{path}?per_page={size}&page={page}")
+    if status != 200 or not isinstance(body, list):
+        raise ghadmin.GitHubAdminError("GitHub member list unavailable")
+    users = []
+    for item in body:
+        if not isinstance(item, dict):
+            continue
+        account = item.get("user") if isinstance(item.get("user"), dict) else item
+        if account.get("login"):
+            users.append({"login": str(account["login"]).lower(),
+                          "name": account.get("name") or account["login"], "kind": "github"})
+    return {"users": users, "page": page, "has_more": len(body) == size, "source": SOURCE_LIVE}
+
+
 async def is_org_member(cfg, org: str, login: str) -> tuple[bool, str]:
     """(is a member, source). Cache first; a miss costs exactly one GitHub call."""
     token = cfg.gh_admin_token

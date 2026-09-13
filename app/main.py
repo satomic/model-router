@@ -20,7 +20,7 @@ import uuid
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 
-from fastapi import Body, FastAPI, Header, HTTPException, Request, Response
+from fastapi import Body, FastAPI, Header, HTTPException, Query, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import (
     FileResponse,
@@ -1428,6 +1428,53 @@ async def list_signed_in_users(request: Request, eligibility: bool = False):
         "eligibility_evaluated": bool(eligibility),
         "eligibility_truncated": truncated,
     }
+
+
+@app.get("/v1/access/topology/members")
+async def topology_members(
+    request: Request,
+    kind: str = Query(pattern="^(organization|team|known)$"),
+    name: str = Query(default="", max_length=200, pattern=r"^[A-Za-z0-9_.-]*(/[0-9]+)?$"),
+    page: int = Query(default=1, ge=1, le=10000),
+):
+    _admin(request)
+    if kind == "known":
+        users = {str(user["login"]).lower(): user for user in authstore.list_known_users()}
+        logins = set(cfg.admin_logins) | set((cfg.model_policy.get("users") or {}).keys())
+        logins.update(cfg.key_scope_policy.get("users") or [])
+        for login in logins:
+            users.setdefault(str(login).lower(), {"login": login, "name": login, "kind": "github"})
+        rows = sorted(users.values(), key=lambda user: str(user["login"]).lower())
+        offset = (page - 1) * 50
+        return {"users": [{"login": user["login"], "name": user.get("name") or user["login"],
+                           "kind": user.get("kind", "github")} for user in rows[offset:offset + 50]],
+                "page": page, "has_more": offset + 50 < len(rows), "source": "registry"}
+    if not name or (kind == "team") != ("/" in name):
+        raise HTTPException(status_code=422, detail="invalid membership scope")
+    try:
+        return await asyncio.wait_for(ghcache.scope_members_page(cfg, kind, name, page), 20)
+    except (ghadmin.GitHubAdminError, TimeoutError) as error:
+        raise HTTPException(status_code=503, detail=str(error) or "GitHub membership request timed out")
+
+
+@app.get("/v1/access/topology/user")
+async def topology_user(
+    request: Request,
+    login: str = Query(min_length=1, max_length=100, pattern=r"^[A-Za-z0-9_.@-]+$"),
+):
+    _admin(request)
+    login = login.strip().lower()
+    administrator = _is_admin_login(login)
+    results = await asyncio.gather(
+        asyncio.wait_for(keypolicy.evaluate(cfg, login, administrator), 20),
+        asyncio.wait_for(scopepolicy.evaluate(cfg, login, administrator), 20),
+        asyncio.wait_for(modelpolicy.evaluate(cfg, login, administrator), 20),
+        return_exceptions=True,
+    )
+    return {"login": login, "is_admin": administrator,
+            **{field: None if isinstance(result, BaseException) else result
+               for field, result in zip(("access", "key_scope", "model_policy"), results)},
+            "keys": authstore.list_api_keys(login, include_secret=False)}
 
 
 # -- Usage statistics ---------------------------------------------------------
