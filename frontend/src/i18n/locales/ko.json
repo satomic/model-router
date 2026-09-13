@@ -248,6 +248,12 @@
       "exact": "정확한 총량",
       "seats": "시트로 추정"
     },
+    "memberSourceHint": "게이트 소속 판단의 출처",
+    "memberSource": {
+      "seats": "멤버: {{count}}명(시트 목록)",
+      "cache": "멤버: {{count}}명(정책 캐시)",
+      "none": "멤버: 알 수 없음"
+    },
     "poolTotal": "풀 총량",
     "consumed": "풀에서 사용",
     "remaining": "잔여",
@@ -283,16 +289,18 @@
     "gateTitle": "BYOK 게이트",
     "gateOn": "적용 중",
     "gateToggle": "공유 풀에 잔여 크레딧이 있는 동안 요청을 라우팅하지 않고 안내 메시지를 반환",
-    "gateOnNote": "적용 중. 소속 엔터프라이즈 풀에 잔여 크레딧이 있는 사용자의 요청은 <strong>라우팅되지도, 결정 모델에 전달되지도 않고</strong> 아래 안내를 일반 어시스턴트 메시지로 반환하므로 백엔드 비용이 들지 않습니다. 풀이 소진되거나 스냅샷이 만료되거나 폴링이 멈추면 자동으로 해제됩니다. 불확실한 경우는 모두 통과시킵니다.",
+    "gateOnNote": "적용 중. 잔여 크레딧이 있는 엔터프라이즈에 <strong>소속된</strong> 사용자의 요청은 <strong>라우팅되지도, 결정 모델에 전달되지도 않고</strong> 아래 안내를 일반 어시스턴트 메시지로 반환하므로 백엔드 비용이 들지 않습니다. 소속은 시트 목록으로, GitHub가 시트 목록을 주지 않으면 키 정책의 멤버 캐시로 판단합니다. 어떤 엔터프라이즈에도 소속을 확인할 수 없는 사용자는 통과시킵니다. 풀이 소진되거나 스냅샷이 만료되거나 폴링이 멈추면 자동으로 해제됩니다.",
     "gateOffNote": "꺼짐. 풀 상태와 무관하게 평소처럼 라우팅합니다. 켜도 폴링이 스냅샷을 만들기 전까지는 효과가 없습니다.",
     "gateNeedsPolling": "게이트에는 폴링이 필요합니다. 스냅샷이 없으면 판단할 근거가 없어 모두 통과시킵니다.",
-    "perUserToggle": "사용자별로도 판단(시트 및 사용자 수준 예산)",
-    "perUserNote": "켜면 폴링이 GitHub의 사용자 수준 예산과 시트 목록도 읽습니다. 해당 엔터프라이즈에 <strong>시트가 없는</strong> 사용자, 또는 <strong>자신의 사용자 수준 예산을 소진한</strong> 사용자(풀과 무관하게 GitHub가 차단)는 Copilot으로 돌려보내지 않고 BYOK로 통과시킵니다. 매우 큰 엔터프라이즈에서는 GitHub가 시트 목록을 공개하지 않으므로 모두 시트가 있는 것으로 간주합니다.",
+    "perUserToggle": "사용자별로, 각 사용자 자신의 사용자 수준 예산으로 판단",
+    "perUserNote": "켜면 폴링이 GitHub의 사용자 수준 예산도 읽고, <strong>사용자 자신의 예산이 풀보다 우선</strong>합니다. 예산이 남아 있으면 공유 풀이 이미 소진되었더라도 Copilot으로 돌려보냅니다(예산은 승인된 Copilot 지출입니다). 예산을 소진했다면 GitHub가 차단하므로 BYOK를 통과시킵니다. 사용자 수준 예산이 없는 사용자는 위의 풀 판단으로 돌아갑니다.",
     "minRemaining": "잔여 크레딧이 이 값보다 적으면 게이트 해제",
     "minRemainingHint": "0 = 풀이 실제로 소진된 경우에만",
     "message": "사용자에게 반환할 안내",
     "messageHint": "비워 두면 내장 영어 기본 문구",
     "messagePlaceholders": "자리 표시자: <code>{enterprise}</code>, <code>{slug}</code>, <code>{remaining}</code>, <code>{total}</code>, <code>{remaining_note}</code>(예 \" (about 1,200 of 42,800 credits)\", 총량 미상 시 빈 문자열).",
+    "messageBudget": "사용자 자신의 예산이 남아 있을 때 반환할 안내",
+    "messageBudgetPlaceholders": "자리 표시자: <code>{enterprise}</code>, <code>{slug}</code>, <code>{budget_remaining_usd}</code>, <code>{budget_total_usd}</code>, <code>{budget_remaining_credits}</code>, 그리고 위의 풀 자리 표시자.",
     "restoreDefault": "기본값 복원",
     "noUsers": "사용자별 데이터가 없습니다. 이 엔터프라이즈의 시트 목록과 사용자 수준 예산이 비어 있거나 사용할 수 없습니다.",
     "userCount_other": "{{count}}명",
@@ -308,7 +316,8 @@
       "verdict": "게이트 판정"
     },
     "verdict": {
-      "useCopilot": "Copilot으로 안내",
+      "useCopilot": "Copilot으로 안내(풀)",
+      "useCopilotBudget": "Copilot으로 안내(자신의 예산)",
       "blockedOnCopilot": "예산 소진 → BYOK 통과",
       "byokOpen": "BYOK 통과"
     }

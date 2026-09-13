@@ -22,7 +22,9 @@ def _snapshot(cfg, **entry):
     base = {
         "slug": "acme", "name": "Acme", "pool_total": 40000.0, "pool_total_source": "seats",
         "consumed": 10000.0, "metered": 0.0, "gross": 10000.0, "remaining": 30000.0,
-        "state": aicredits.POOL_AVAILABLE, "seats": {"enterprise": 10}, "seat_logins": {},
+        "state": aicredits.POOL_AVAILABLE, "seats": {"enterprise": 10},
+        # alice holds a seat; anyone else is *not* a member of acme
+        "seat_logins": {"alice": "enterprise"}, "member_logins": {},
         "users": None, "universal_budget_usd": None, "skus": [], "warnings": [], "error": None,
     }
     base.update(entry)
@@ -96,8 +98,19 @@ class GateTests(unittest.TestCase):
         with patch.object(aicredits, "load_snapshot", return_value=_snapshot(cfg)):
             verdict = aicredits.gate(cfg, "alice")
         self.assertEqual(verdict["enterprise"], "acme")
+        self.assertEqual(verdict["reason"], aicredits.REASON_POOL)
         self.assertIn("Acme", verdict["message"])
         self.assertIn("30,000 of 40,000", verdict["message"])
+
+    def test_non_member_is_not_gated_by_someone_elses_pool(self):
+        cfg = _cfg(gate={"enabled": True})
+        with patch.object(aicredits, "load_snapshot", return_value=_snapshot(cfg)):
+            self.assertIsNone(aicredits.gate(cfg, "bob"))            # seat list says no
+        # No seat list (large enterprise): the key-policy member cache decides, unknown lets through
+        snap = _snapshot(cfg, seat_logins=None, seats=None, member_logins={"carol": "org:eng"})
+        with patch.object(aicredits, "load_snapshot", return_value=snap):
+            self.assertIsNotNone(aicredits.gate(cfg, "carol"))
+            self.assertIsNone(aicredits.gate(cfg, "dave"))
 
     def test_exhausted_stale_or_foreign_token_lets_through(self):
         cfg = _cfg(gate={"enabled": True})
@@ -122,19 +135,40 @@ class GateTests(unittest.TestCase):
         snap = _snapshot(
             cfg,
             seat_logins={"alice": "enterprise", "bob": "business", "carol": "enterprise"},
-            users={"bob": {"target_usd": 60.0, "consumed_usd": 60.0}},
+            users={"bob": {"target_usd": 60.0, "consumed_usd": 60.0},
+                   "carol": {"target_usd": 1000.0, "consumed_usd": 250.0}},
             universal_budget_usd=60.0,
         )
         with patch.object(aicredits, "load_snapshot", return_value=snap):
-            self.assertIsNotNone(aicredits.gate(cfg, "Alice"))      # seat, universal budget untouched
+            alice = aicredits.gate(cfg, "Alice")                    # seat, universal budget untouched
+            self.assertEqual(alice["reason"], aicredits.REASON_BUDGET)
+            self.assertEqual(alice["headroom_usd"], 60.0)
+            self.assertIn("$60.00 of $60.00", alice["message"])
             self.assertIsNone(aicredits.gate(cfg, "bob"))           # seat, but own budget used up
-            self.assertIsNotNone(aicredits.gate(cfg, "carol"))
+            carol = aicredits.gate(cfg, "carol")
+            self.assertEqual(carol["headroom_usd"], 750.0)
+            self.assertIn("$750.00 of $1,000.00", carol["message"])
             self.assertIsNone(aicredits.gate(cfg, "nobody"))        # no seat in this enterprise
+
+    def test_per_user_budget_headroom_gates_even_when_pool_is_exhausted(self):
+        cfg = _cfg(gate={"enabled": True, "per_user": True})
+        snap = _snapshot(
+            cfg, state=aicredits.POOL_EXHAUSTED, remaining=0.0, metered=500.0,
+            seat_logins={"alice": "enterprise", "bob": "enterprise"},
+            users={"alice": {"target_usd": 1000.0, "consumed_usd": 111.0}},
+        )
+        with patch.object(aicredits, "load_snapshot", return_value=snap):
+            self.assertEqual(aicredits.gate(cfg, "alice")["reason"], aicredits.REASON_BUDGET)
+            self.assertIsNone(aicredits.gate(cfg, "bob"))           # no budget -> pool decides -> exhausted
 
     def test_custom_message_placeholders(self):
         cfg = _cfg(gate={"enabled": True, "message": "Use Copilot in {slug}: {remaining}/{total}"})
         with patch.object(aicredits, "load_snapshot", return_value=_snapshot(cfg)):
             self.assertEqual(aicredits.gate(cfg, "alice")["message"], "Use Copilot in acme: 30,000/40,000")
+        cfg = _cfg(gate={"enabled": True, "per_user": True, "message_budget": "{budget_remaining_credits} credits left"})
+        snap = _snapshot(cfg, users={"alice": {"target_usd": 10.0, "consumed_usd": 2.5}})
+        with patch.object(aicredits, "load_snapshot", return_value=snap):
+            self.assertEqual(aicredits.gate(cfg, "alice")["message"], "750 credits left")
 
 
 class SettingsTests(unittest.TestCase):
@@ -151,8 +185,10 @@ class SettingsTests(unittest.TestCase):
             st = aicredits.status(cfg)
         ent = st["enterprises"][0]
         self.assertNotIn("seat_logins", ent)
+        self.assertNotIn("member_logins", ent)
         self.assertEqual(ent["seat_count"], 1)
         self.assertEqual(ent["users"][0]["headroom_usd"], 50.0)
+        self.assertEqual(ent["users"][0]["gate"], aicredits.REASON_BUDGET)
         self.assertFalse(st["stale"])
         self.assertIsNotNone(st["next_run_at"])
 

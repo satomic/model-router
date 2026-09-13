@@ -639,13 +639,20 @@ def _gated_context(
             "analysis": {
                 "type": "gate",
                 "note": (
-                    f"answered by the AI-credit gate: the Copilot pool of "
-                    f"{gated.get('enterprise')} still has credits, so the request was neither "
-                    f"routed nor sent to the decision model"
+                    f"answered by the AI-credit gate: {gated.get('enterprise')} -- "
+                    + (
+                        f"the caller's user-level budget still has ${gated.get('headroom_usd', 0):,.2f} left"
+                        if gated.get("reason") == aicredits.REASON_BUDGET
+                        else "the Copilot pool still has credits"
+                    )
+                    + ", so the request was neither routed nor sent to the decision model"
                 ),
+                "reason": gated.get("reason"),
                 "enterprise": gated.get("enterprise"),
                 "remaining_credits": gated.get("remaining"),
                 "pool_total": gated.get("pool_total"),
+                "headroom_usd": gated.get("headroom_usd"),
+                "budget_usd": gated.get("budget_usd"),
             },
         },
         "backend": {
@@ -658,8 +665,9 @@ def _gated_context(
     }
     traces.resolve_interaction(trace)
     logger.info(
-        "gated id=%s user=%s enterprise=%s remaining=%s",
-        trace["id"], key["user_login"], gated.get("enterprise"), gated.get("remaining"),
+        "gated id=%s user=%s enterprise=%s reason=%s remaining=%s headroom=%s",
+        trace["id"], key["user_login"], gated.get("enterprise"), gated.get("reason"),
+        gated.get("remaining"), gated.get("headroom_usd"),
     )
     headers = {
         "x-trace-id": trace["id"],

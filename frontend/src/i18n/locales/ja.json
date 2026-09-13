@@ -248,6 +248,12 @@
       "exact": "正確な総量",
       "seats": "シートから推定"
     },
+    "memberSourceHint": "ゲートの所属判定の情報源",
+    "memberSource": {
+      "seats": "メンバー: {{count}} 人（シート一覧）",
+      "cache": "メンバー: {{count}} 人（ポリシーキャッシュ）",
+      "none": "メンバー: 不明"
+    },
     "poolTotal": "プール総量",
     "consumed": "プールから使用",
     "remaining": "残り",
@@ -283,16 +289,18 @@
     "gateTitle": "BYOK ゲート",
     "gateOn": "有効",
     "gateToggle": "共有プールに残高がある間はリクエストをルーティングせず、案内メッセージを返す",
-    "gateOnNote": "有効。所属エンタープライズのプールに残高があるユーザーのリクエストは、<strong>ルーティングも判定モデルへの送信も行わず</strong>、以下の案内を通常のアシスタントメッセージとして返します。バックエンドのコストは発生しません。プールが枯渇するか、スナップショットが期限切れになるか、ポーリングが停止すると自動的に解除されます。不確実な場合はすべて通過させます。",
+    "gateOnNote": "有効。プールに残高があるエンタープライズに<strong>所属する</strong>ユーザーのリクエストは、<strong>ルーティングも判定モデルへの送信も行わず</strong>、以下の案内を通常のアシスタントメッセージとして返します。バックエンドのコストは発生しません。所属はシート一覧から、GitHub がシート一覧を返さない場合はキーポリシーのメンバーキャッシュから判定します。どのエンタープライズにも所属を確認できないユーザーは通過させます。プールが枯渇するか、スナップショットが期限切れになるか、ポーリングが停止すると自動的に解除されます。",
     "gateOffNote": "無効。プールの状態に関係なく通常どおりルーティングします。有効にしてもスナップショットが作成されるまで効果はありません。",
     "gateNeedsPolling": "ゲートにはポーリングが必要です。スナップショットがなければ判断材料がなく、すべて通過します。",
-    "perUserToggle": "ユーザーごとにも判断する（シートとユーザー単位予算）",
-    "perUserNote": "有効にすると、ポーリングは GitHub のユーザー単位予算とシート一覧も読み取ります。そのエンタープライズに<strong>シートを持たない</strong>ユーザー、または<strong>自身のユーザー単位予算を使い切った</strong>ユーザー（プールの状態に関わらず GitHub 側でブロックされます）は、Copilot へ戻すのではなく BYOK へ通過させます。非常に大きなエンタープライズでは GitHub がシート一覧を公開しないため、全員がシートを持つものとみなします。",
+    "perUserToggle": "ユーザーごとに、各ユーザー自身のユーザー単位予算で判断する",
+    "perUserNote": "有効にすると、ポーリングは GitHub のユーザー単位予算も読み取り、<strong>ユーザー自身の予算がプールより優先</strong>されます。予算が残っていれば、共有プールが枯渇していても Copilot へ戻します（予算は承認済みの Copilot 支出です）。予算を使い切っていれば GitHub 側でブロックされるため BYOK を通過させます。ユーザー単位予算のないユーザーは上記のプール判定に戻ります。",
     "minRemaining": "残りクレジットがこの値を下回ったらゲートを解除",
     "minRemainingHint": "0 = プールが実際に枯渇したときのみ",
     "message": "ユーザーへ返す案内",
     "messageHint": "空 = 内蔵の英語既定文",
     "messagePlaceholders": "プレースホルダー: <code>{enterprise}</code>、<code>{slug}</code>、<code>{remaining}</code>、<code>{total}</code>、<code>{remaining_note}</code>（例 \" (about 1,200 of 42,800 credits)\"、総量不明時は空）。",
+    "messageBudget": "ユーザー自身の予算に残りがあるときの案内",
+    "messageBudgetPlaceholders": "プレースホルダー: <code>{enterprise}</code>、<code>{slug}</code>、<code>{budget_remaining_usd}</code>、<code>{budget_total_usd}</code>、<code>{budget_remaining_credits}</code>、および上記のプール用プレースホルダー。",
     "restoreDefault": "既定に戻す",
     "noUsers": "ユーザー別データがありません。このエンタープライズのシート一覧とユーザー単位予算が空か利用できません。",
     "userCount_other": "{{count}} 人",
@@ -308,7 +316,8 @@
       "verdict": "ゲート判定"
     },
     "verdict": {
-      "useCopilot": "Copilot へ戻す",
+      "useCopilot": "Copilot へ戻す（プール）",
+      "useCopilotBudget": "Copilot へ戻す（自身の予算）",
       "blockedOnCopilot": "予算枯渇 → BYOK 通過",
       "byokOpen": "BYOK 通過"
     }

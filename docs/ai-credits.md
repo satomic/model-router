@@ -9,12 +9,13 @@ The **AI credits** page (administrators only, under *Management*) closes that ga
 
 1. It **polls GitHub on a cron schedule** with the enterprise administrator token already configured
    for the key policy, and works out the state of each enterprise's shared pool: size, used, remaining.
-2. With the **BYOK gate** on, a request from a user whose pool still has credits is **neither routed
-   nor sent to the decision model**. It is answered with a short note (a normal assistant message)
-   telling them to use Copilot's built-in models first. The gate lifts by itself once the pool is
-   exhausted.
-3. Optionally the gate is **per user**: it also honours the user's seat and GitHub user-level budget,
-   so a user GitHub would block anyway is let through to BYOK.
+2. With the **BYOK gate** on, a request from a user who **belongs to** an enterprise whose pool still
+   has credits is **neither routed nor sent to the decision model**. It is answered with a short note
+   (a normal assistant message) telling them to use Copilot's built-in models first. The gate lifts by
+   itself once the pool is exhausted.
+3. Optionally the gate is **per user**: the caller's own GitHub user-level budget takes precedence --
+   headroom left means "use Copilot" even if the pool is already exhausted, budget used up means GitHub
+   blocks them and BYOK stays open.
 
 ## What GitHub's API can and cannot tell us
 
@@ -53,7 +54,8 @@ ai_credits:
   gate:
     enabled: false              # answer with the note instead of routing while the pool has credits
     per_user: false             # also honour each user's seat and user-level budget
-    message: ''                 # empty = the built-in English note
+    message: ''                 # empty = the built-in English note (pool has credits)
+    message_budget: ''          # empty = the built-in English note (own budget has headroom)
 ```
 
 The cron parser accepts the usual subset: `*`, `N`, `A-B`, `*/S`, `A-B/S`, comma lists, three-letter
@@ -61,23 +63,33 @@ month and weekday names, `0` and `7` both meaning Sunday. The page previews the 
 (rendered by the backend, so what is previewed is what will run) and offers presets from every
 15 minutes to daily.
 
-The note supports placeholders: `{enterprise}`, `{slug}`, `{remaining}`, `{total}` and `{remaining_note}`
-(e.g. ` (about 1,200 of 42,800 credits)`, empty when the size is unknown). The built-in default is in
-English; set `gate.message` to localise it.
+The pool note supports placeholders: `{enterprise}`, `{slug}`, `{remaining}`, `{total}` and
+`{remaining_note}` (e.g. ` (about 1,200 of 42,800 credits)`, empty when the size is unknown). The budget
+note additionally takes `{budget_remaining_usd}`, `{budget_total_usd}` and `{budget_remaining_credits}`.
+Both built-in defaults are in English; set `gate.message` / `gate.message_budget` to localise them.
 
-### Per-user mode
+### Which enterprise is the caller's?
 
-With `gate.per_user` on, the poll additionally walks the seat list and the AI-credit budgets. A user
-is sent back to Copilot only when **all** of the following hold for some polled enterprise:
+The gate never sends a user to a pool that is not theirs. For each polled enterprise it asks whether the
+caller **belongs** there, in this order:
 
-- the enterprise's pool is `available` (and above `min_remaining_credits`);
-- the user holds a Copilot seat there — or the seat list is unavailable, in which case everyone is
-  assumed to hold one;
-- the user has headroom under the user-level budget that applies to them (individual → cost-center →
-  universal), or no user-level budget applies.
+1. a user-level budget record for the login exists (they consumed credits there) -- yes;
+2. GitHub returned a seat list -- the login is a member iff it holds a seat;
+3. no seat list (large enterprises) -- the key policy's cached organization / team member lists for
+   that enterprise decide; a login none of them mention is **unknown**, not absent.
 
-The page lists every seat holder with their budget, consumption, headroom and the resulting verdict,
-filterable by login.
+Unknown membership lets the request through. Each enterprise card shows where its membership test
+draws from (`members: N from seat list` / `from policy cache` / `unknown`).
+
+### Enterprise mode vs per-user mode
+
+| `gate.per_user` | Verdict for a caller who belongs to the enterprise |
+|---|---|
+| off | Sent back to Copilot iff the enterprise pool is `available` (and above `min_remaining_credits`). |
+| on, caller has a user-level budget | Their **own budget decides**: headroom left -> sent back to Copilot with the budget note, even if the pool is exhausted (the budget is pre-approved Copilot spend); budget used up -> GitHub blocks them, BYOK stays open. |
+| on, caller has no user-level budget | Falls back to the pool test above. |
+
+With several enterprises polled, the first one that yields a verdict wins.
 
 ## Request path
 
@@ -87,8 +99,9 @@ upstream. The answer is a normal `200` in the caller's protocol and streaming mo
 Anthropic, streamed or not. A `4xx` would surface in Copilot as a bare failure; a message is read.
 
 A trace is still recorded, with `ai-credits-gate` in both the model and reason columns and an
-analysis note naming the enterprise and the remaining credits, so *"why did nobody route through the
-router this morning"* has an answer in the trace list. Administrators are gated like everyone else:
+analysis note naming the enterprise, the reason (`pool` or `budget`) and the remaining credits or
+budget headroom, so *"why did nobody route through the router this morning"* has an answer in the
+trace list. Administrators are gated like everyone else:
 this is about the customer's budget, not a privilege boundary.
 
 ## Operations

@@ -362,7 +362,7 @@ export default function CreditsPage() {
             />
           </label>
 
-          <label className="field" style={{ marginBottom: 0 }}>
+          <label className="field">
             <span className="field-name">
               {t('credits.message')}
               <span className="field-hint">{t('credits.messageHint')}</span>
@@ -374,15 +374,41 @@ export default function CreditsPage() {
               )}
             </span>
             <textarea
-              rows={5}
+              rows={4}
               value={gate.message ?? ''}
               placeholder={status?.default_message ?? ''}
               onChange={(e) => setGate({ message: e.target.value })}
             />
           </label>
-          <p className="panel-note" style={{ margin: '6px 0 0' }}>
+          <p className="panel-note" style={{ margin: '-6px 0 14px' }}>
             <Trans i18nKey="credits.messagePlaceholders" components={{ code: <code /> }} />
           </p>
+
+          {gate.per_user && (
+            <>
+              <label className="field" style={{ marginBottom: 0 }}>
+                <span className="field-name">
+                  {t('credits.messageBudget')}
+                  <span className="field-hint">{t('credits.messageHint')}</span>
+                  <span className="spacer" />
+                  {(gate.message_budget ?? '').trim() && (
+                    <button className="btn-link" type="button" onClick={() => setGate({ message_budget: '' })}>
+                      {t('credits.restoreDefault')}
+                    </button>
+                  )}
+                </span>
+                <textarea
+                  rows={4}
+                  value={gate.message_budget ?? ''}
+                  placeholder={status?.default_message_budget ?? ''}
+                  onChange={(e) => setGate({ message_budget: e.target.value })}
+                />
+              </label>
+              <p className="panel-note" style={{ margin: '6px 0 0' }}>
+                <Trans i18nKey="credits.messageBudgetPlaceholders" components={{ code: <code /> }} />
+              </p>
+            </>
+          )}
         </div>
       </div>
     </div>
@@ -467,6 +493,13 @@ function EnterpriseCard({ ent, perUser }: { ent: CreditsEnterprise; perUser: boo
         </span>
         {ent.pool_total_source && (
           <span className="badge">{t(`credits.source.${ent.pool_total_source}`)}</span>
+        )}
+        {!ent.error && (
+          <span className="badge" title={t('credits.memberSourceHint')}>
+            {ent.member_source
+              ? t(`credits.memberSource.${ent.member_source}`, { count: ent.member_count })
+              : t('credits.memberSource.none')}
+          </span>
         )}
       </div>
       {ent.error && <p className="credits-err">{ent.error}</p>}
@@ -582,10 +615,12 @@ function UserTable({ ent }: { ent: CreditsEnterprise }) {
                 </td>
                 <td className="num">{u.headroom_usd === null ? t('credits.noBudget') : fmtUsd(u.headroom_usd)}</td>
                 <td>
-                  {u.blocked_on_copilot ? (
-                    <span className="badge warn">{t('credits.verdict.blockedOnCopilot')}</span>
-                  ) : ent.state === 'available' ? (
+                  {u.gate === 'budget' ? (
+                    <span className="badge ok">{t('credits.verdict.useCopilotBudget')}</span>
+                  ) : u.gate === 'pool' ? (
                     <span className="badge ok">{t('credits.verdict.useCopilot')}</span>
+                  ) : u.blocked_on_copilot ? (
+                    <span className="badge warn">{t('credits.verdict.blockedOnCopilot')}</span>
                   ) : (
                     <span className="badge">{t('credits.verdict.byokOpen')}</span>
                   )}

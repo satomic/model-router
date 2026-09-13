@@ -487,24 +487,27 @@ five firings and offers presets from every 15 minutes to daily; GitHub's billing
 hours, so anything more frequent buys nothing. Tick enterprises to poll only some of them; none
 ticked means every enterprise the token can see.
 
-**BYOK gate**: once on, a request from a user whose enterprise pool still has credits is **neither
-routed nor shown to the decision model**. It is answered with a note as a normal assistant message
-(English by default, editable, with `{enterprise}`, `{remaining}` and other placeholders), the
-same way streamed or not, on the OpenAI and the Anthropic endpoint alike. The gate lifts on its own
-once the pool is exhausted, the snapshot goes stale or polling stops -- every uncertainty lets the
-request through, because the gate saves money and must never be why a developer cannot work.
-**Lift the gate when fewer than N credits remain** opens it a little before GitHub starts metering,
-to absorb the billing lag.
+**BYOK gate**: once on, a request from a user who **belongs to** an enterprise whose pool still has
+credits is **neither routed nor shown to the decision model**. It is answered with a note as a normal
+assistant message (English by default, editable, with `{enterprise}`, `{remaining}` and other
+placeholders), the same way streamed or not, on the OpenAI and the Anthropic endpoint alike. Which
+enterprise a user belongs to comes from the seat list, or from the key policy's cached member lists
+when GitHub returns no seats; a user who cannot be placed in any enterprise is let through rather than
+held to someone else's pool. The gate lifts on its own once the pool is exhausted, the snapshot goes
+stale or polling stops -- every uncertainty lets the request through, because the gate saves money and
+must never be why a developer cannot work. **Lift the gate when fewer than N credits remain** opens it
+a little before GitHub starts metering, to absorb the billing lag.
 
-With **Also consider each user individually** ticked, the poll additionally reads the seat list and
-GitHub's user-level budgets: a user without a seat in that enterprise, or one who has used up their
-own user-level budget (GitHub blocks them on Copilot regardless of the pool), is let through to BYOK
-rather than sent back to Copilot. Each card then lists every seat holder with budget, consumption,
-headroom and the verdict, filterable by login.
+With **Decide per user** ticked, the poll additionally reads GitHub's user-level budgets, and a user's
+**own budget takes precedence over the pool**: headroom left means they are sent back to Copilot (with
+a second, budget-specific note carrying `{budget_remaining_usd}` and friends) even if the shared pool
+is already exhausted; budget used up means GitHub blocks them and BYOK stays open. A user with no
+user-level budget falls back to the pool test. Each card then lists every seat holder with budget,
+consumption, headroom and the verdict (pool / own budget / BYOK open), filterable by login.
 
 Gated requests are still traced, with `ai-credits-gate` in both the model and the decision column and
-the enterprise and remaining credits in the detail. The derivation and the limits of GitHub's API
-are written up in [Copilot AI credits](ai-credits.md).
+the enterprise, the reason (pool or budget) and the remaining credits or headroom in the detail. The
+derivation and the limits of GitHub's API are written up in [Copilot AI credits](ai-credits.md).
 
 ### 2.9 Monitoring: usage, traces, playground
 

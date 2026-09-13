@@ -248,6 +248,12 @@
       "exact": "精确总量",
       "seats": "按席位估算"
     },
+    "memberSourceHint": "拦截时成员关系的判定来源",
+    "memberSource": {
+      "seats": "成员：{{count}} 人（席位列表）",
+      "cache": "成员：{{count}} 人（策略缓存）",
+      "none": "成员：未知"
+    },
     "poolTotal": "池总量",
     "consumed": "已从池中使用",
     "remaining": "剩余",
@@ -283,16 +289,18 @@
     "gateTitle": "BYOK 拦截",
     "gateOn": "生效中",
     "gateToggle": "共享池仍有余额时，不路由任何请求——直接返回提示说明",
-    "gateOnNote": "生效中。所属企业共享池仍有余额的用户发来的请求<strong>既不路由，也不经过决策模型</strong>，而是以普通 assistant 消息的形式返回下方提示，因此不会消耗任何后端。共享池用尽、快照过期或轮询停止后拦截自动解除——任何不确定的情况都放行。",
+    "gateOnNote": "生效中。<strong>隶属于</strong>共享池仍有余额的企业的用户发来的请求<strong>既不路由，也不经过决策模型</strong>，而是以普通 assistant 消息的形式返回下方提示，因此不会消耗任何后端。成员关系来自席位列表；GitHub 不提供席位列表时，来自密钥策略的成员缓存。无法归属到任何企业的用户直接放行。共享池用尽、快照过期或轮询停止后拦截自动解除。",
     "gateOffNote": "已关闭。请求照常路由，与共享池无关。开启后需等轮询产生快照才会生效。",
     "gateNeedsPolling": "拦截依赖轮询——没有快照就无从判断，所有请求都会放行。",
-    "perUserToggle": "同时逐用户判断（席位与用户级预算）",
-    "perUserNote": "开启后，轮询还会读取 GitHub 的用户级预算和席位列表。在该企业<strong>没有席位</strong>的用户，或<strong>已用尽自身用户级预算</strong>的用户（无论池子如何 GitHub 都会拦下他们），将放行到 BYOK 而不是被劝回 Copilot。超大企业 GitHub 不公布席位列表，此时视所有人都有席位。",
+    "perUserToggle": "按用户判断，以每个用户自己的用户级预算为准",
+    "perUserNote": "开启后，轮询还会读取 GitHub 的用户级预算，并且<strong>用户自身预算优先于共享池</strong>：预算还有剩余就劝回 Copilot，即使共享池已经用尽（预算是已批准的 Copilot 支出）；预算用尽则 GitHub 会拦下该用户，BYOK 放行。没有用户级预算的用户回到上面的共享池判断。",
     "minRemaining": "剩余额度低于此值即解除拦截",
     "minRemainingHint": "0 = 仅在池子真正用尽时",
     "message": "返回给用户的提示",
     "messageHint": "留空 = 内置英文默认文案",
     "messagePlaceholders": "占位符：<code>{enterprise}</code>、<code>{slug}</code>、<code>{remaining}</code>、<code>{total}</code>、<code>{remaining_note}</code>（如 \" (about 1,200 of 42,800 credits)\"，总量未知时为空）。",
+    "messageBudget": "用户自身预算仍有剩余时返回的提示",
+    "messageBudgetPlaceholders": "占位符：<code>{enterprise}</code>、<code>{slug}</code>、<code>{budget_remaining_usd}</code>、<code>{budget_total_usd}</code>、<code>{budget_remaining_credits}</code>，以及上方的共享池占位符。",
     "restoreDefault": "恢复默认",
     "noUsers": "没有逐用户数据：该企业的席位列表与用户级预算为空或不可用。",
     "userCount_other": "{{count}} 个用户",
@@ -308,7 +316,8 @@
       "verdict": "拦截判定"
     },
     "verdict": {
-      "useCopilot": "劝回 Copilot",
+      "useCopilot": "劝回 Copilot（共享池）",
+      "useCopilotBudget": "劝回 Copilot（自身预算）",
       "blockedOnCopilot": "预算已用尽 → 放行 BYOK",
       "byokOpen": "放行 BYOK"
     }

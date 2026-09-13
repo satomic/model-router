@@ -440,6 +440,34 @@ def _scopes_to_fetch(cfg, structure: dict) -> list[tuple[str, str, object]]:
     return out[:_MAX_MEMBER_SCOPES]
 
 
+def cached_enterprise_members(slug: str) -> dict[str, str]:
+    """Every login the member cache places in this enterprise: {login: scope key}.
+
+    Read from the org and team lists already cached for the key policy, so it only knows
+    about the scopes the policy names. Truncated or errored lists are still used here --
+    a login that *is* present is a positive fact even when the list is incomplete; only
+    absence from such a list means nothing, and callers treat "not found" as unknown.
+    """
+    structure = _load_structure()
+    ent = next(
+        (e for e in (structure.get("enterprises") or [])
+         if isinstance(e, dict) and str(e.get("slug") or "").lower() == (slug or "").lower()),
+        None,
+    )
+    if not ent:
+        return {}
+    keys = [_org_key(str((o or {}).get("login") or "")) for o in (ent.get("organizations") or [])]
+    keys += [_team_key(slug, str((t or {}).get("id") or "")) for t in (ent.get("teams") or [])]
+    entries = _load_members().get("entries") or {}
+    out: dict[str, str] = {}
+    for key in keys:
+        entry = entries.get(key)
+        if isinstance(entry, dict):
+            for login in entry.get("logins") or []:
+                out.setdefault(str(login).lower(), key)
+    return out
+
+
 async def refresh(cfg) -> dict:
     """Refresh structure.json and every member list the policy references.
 

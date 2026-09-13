@@ -44,7 +44,7 @@ from datetime import datetime, timezone
 
 import httpx
 
-from . import config, cronexpr, ghadmin
+from . import config, cronexpr, ghadmin, ghcache
 from .authstore import mtime, read_json, write_json
 from .ghcache import token_fp
 
@@ -80,11 +80,20 @@ POOL_UNKNOWN = "unknown"
 POOL_NONE = "none"  # no Copilot seats at all
 
 GATE_REASON = "ai-credits-gate"
+# Why a request was gated: the enterprise pool still has credits, or (per-user mode) the
+# caller's own user-level budget does. Each has its own note.
+REASON_POOL = "pool"
+REASON_BUDGET = "budget"
 
 DEFAULT_MESSAGE = (
     "Your GitHub Copilot AI-credit pool ({enterprise}) still has credits left"
     "{remaining_note}. Please use Copilot's built-in models first; this BYOK "
     "route reopens automatically once the pool is used up."
+)
+DEFAULT_MESSAGE_BUDGET = (
+    "Your GitHub Copilot user-level budget in {enterprise} still has "
+    "${budget_remaining_usd} of ${budget_total_usd} left. Please use Copilot's built-in "
+    "models first; this BYOK route reopens automatically once your budget is used up."
 )
 
 _snapshot_cache: dict | None = None
@@ -113,6 +122,7 @@ def settings(cfg) -> dict:
         "gate_enabled": bool(gate.get("enabled", False)),
         "per_user": bool(gate.get("per_user", False)),
         "message": str(gate.get("message") or "").strip(),
+        "message_budget": str(gate.get("message_budget") or "").strip(),
     }
 
 
@@ -150,6 +160,8 @@ def validate(raw) -> list[str]:
                     errors.append(f"ai_credits.gate.{field} must be a boolean")
             if "message" in gate and gate["message"] is not None and not isinstance(gate["message"], str):
                 errors.append("ai_credits.gate.message must be a string")
+            if "message_budget" in gate and gate["message_budget"] is not None and not isinstance(gate["message_budget"], str):
+                errors.append("ai_credits.gate.message_budget must be a string")
     return errors
 
 
@@ -295,7 +307,8 @@ async def fetch_enterprise(token: str, slug: str, name: str, per_user: bool) -> 
         "pool_total": None, "pool_total_source": None,
         "consumed": 0.0, "metered": 0.0, "gross": 0.0,
         "remaining": None, "state": POOL_UNKNOWN,
-        "seats": None, "seat_logins": None, "users": None, "universal_budget_usd": None,
+        "seats": None, "seat_logins": None, "member_logins": {},
+        "users": None, "universal_budget_usd": None,
         "skus": [], "warnings": [], "error": None,
     }
     try:
@@ -348,6 +361,13 @@ async def fetch_enterprise(token: str, slug: str, name: str, per_user: bool) -> 
     except httpx.HTTPError as e:
         entry["error"] = f"GitHub request failed: {e}"
         return entry
+
+    # Who belongs to this enterprise, for the gate's membership test. The seat list is the
+    # authoritative answer when GitHub gives one; when it does not (large enterprises) the key
+    # policy's cached org / team member lists are the fallback, so a user the access policy
+    # already places in this enterprise is still recognised.
+    if entry["seat_logins"] is None:
+        entry["member_logins"] = ghcache.cached_enterprise_members(slug)
 
     _derive_pool(entry)
     return entry
@@ -509,29 +529,102 @@ def user_headroom_usd(entry: dict, login: str) -> float | None:
     return None
 
 
-def _render(template: str, entry: dict) -> str:
+def _render(template: str, entry: dict, headroom: float | None = None, target: float | None = None) -> str:
     remaining = entry.get("remaining")
     total = entry.get("pool_total")
     note = f" (about {remaining:,.0f} of {total:,.0f} credits)" if remaining is not None and total else ""
-    text = template or DEFAULT_MESSAGE
+    text = template
     for key, value in (
         ("{enterprise}", entry.get("name") or entry.get("slug") or ""),
         ("{slug}", entry.get("slug") or ""),
         ("{remaining_note}", note),
         ("{remaining}", f"{remaining:,.0f}" if remaining is not None else "?"),
         ("{total}", f"{total:,.0f}" if total else "?"),
+        ("{budget_remaining_usd}", f"{headroom:,.2f}" if headroom is not None else "?"),
+        ("{budget_total_usd}", f"{target:,.2f}" if target is not None else "?"),
+        ("{budget_remaining_credits}", f"{headroom / USD_PER_CREDIT:,.0f}" if headroom is not None else "?"),
     ):
         text = text.replace(key, str(value))
     return text
 
 
-def gate(cfg, login: str) -> dict | None:
-    """Decide whether this caller's request is answered with the note instead of being routed.
+def membership(entry: dict, login: str) -> bool | None:
+    """Whether this login belongs to the enterprise: True / False / None (cannot tell).
 
-    Returns None to let the request through, otherwise {"message", "enterprise", "remaining"}.
-    Every uncertainty resolves to "let it through": an unknown pool size with no draw yet, a
-    snapshot from another token, a stale snapshot, a user GitHub itself would block. The gate
-    protects a budget; it must never be the reason a developer cannot work.
+    A budget record is proof (the user consumed credits there). The seat list is authoritative
+    when GitHub returned one, so absence from it is a real "no". Without a seat list the key
+    policy's cached member lists decide, and a login none of them mention is *unknown* rather
+    than absent -- those lists only cover the scopes the policy names.
+    """
+    users = entry.get("users")
+    if isinstance(users, dict) and login in users:
+        return True
+    seat_logins = entry.get("seat_logins")
+    if isinstance(seat_logins, dict):
+        return login in seat_logins
+    members = entry.get("member_logins") or {}
+    if login in members:
+        return True
+    return None
+
+
+def evaluate(conf: dict, entry: dict, login: str) -> dict | None:
+    """The gate's verdict for one login against one enterprise, or None to let through.
+
+    Two regimes, chosen by `per_user`:
+      * enterprise mode: the caller must belong to this enterprise and its pool must have
+        credits left;
+      * per-user mode: the caller's own user-level budget decides when one applies -- headroom
+        left means "use Copilot" even if the pool is exhausted (the budget is pre-approved
+        Copilot spend), none left means GitHub blocks them and BYOK stays open. A caller with
+        no user-level budget falls back to the pool test.
+    Unknown membership lets the request through: gating someone whose enterprise we cannot
+    place would send them to a pool that may not be theirs -- exactly the bug this guards.
+    """
+    if entry.get("error"):
+        return None
+    login = (login or "").strip().lower()
+    if membership(entry, login) is not True:
+        return None
+    remaining = entry.get("remaining")
+    pool_ok = entry.get("state") == POOL_AVAILABLE and (
+        remaining is None or remaining > conf["min_remaining_credits"]
+    )
+    base = {
+        "enterprise": entry.get("slug"),
+        "enterprise_name": entry.get("name"),
+        "remaining": remaining,
+        "pool_total": entry.get("pool_total"),
+        "pool_ok": pool_ok,
+    }
+    if conf["per_user"]:
+        headroom = user_headroom_usd(entry, login)
+        if headroom is not None:
+            if headroom <= 0:
+                return None
+            rec = (entry.get("users") or {}).get(login) or {}
+            target = rec.get("target_usd")
+            if target is None:
+                target = entry.get("universal_budget_usd")
+            return base | {
+                "reason": REASON_BUDGET,
+                "headroom_usd": headroom,
+                "budget_usd": target,
+                "message": _render(conf["message_budget"] or DEFAULT_MESSAGE_BUDGET, entry, headroom, target),
+            }
+    if pool_ok:
+        return base | {"reason": REASON_POOL, "message": _render(conf["message"] or DEFAULT_MESSAGE, entry)}
+    return None
+
+
+def gate(cfg, login: str) -> dict | None:
+    """Decide whether this caller's request is answered with a note instead of being routed.
+
+    Returns None to let the request through, otherwise the verdict from `evaluate` (with
+    `message`, `reason`, `enterprise`). Every uncertainty resolves to "let it through": a
+    snapshot from another token, a stale snapshot, an enterprise the caller cannot be placed
+    in, a user GitHub itself would block. The gate protects a budget; it must never be the
+    reason a developer cannot work.
     """
     conf = settings(cfg)
     if not conf["gate_enabled"]:
@@ -541,26 +634,10 @@ def gate(cfg, login: str) -> dict | None:
         return None
     if is_stale(cfg, snap):
         return None
-    login = (login or "").strip().lower()
     for entry in (snap.get("enterprises") or {}).values():
-        if entry.get("error") or entry.get("state") != POOL_AVAILABLE:
-            continue
-        remaining = entry.get("remaining")
-        if remaining is not None and remaining <= conf["min_remaining_credits"]:
-            continue
-        if conf["per_user"]:
-            seat_logins = entry.get("seat_logins")
-            if isinstance(seat_logins, dict) and seat_logins and login not in seat_logins:
-                continue
-            headroom = user_headroom_usd(entry, login)
-            if headroom is not None and headroom <= 0:
-                continue
-        return {
-            "message": _render(conf["message"], entry),
-            "enterprise": entry.get("slug"),
-            "remaining": remaining,
-            "pool_total": entry.get("pool_total"),
-        }
+        verdict = evaluate(conf, entry, login)
+        if verdict:
+            return verdict
     return None
 
 
@@ -575,6 +652,7 @@ def status(cfg) -> dict:
         "settings": conf,
         "token_configured": bool(cfg.gh_admin_token),
         "default_message": DEFAULT_MESSAGE,
+        "default_message_budget": DEFAULT_MESSAGE_BUDGET,
         "included_credits": INCLUDED_CREDITS,
         "fetched_at": (snap or {}).get("fetched_at") if token_ok else None,
         "stale": bool(snap) and token_ok and is_stale(cfg, snap, now),
@@ -589,11 +667,13 @@ def status(cfg) -> dict:
         for entry in (snap.get("enterprises") or {}).values():
             users = entry.get("users")
             seat_logins = entry.get("seat_logins") or {}
+            members = entry.get("member_logins") or {}
             rows = []
             if isinstance(users, dict) or seat_logins:
                 for login in sorted(set(seat_logins) | set(users or {})):
                     rec = (users or {}).get(login) or {}
                     headroom = user_headroom_usd(entry, login) if isinstance(users, dict) else None
+                    verdict = evaluate(conf, entry, login)
                     rows.append({
                         "login": login,
                         "plan": seat_logins.get(login),
@@ -601,11 +681,19 @@ def status(cfg) -> dict:
                         "consumed_usd": rec.get("consumed_usd"),
                         "headroom_usd": headroom,
                         "blocked_on_copilot": headroom is not None and headroom <= 0,
+                        # What the gate would do for this login right now, under the saved settings
+                        "gate": verdict["reason"] if verdict else None,
                     })
                 rows.sort(key=lambda r: -(r["consumed_usd"] or 0))
             out["enterprises"].append({
-                k: v for k, v in entry.items() if k not in ("users", "seat_logins")
-            } | {"users": rows, "seat_count": len(seat_logins) if seat_logins else None})
+                k: v for k, v in entry.items() if k not in ("users", "seat_logins", "member_logins")
+            } | {
+                "users": rows,
+                "seat_count": len(seat_logins) if seat_logins else None,
+                "member_source": "seats" if isinstance(entry.get("seat_logins"), dict)
+                                 else ("cache" if members else None),
+                "member_count": len(seat_logins) if isinstance(entry.get("seat_logins"), dict) else len(members),
+            })
     return out
 
 

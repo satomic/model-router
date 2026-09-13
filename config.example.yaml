@@ -200,8 +200,9 @@ ai_credits:
   min_remaining_credits: 0      # treat the pool as used up while this many (or fewer) credits remain
   gate:
     enabled: false              # answer with a note instead of routing while the pool has credits
-    per_user: false             # also honour each user's Copilot seat and user-level budget
-    message: ''                 # empty = the built-in English note
+    per_user: false             # decide per user from their own GitHub user-level budget instead
+    message: ''                 # empty = the built-in English note (pool has credits)
+    message_budget: ''          # empty = the built-in English note (own budget has headroom)
 
 # Keyword matching is a plain substring test, so list every language your users write in --
 # the examples below cover both English and Chinese.

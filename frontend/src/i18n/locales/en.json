@@ -249,6 +249,12 @@
       "exact": "exact size",
       "seats": "estimated from seats"
     },
+    "memberSourceHint": "Where the gate's membership test draws from",
+    "memberSource": {
+      "seats": "members: {{count}} from seat list",
+      "cache": "members: {{count}} from policy cache",
+      "none": "members: unknown"
+    },
     "poolTotal": "Pool size",
     "consumed": "Used from pool",
     "remaining": "Remaining",
@@ -284,16 +290,18 @@
     "gateTitle": "BYOK gate",
     "gateOn": "in force",
     "gateToggle": "While the shared pool still has credits, do not route any request — answer with a note instead",
-    "gateOnNote": "In force. A request from a user whose enterprise pool still has credits is <strong>neither routed nor shown to the decision model</strong>: it is answered with the note below as a normal assistant message, so it costs nothing on any backend. The gate lifts by itself once the pool is exhausted, the snapshot goes stale, or polling stops — every uncertainty resolves to letting the request through.",
+    "gateOnNote": "In force. A request from a user who <strong>belongs to</strong> an enterprise whose pool still has credits is <strong>neither routed nor shown to the decision model</strong>: it is answered with the note below as a normal assistant message, so it costs nothing on any backend. Membership comes from the seat list, or from the key policy's cached member lists when GitHub returns no seats; a user who cannot be placed in any enterprise is let through. The gate lifts by itself once the pool is exhausted, the snapshot goes stale, or polling stops.",
     "gateOffNote": "Off. Requests are routed as usual regardless of the pool. Turning this on only has an effect once polling has produced a snapshot.",
     "gateNeedsPolling": "The gate needs polling to be on — without a snapshot it has nothing to decide on and lets everything through.",
-    "perUserToggle": "Also consider each user individually (seat and user-level budget)",
-    "perUserNote": "With this on, the poll also reads GitHub's user-level budgets and the seat list. A user <strong>without a seat</strong> in the enterprise, or one who has <strong>used up their own user-level budget</strong> (GitHub blocks them on Copilot regardless of the pool), is let through to BYOK rather than sent back to Copilot. On very large enterprises GitHub does not publish the seat list; everyone is then assumed to hold a seat.",
+    "perUserToggle": "Decide per user, from each user's own user-level budget",
+    "perUserNote": "With this on, the poll also reads GitHub's user-level budgets, and <strong>a user's own budget takes precedence over the pool</strong>: headroom left means they are sent back to Copilot even if the shared pool is already exhausted (the budget is pre-approved Copilot spend); budget used up means GitHub blocks them and BYOK stays open. A user with no user-level budget falls back to the pool test above.",
     "minRemaining": "Lift the gate when fewer than this many credits remain",
     "minRemainingHint": "0 = only when the pool is actually exhausted",
     "message": "Note returned to the user",
     "messageHint": "empty = built-in English default",
     "messagePlaceholders": "Placeholders: <code>{enterprise}</code>, <code>{slug}</code>, <code>{remaining}</code>, <code>{total}</code>, <code>{remaining_note}</code> (e.g. \" (about 1,200 of 42,800 credits)\", empty when the size is unknown).",
+    "messageBudget": "Note when the user's own budget still has headroom",
+    "messageBudgetPlaceholders": "Placeholders: <code>{enterprise}</code>, <code>{slug}</code>, <code>{budget_remaining_usd}</code>, <code>{budget_total_usd}</code>, <code>{budget_remaining_credits}</code>, plus the pool placeholders above.",
     "restoreDefault": "Restore default",
     "noUsers": "No per-user data: the seat list and user-level budgets are empty or unavailable for this enterprise.",
     "userCount_one": "{{count}} user",
@@ -310,7 +318,8 @@
       "verdict": "Gate verdict"
     },
     "verdict": {
-      "useCopilot": "sent back to Copilot",
+      "useCopilot": "sent back to Copilot (pool)",
+      "useCopilotBudget": "sent back to Copilot (own budget)",
       "blockedOnCopilot": "budget used up → BYOK open",
       "byokOpen": "BYOK open"
     }

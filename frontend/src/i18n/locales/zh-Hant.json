@@ -248,6 +248,12 @@
       "exact": "精確總量",
       "seats": "按席位估算"
     },
+    "memberSourceHint": "攔截時成員關係的判定來源",
+    "memberSource": {
+      "seats": "成員：{{count}} 人（席位清單）",
+      "cache": "成員：{{count}} 人（政策快取）",
+      "none": "成員：未知"
+    },
     "poolTotal": "池總量",
     "consumed": "已從池中使用",
     "remaining": "剩餘",
@@ -283,16 +289,18 @@
     "gateTitle": "BYOK 攔截",
     "gateOn": "生效中",
     "gateToggle": "共享池仍有餘額時，不路由任何請求——直接回傳提示說明",
-    "gateOnNote": "生效中。所屬企業共享池仍有餘額的使用者送來的請求<strong>既不路由，也不經過決策模型</strong>，而是以一般 assistant 訊息回傳下方提示，因此不會消耗任何後端。共享池用盡、快照過期或輪詢停止後攔截自動解除——任何不確定的情況都放行。",
+    "gateOnNote": "生效中。<strong>隸屬於</strong>共享池仍有餘額的企業的使用者送來的請求<strong>既不路由，也不經過決策模型</strong>，而是以一般 assistant 訊息回傳下方提示，因此不會消耗任何後端。成員關係來自席位清單；GitHub 不提供席位清單時，來自金鑰政策的成員快取。無法歸屬到任何企業的使用者直接放行。共享池用盡、快照過期或輪詢停止後攔截自動解除。",
     "gateOffNote": "已關閉。請求照常路由，與共享池無關。開啟後需等輪詢產生快照才會生效。",
     "gateNeedsPolling": "攔截依賴輪詢——沒有快照就無從判斷，所有請求都會放行。",
-    "perUserToggle": "同時逐使用者判斷（席位與使用者層級預算）",
-    "perUserNote": "開啟後，輪詢還會讀取 GitHub 的使用者層級預算和席位清單。在該企業<strong>沒有席位</strong>的使用者，或<strong>已用盡自身使用者層級預算</strong>的使用者（無論池子如何 GitHub 都會攔下他們），將放行到 BYOK 而不是被勸回 Copilot。超大企業 GitHub 不公布席位清單，此時視所有人都有席位。",
+    "perUserToggle": "按使用者判斷，以每位使用者自己的使用者層級預算為準",
+    "perUserNote": "開啟後，輪詢還會讀取 GitHub 的使用者層級預算，並且<strong>使用者自身預算優先於共享池</strong>：預算還有剩餘就勸回 Copilot，即使共享池已經用盡（預算是已核准的 Copilot 支出）；預算用盡則 GitHub 會攔下該使用者，BYOK 放行。沒有使用者層級預算的使用者回到上面的共享池判斷。",
     "minRemaining": "剩餘額度低於此值即解除攔截",
     "minRemainingHint": "0 = 僅在池子真正用盡時",
     "message": "回傳給使用者的提示",
     "messageHint": "留空 = 內建英文預設文案",
     "messagePlaceholders": "佔位符：<code>{enterprise}</code>、<code>{slug}</code>、<code>{remaining}</code>、<code>{total}</code>、<code>{remaining_note}</code>（如 \" (about 1,200 of 42,800 credits)\"，總量未知時為空）。",
+    "messageBudget": "使用者自身預算仍有剩餘時回傳的提示",
+    "messageBudgetPlaceholders": "佔位符：<code>{enterprise}</code>、<code>{slug}</code>、<code>{budget_remaining_usd}</code>、<code>{budget_total_usd}</code>、<code>{budget_remaining_credits}</code>，以及上方的共享池佔位符。",
     "restoreDefault": "恢復預設",
     "noUsers": "沒有逐使用者資料：該企業的席位清單與使用者層級預算為空或不可用。",
     "userCount_other": "{{count}} 位使用者",
@@ -308,7 +316,8 @@
       "verdict": "攔截判定"
     },
     "verdict": {
-      "useCopilot": "勸回 Copilot",
+      "useCopilot": "勸回 Copilot（共享池）",
+      "useCopilotBudget": "勸回 Copilot（自身預算）",
       "blockedOnCopilot": "預算已用盡 → 放行 BYOK",
       "byokOpen": "放行 BYOK"
     }

@@ -288,8 +288,12 @@ export interface AICreditsConfig {
     /** Also honour each user's user-level budget and seat: a user GitHub would block is let
      *  through to BYOK. */
     per_user?: boolean
-    /** The note returned instead of a model answer. Empty = the built-in bilingual default. */
+    /** The note returned instead of a model answer while the pool has credits. Empty = the
+     *  built-in default. */
     message?: string
+    /** The note returned in per-user mode when the caller's own user-level budget still has
+     *  headroom. Empty = the built-in default. */
+    message_budget?: string
   }
 }
 
@@ -570,6 +574,9 @@ export interface CreditsUserRow {
   consumed_usd: number | null
   headroom_usd: number | null
   blocked_on_copilot: boolean
+  /** What the gate would do for this login under the saved settings: why it would be sent back
+   *  to Copilot, or null when BYOK stays open. */
+  gate: 'pool' | 'budget' | null
 }
 
 export interface CreditsEnterprise {
@@ -586,6 +593,10 @@ export interface CreditsEnterprise {
   state: PoolState
   seats: Record<string, number> | null
   seat_count: number | null
+  /** Where the gate's membership test draws from: the seat list, or the key policy's cached
+   *  member lists when GitHub returns no seats. */
+  member_source: 'seats' | 'cache' | null
+  member_count: number
   universal_budget_usd: number | null
   skus: { sku: string; gross: number; covered: number; metered: number }[]
   users: CreditsUserRow[]
@@ -602,9 +613,11 @@ export interface CreditsStatus {
     gate_enabled: boolean
     per_user: boolean
     message: string
+    message_budget: string
   }
   token_configured: boolean
   default_message: string
+  default_message_budget: string
   included_credits: Record<string, number>
   fetched_at: number | null
   stale: boolean
