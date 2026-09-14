@@ -39,6 +39,12 @@ frontend/dist/
 frontend/.vite/
 node_modules/
 
+# Go build artefacts from the host. bin/ is a compiled binary for whatever platform the
+# developer is on, and internal/web/dist is a copy of the console that scripts/build.sh puts
+# there -- the image builds both itself, from source, so a host copy could only ever be stale.
+server-go/bin/
+server-go/internal/web/dist/
+
 # Not needed at runtime, and excluded so editing them cannot invalidate the build cache.
 .git/
 .github/
@@ -48,6 +54,7 @@ docs/
 verify/
 README.md
 Dockerfile
+Dockerfile.go
 .playwright-mcp/
 
 # IDE / OS

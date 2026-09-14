@@ -13,9 +13,11 @@ on:
   pull_request:
     paths:
       - Dockerfile
+      - Dockerfile.go
       - .dockerignore
       - requirements.txt
       - app/**
+      - server-go/**
       - frontend/**
       - .github/workflows/docker-publish.yml
 
@@ -36,6 +38,32 @@ jobs:
       # Required for pushing to GHCR with the automatic GITHUB_TOKEN, so no PAT has to be
       # stored as a secret.
       packages: write
+
+    strategy:
+      # Both images are published from one run so a release can never ship half of itself, and
+      # fail-fast is off so a break in one backend still produces the other -- the two are
+      # independent implementations and a fault in one says nothing about the other.
+      fail-fast: false
+      matrix:
+        include:
+          # The Go backend carries the unsuffixed tags, so `docker pull <image>:latest` and
+          # `:2.0.0` are the Go image. It is the default because it is what a deployment should
+          # run: it holds roughly twice the concurrent in-flight requests at a fraction of the
+          # latency and memory. See docs/backend-benchmark.md.
+          - backend: go
+            dockerfile: Dockerfile.go
+            # No flavor at all rather than an empty suffix=: the unsuffixed leg should not be
+            # relying on how the action reads a blank value.
+            flavor: ""
+          # The Python backend stays published under -py, so an existing deployment that wants
+          # the reference implementation can pin `:latest-py` / `:2.0.0-py` and keep it.
+          - backend: python
+            dockerfile: Dockerfile
+            # onlatest is what carries the suffix onto `latest` too, so this leg publishes
+            # `latest-py` instead of fighting the Go leg for `latest`.
+            flavor: "suffix=-py,onlatest=true"
+
+    name: ${{ matrix.backend }}
 
     steps:
       - name: Checkout
@@ -86,12 +114,17 @@ jobs:
           # the ref being a version tag: a manual workflow_dispatch run off a branch must not
           # move `latest` to an unreleased build, so it gets a throwaway branch-<sha> tag
           # instead and `latest` keeps pointing at the last real release.
+          #
+          # The Go leg passes nothing here, so its tags are exactly what this repository
+          # published before a second backend existed.
+          flavor: ${{ matrix.flavor }}
 
       - name: Build and push
         timeout-minutes: 55
         uses: docker/build-push-action@v6
         with:
           context: .
+          file: ${{ matrix.dockerfile }}
           platforms: linux/amd64,linux/arm64
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
@@ -109,8 +142,12 @@ jobs:
           # the same tag. That is the right price for a build that runs a few times per release.
           # If the emulated arm64 leg ever becomes the bottleneck, the fix is a *separate* cache
           # package (ref=${{ steps.image.outputs.ref }}-cache:latest), not a tag on this one.
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          #
+          # Scoped per backend: the two legs share nothing -- different base images, different
+          # dependency steps -- so an unscoped cache would have each run evicting the other's
+          # layers and neither would ever hit.
+          cache-from: type=gha,scope=${{ matrix.backend }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.backend }}
 
       # Fails the run if the image cannot serve /healthz, so a broken image is never left
       # sitting under `latest` with a green check next to it. amd64 only -- the runner cannot
@@ -121,19 +158,41 @@ jobs:
         run: |
           set -euo pipefail
           IMAGE=$(echo "${{ steps.meta.outputs.tags }}" | head -n1)
-          docker run -d --name smoke -p 8000:8000 -v smoke-data:/data "$IMAGE"
+          VOLUME="smoke-${{ matrix.backend }}"
+          docker volume rm -f "$VOLUME" > /dev/null 2>&1 || true
+          docker run -d --name smoke -p 8000:8000 -v "$VOLUME":/data "$IMAGE"
           for i in $(seq 1 30); do
             if curl -fsS http://localhost:8000/healthz > /tmp/health.json; then
               echo "healthy after ${i}s: $(cat /tmp/health.json)"
-              # The config must have been created on the empty volume, and the traces
-              # directory must sit under the same mount: that single-volume layout plus the
-              # auto-creation is what makes `docker run` need no preparation at all. Asserted
-              # rather than assumed -- a path regression would otherwise only show up as
-              # somebody's configuration vanishing on their next upgrade.
-              docker exec smoke test -f /data/config.yaml \
-                && echo "config.yaml auto-created on the volume OK"
-              docker exec smoke test -d /data/logs \
-                && echo "traces directory is on the volume OK"
+
+              # The config must have been created on the empty volume, and the traces directory
+              # must sit under the same mount: that single-volume layout plus the auto-creation
+              # is what makes `docker run` need no preparation at all. Asserted rather than
+              # assumed -- a path regression would otherwise only show up as somebody's
+              # configuration vanishing on their next upgrade.
+              #
+              # Checked from a busybox container over the same volume rather than with
+              # `docker exec`: the volume is what survives an upgrade, so it is the honest thing
+              # to assert, and one form of the check then covers both backends regardless of
+              # what either image happens to contain.
+              docker run --rm -v "$VOLUME":/data busybox sh -eu -c '
+                test -f /data/config.yaml || { echo "config.yaml was not created"; exit 1; }
+                test -d /data/logs || { echo "the traces directory is missing"; exit 1; }
+                echo "config.yaml auto-created on the volume OK"
+                echo "traces directory is on the volume OK"
+              '
+
+              # The server must be able to write there as the unprivileged uid it runs as. A
+              # named volume inherits the ownership of the image directory it is mounted over, so
+              # a regression here is a first-start failure for every new deployment -- and
+              # invisible on a bind mount the operator had already chowned by hand.
+              owner=$(docker run --rm -v "$VOLUME":/data busybox stat -c '%u' /data)
+              if [ "$owner" != "10001" ]; then
+                echo "::error::/data on the volume is owned by uid $owner, not the 10001 the server runs as"
+                exit 1
+              fi
+              echo "volume /data is owned by uid $owner OK"
+
               docker rm -f smoke > /dev/null
               exit 0
             fi

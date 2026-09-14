@@ -155,20 +155,36 @@ docker logs model-router
 Terminating TLS elsewhere means the router has to be told, or the OAuth callback URL is built with
 the wrong scheme and the session cookie loses its `Secure` flag:
 
-Append the uvicorn flags to the `docker run` command — anything after the image name replaces
-the image's default command:
+Name the proxy's address. Anything after the image name **replaces** the image's default command,
+which here is `--host 0.0.0.0 --port 8000`; the binary defaults to the same address and port, so
+passing only the extra flag is safe — but pass all three if you would rather not depend on that:
 
 ```bash
 docker run -d --name model-router -p 8000:8000 -v mr-data:/data \
   --restart unless-stopped ghcr.io/satomic/model-router:latest \
-  uvicorn app.main:app --host 0.0.0.0 --port 8000 \
-  --proxy-headers --forwarded-allow-ips 10.0.0.2
+  --host 0.0.0.0 --port 8000 --forwarded-allow-ips 10.0.0.2
 ```
 
 Set `--forwarded-allow-ips` to the proxy's address rather than `*`: those headers are
-client-supplied, and trusting them from anyone lets a caller dictate the callback origin. The
-GitHub OAuth App's callback URL must match the public address — see
+client-supplied, and trusting them from anyone lets a caller dictate the callback origin and
+strip the `Secure` flag off a session cookie. Only the **direct peer** is checked, which a client
+cannot forge. The default is loopback only, so a deployment behind a proxy has to say this
+explicitly; the startup line reports what is in force:
+
+```
+INFO mr: model-router 2.0.0 (go) listening on http://0.0.0.0:8000 (X-Forwarded-* trusted from 10.0.0.2)
+```
+
+The GitHub OAuth App's callback URL must match the public address — see
 [Sign-in and authentication](authentication.md).
+
+> **Upgrading from 1.x.** The 1.x image ran uvicorn, and this command used to pass uvicorn's own
+> flags: `uvicorn app.main:app --host 0.0.0.0 --port 8000 --proxy-headers --forwarded-allow-ips
+> 10.0.0.2`. The 2.0 image has no uvicorn in it and rejects those flags outright — the container
+> exits with `flag provided but not defined: -proxy-headers` — so this line has to be updated
+> before pulling. `--proxy-headers` has no equivalent because the behaviour it enabled is now
+> always on, gated on `--forwarded-allow-ips` instead. To stay on the Python backend, pull
+> `:latest-py` and keep the old command unchanged.
 
 ## The image
 
@@ -176,8 +192,8 @@ GitHub OAuth App's callback URL must match the public address — see
 |---|---|
 | Registry | `ghcr.io/satomic/model-router` |
 | Platforms | `linux/amd64`, `linux/arm64` |
-| Base | `python:3.11-slim` (the console is built in a discarded `node:22-alpine` stage) |
-| Size | ~275 MB |
+| Base | `alpine:3.21` (the console is built in a discarded `node:22-alpine` stage and embedded in the binary) |
+| Size | ~29 MB — the Python image is published as `:latest-py`, ~319 MB |
 | Runs as | uid `10001`, non-root |
 | Published by | [.github/workflows/docker-publish.yml](../.github/workflows/docker-publish.yml) on a `v*` tag |
 

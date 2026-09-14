@@ -1,0 +1,29 @@
+# The Go backend's build artefacts. Kept here rather than in the repository root so the rules
+# travel with the module and read against paths that make sense from inside it.
+
+# The compiled server. Rebuilt by scripts/build.sh; nothing outside a release needs it, and it
+# is platform-specific, so a committed one would only ever be the wrong architecture.
+bin/
+
+# The console, copied in at build time by scripts/build.sh so `go:embed` can bundle it into the
+# binary. The source of truth is frontend/, and frontend/dist is itself ignored at the root --
+# committing a second copy here would let an image ship a stale bundle.
+#
+# .gitkeep is the exception and must stay tracked: `go:embed all:dist` refuses a directory that
+# does not exist, so without it a fresh clone cannot even compile. scripts/build.sh recreates it
+# on every build for the same reason.
+internal/web/dist/*
+!internal/web/dist/.gitkeep
+
+# Compiled test binaries, from `go test -c`.
+*.test
+
+# Profiles and coverage, from `go test -cover` / `-cpuprofile` and friends.
+*.out
+*.prof
+coverage.*
+
+# A local multi-module workspace. It points at whatever directories one developer happens to
+# have checked out, so it is never right for anybody else.
+go.work
+go.work.sum

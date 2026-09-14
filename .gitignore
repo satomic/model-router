@@ -39,6 +39,12 @@ frontend/dist/
 frontend/.vite/
 node_modules/
 
+# Go backend. Its build artefacts are ignored by server-go/.gitignore, which sits next to them
+# and is the place to add more; the two entries below are the ones that can appear anywhere.
+*.test
+go.work
+go.work.sum
+
 # Scratch space. Working notes live here and have held real credentials, so the whole
 # directory is excluded rather than filtered file by file.
 tmp/

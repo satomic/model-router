@@ -10,6 +10,11 @@ docker run -d --name model-router \
   ghcr.io/satomic/model-router:latest
 ```
 
+`:latest` is the Go backend — a 29 MB Alpine image with a shell in it, so a container can still
+be opened with `docker exec -it model-router sh`. The Python backend is published from the
+same release under `:latest-py` for anyone who wants the reference implementation; the two share
+the `/data` volume, so switching is a change of tag. See [the two backends](docs/backends.md).
+
 Nothing to prepare: the configuration is created from the template on first start, and the single
 `/data` volume holds all of it (the configuration, the sign-in state, the keys and the traces), so
 an upgrade is just a new image over the same volume.
@@ -26,13 +31,34 @@ key on the "API keys" page, and point your client at it:
 
 Volumes, port mapping, upgrades and reverse proxies: [Docker deployment](docs/docker.md).
 
+## Two backends, one service
+
+The router ships two interchangeable implementations: the original Python one (FastAPI) and a Go
+one built for throughput. They share `data/`, `config.yaml`, the REST API, the trace format and the
+console, so switching is stopping one and starting the other -- no migration.
+
+```bash
+./run.sh                      # Go (the default)
+./run.sh --backend python     # Python
+```
+
+Go holds roughly twice the concurrent in-flight requests and adds 1% latency overhead where
+Python adds 61%, in a third of the memory. It ships as a single static binary with the console
+embedded inside it — a 29 MB image against the Python one's 319 MB. See
+[the benchmark](docs/backend-benchmark.md) for the measurements, the method, and when Python is
+still the better choice.
+
 ## Running from source
 
-```powershell
-.venv\Scripts\Activate.ps1
+```bash
+cd frontend && npm ci && npm run build && cd ..   # both backends serve the built console from /
+
+# Go
+server-go/scripts/build.sh && ./run.sh
+
+# Python
 pip install -r requirements.txt
-cd frontend; npm ci; npm run build; cd ..   # FastAPI serves the built console from /
-uvicorn app.main:app --host 0.0.0.0 --port 8000
+./run.sh --backend python
 ```
 
 `data/config.yaml` is created from `config.example.yaml` on first start here too, and `data/` is the
@@ -90,16 +116,20 @@ from `127.0.0.1`, which is why a container uses the local administrator instead.
 | [API](docs/api.md) | every endpoint |
 | [Full-chain logging](docs/traces.md) | the trace format, turns, and how the listing stays cheap at scale |
 | [Verification scripts](docs/verification.md) | the `verify/` suite and the frontend gates |
+| [The two backends](docs/backends.md) | Python and Go: what they share, how to choose one, the Go source layout |
+| [Backend benchmark](docs/backend-benchmark.md) | measured throughput, latency, in-flight capacity and footprint of the two |
 
 ## Layout
 
 ```
-app/         FastAPI backend: routing, providers, auth, key policy, traces
-frontend/    React + Vite console (built output is served by FastAPI from /)
-docs/        the documents listed above
-verify/      end-to-end verification scripts
-Dockerfile   multi-stage build: the console is built in a discarded Node stage
-data/        ALL persistent state -- config.yaml, sessions, keys, traces -- gitignored
+app/           Python backend (FastAPI): routing, providers, auth, key policy, traces
+server-go/     Go backend: the same service, same data/, same API -- see docs/backends.md
+frontend/      React + Vite console (the built output is served by either backend from /)
+docs/          the documents listed above
+verify/        end-to-end verification scripts
+run.sh         launcher: --backend go | python
+Dockerfile     Python image (python:3.11-slim); Dockerfile.go builds the Go one (alpine)
+data/          ALL persistent state -- config.yaml, sessions, keys, traces -- gitignored
 ```
 
 Credentials never enter the repository: the whole of `data/` (which is where `config.yaml` lives)

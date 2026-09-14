@@ -50,8 +50,10 @@ The console owns the site root and every page has its own address — `/usage`, 
 colleague. Any unknown path is answered with the console shell, which then renders its own
 not-found view.
 
-Behind a reverse proxy, add `--proxy-headers` so the callback URL and the cookie's `Secure` flag
-follow `X-Forwarded-Proto` / `X-Forwarded-Host` correctly.
+Behind a reverse proxy the callback URL and the cookie's `Secure` flag have to follow
+`X-Forwarded-Proto` / `X-Forwarded-Host`, and those headers are only honoured from an address you
+name: `--forwarded-allow-ips 10.0.0.2` on the Go backend, `--proxy-headers --forwarded-allow-ips
+10.0.0.2` on uvicorn. Trusting them from anyone lets a caller dictate the callback origin.
 
 Frontend development mode (optional, with hot reload):
 

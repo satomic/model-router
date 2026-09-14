@@ -1,0 +1,93 @@
+name: Go backend
+
+# Build, vet and test the Go backend. Separate from the image workflow on purpose: this needs no
+# Docker, no registry credentials and no tag, so it can run on every push and every pull request
+# and finish in well under a minute. A compile error or a failing test is then caught at the
+# commit that caused it, rather than surfacing as a failed image build days later at release time.
+on:
+  push:
+    paths:
+      - server-go/**
+      - .github/workflows/go.yml
+  pull_request:
+    paths:
+      - server-go/**
+      - .github/workflows/go.yml
+  # So the suite can be re-run by hand after a flaky runner, without pushing an empty commit.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        # Every command below is relative to the module, which is not the repository root.
+        working-directory: server-go
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          # Read from go.mod rather than pinned here, so the toolchain moves in one place.
+          go-version-file: server-go/go.mod
+          cache-dependency-path: server-go/go.sum
+
+      # gofmt before anything else: a formatting failure is the cheapest to fix and the one most
+      # likely to be a reviewer's first comment.
+      - name: Check formatting
+        run: |
+          unformatted=$(gofmt -l . | grep -v '^internal/web/dist' || true)
+          if [ -n "$unformatted" ]; then
+            echo "::error::these files are not gofmt-clean:"
+            echo "$unformatted"
+            gofmt -d $unformatted
+            exit 1
+          fi
+
+      # The version is defined twice -- once per backend -- and the two must agree: the console
+      # header, /healthz and the release check all read it, so a drift makes one backend claim to
+      # be a version that was never released. Cheap to check, and impossible to notice by eye.
+      - name: Versions agree across the backends
+        working-directory: .
+        run: |
+          go_version=$(sed -n 's/^const Version = "\(.*\)"$/\1/p' server-go/internal/version/version.go)
+          py_version=$(sed -n 's/^VERSION = "\(.*\)"$/\1/p' app/version.py)
+          npm_version=$(node -p "require('./frontend/package.json').version")
+          echo "  go: $go_version   python: $py_version   npm: $npm_version"
+          if [ "$go_version" != "$py_version" ] || [ "$go_version" != "$npm_version" ]; then
+            echo "::error::the backends disagree about the version"
+            exit 1
+          fi
+          if [ -z "$go_version" ]; then
+            echo "::error::could not read the version -- has the constant been renamed?"
+            exit 1
+          fi
+
+      - name: Build
+        # Both release platforms, statically and without cgo -- the same flags Dockerfile.go
+        # uses. The builder runs on glibc and the runtime image on Alpine's musl, so a
+        # dynamically linked binary would compile here and fail to start there; a build that
+        # only succeeds on the runner's own settings proves nothing about the image.
+        run: |
+          for pair in linux/amd64 linux/arm64; do
+            echo "==> $pair"
+            GOOS="${pair%/*}" GOARCH="${pair#*/}" CGO_ENABLED=0 \
+              go build -trimpath -ldflags="-s -w" -o /dev/null ./cmd/model-router
+          done
+          go build ./...
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Test
+        # -race because the server is the whole point: the configuration is swapped under live
+        # requests, the trace store folds concurrent turns of one interaction, and several caches
+        # are read from background loops while requests write them.
+        run: go test -race -count=1 ./...
