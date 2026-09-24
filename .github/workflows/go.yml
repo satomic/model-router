@@ -51,18 +51,22 @@ jobs:
             exit 1
           fi
 
-      # The version is defined twice -- once per backend -- and the two must agree: the console
-      # header, /healthz and the release check all read it, so a drift makes one backend claim to
-      # be a version that was never released. Cheap to check, and impossible to notice by eye.
-      - name: Versions agree across the backends
+      # The version is defined in the Go backend and in the console's package.json, and the two
+      # must agree: the console header, /healthz and the release check all read it, so a drift
+      # makes the release claim to be a version that was never released. Cheap to check, and
+      # impossible to notice by eye.
+      #
+      # app/version.py is deliberately not compared: the Python backend is frozen at the last
+      # release that shipped it (2.0.0) and is no longer published, so its version stays where
+      # it stopped rather than claiming releases it does not implement.
+      - name: Versions agree
         working-directory: .
         run: |
           go_version=$(sed -n 's/^const Version = "\(.*\)"$/\1/p' server-go/internal/version/version.go)
-          py_version=$(sed -n 's/^VERSION = "\(.*\)"$/\1/p' app/version.py)
           npm_version=$(node -p "require('./frontend/package.json').version")
-          echo "  go: $go_version   python: $py_version   npm: $npm_version"
-          if [ "$go_version" != "$py_version" ] || [ "$go_version" != "$npm_version" ]; then
-            echo "::error::the backends disagree about the version"
+          echo "  go: $go_version   npm: $npm_version"
+          if [ "$go_version" != "$npm_version" ]; then
+            echo "::error::server-go and frontend/package.json disagree about the version"
             exit 1
           fi
           if [ -z "$go_version" ]; then
