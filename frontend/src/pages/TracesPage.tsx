@@ -108,7 +108,32 @@ function AnalysisView({ analysis }: { analysis: RoutingAnalysis }) {
   return (
     <dl className="kv">
       <dt>{t('traces.analysis.decisionModel')}</dt>
-      <dd>{analysis.decision_model}</dd>
+      <dd>
+        {analysis.decision_model}
+        {analysis.decision_model_version && analysis.decision_model_version !== analysis.decision_model && (
+          <span className="dim"> ({analysis.decision_model_version})</span>
+        )}
+        {analysis.decision_engine === 'typesafe' && (
+          <span className="badge ok" style={{ marginLeft: 6 }}>TypeSafe</span>
+        )}
+      </dd>
+      {analysis.probabilities && (
+        <>
+          <dt>{t('traces.analysis.probabilities')}</dt>
+          <dd className="mono">
+            {Object.entries(analysis.probabilities)
+              .sort(([, a], [, b]) => b - a)
+              .map(([name, p]) => `${name} ${(p * 100).toFixed(1)}%`)
+              .join(' · ')}
+            {analysis.confidence != null && (
+              <span className="dim">
+                {' '}
+                — {t('traces.analysis.confidence', { value: analysis.confidence.toFixed(2) })}
+              </span>
+            )}
+          </dd>
+        </>
+      )}
       {analysis.rationale && (
         <>
           <dt>{t('traces.analysis.rationale')}</dt>
@@ -142,6 +167,23 @@ function AnalysisView({ analysis }: { analysis: RoutingAnalysis }) {
                 {t('traces.analysis.charsExpand', { count: analysis.decision_system.length })}
               </summary>
               <pre className="code" style={{ marginTop: 6 }}>{analysis.decision_system}</pre>
+            </details>
+          </dd>
+        </>
+      )}
+      {analysis.decision_question && (
+        <>
+          <dt>{t('traces.analysis.decisionQuestion')}</dt>
+          <dd>
+            <details>
+              <summary className="dim" style={{ cursor: 'pointer' }}>
+                {t('traces.analysis.optionsExpand', {
+                  count: Object.keys(analysis.decision_question.criteria ?? {}).length,
+                })}
+              </summary>
+              <pre className="code" style={{ marginTop: 6 }}>
+                {JSON.stringify(analysis.decision_question, null, 2)}
+              </pre>
             </details>
           </dd>
         </>

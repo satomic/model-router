@@ -188,12 +188,13 @@ func RouteCombined(ctx context.Context, prompt string, cfg *config.RouterConfig,
 // RouteByAI returns (model, reason, analysis). The analysis records the decision model's
 // input, output and rationale.
 //
-// The decision model also goes through the connection pool, so it can use a different
-// endpoint/key than the serving models.
+// Two engines make the decision (ai_router.decision_engine): an LLM reached through the
+// connection pool -- so it can use a different endpoint/key than the serving models -- or
+// TypeSafe's Jev. Both share the analysis skeleton, the fallback to the default model, and the
+// rule that an answer outside the catalog is a failure, so the strategy above them cannot tell
+// which one ran.
 func RouteByAI(ctx context.Context, prompt string, cfg *config.RouterConfig, pool *upstream.Pool) (string, string, *omap.Map) {
-	systemPrompt := cfg.RenderDecisionPrompt(cfg.ModelCatalogText())
 	truncated := TruncateForDecision(prompt, cfg.MaxPromptChars)
-	decision := cfg.ResolveDecisionModel()
 
 	candidates := make([]any, 0, cfg.Models.Len())
 	for _, name := range cfg.Models.Keys() {
@@ -201,15 +202,10 @@ func RouteByAI(ctx context.Context, prompt string, cfg *config.RouterConfig, poo
 	}
 	analysis := mapOf(
 		"type", "ai",
-		"decision_model", cfg.DecisionModel,
-		"decision_provider", decision.Provider.Name,
+		"decision_engine", cfg.DecisionEngine,
 		"decision_input", headRunes(truncated, 500),
 		"prompt_truncated", len([]rune(prompt)) > cfg.MaxPromptChars,
 		"candidates", candidates,
-		// The prompt is configurable, so the trace must keep the system content that was
-		// actually sent; otherwise there is no way to tell afterwards which version a
-		// historical request used.
-		"decision_system", systemPrompt,
 	)
 
 	start := time.Now()
@@ -220,10 +216,49 @@ func RouteByAI(ctx context.Context, prompt string, cfg *config.RouterConfig, poo
 		analysis.Set("fallback", true)
 		return cfg.DefaultModel(), "ai-fallback-default", analysis
 	}
+	callCtx, cancel := context.WithTimeout(ctx, time.Duration(cfg.DecisionTimeout*float64(time.Second)))
+	defer cancel()
+
+	var choice string
+	if cfg.UsesTypeSafe() {
+		picked, err := decideByTypeSafe(callCtx, truncated, cfg, analysis)
+		if err != nil {
+			return fail(err.Error())
+		}
+		choice = picked
+	} else {
+		picked, err := decideByLLM(callCtx, truncated, cfg, pool, analysis)
+		if err != nil {
+			return fail(err.Error())
+		}
+		choice = picked
+	}
+	analysis.Set("decision_latency_ms", round1(float64(time.Since(start).Microseconds())/1000))
+
+	if cfg.Models.Has(choice) {
+		return choice, "ai-decision", analysis
+	}
+	analysis.Set("error", fmt.Sprintf("the decision model returned unknown model '%s'", choice))
+	log.Printf("WARNING mr: AI decision returned unknown model '%s', falling back to default", choice)
+	analysis.Set("fallback", true)
+	return cfg.DefaultModel(), "ai-fallback-default", analysis
+}
+
+// decideByLLM asks a chat model for {"model", "rationale"} JSON, with the decision prompt as
+// the system message.
+func decideByLLM(ctx context.Context, truncated string, cfg *config.RouterConfig, pool *upstream.Pool,
+	analysis *omap.Map) (string, error) {
+	systemPrompt := cfg.RenderDecisionPrompt(cfg.ModelCatalogText())
+	decision := cfg.ResolveDecisionModel()
+	analysis.Set("decision_model", cfg.DecisionModel)
+	analysis.Set("decision_provider", decision.Provider.Name)
+	// The prompt is configurable, so the trace must keep the system content that was actually
+	// sent; otherwise there is no way to tell afterwards which version a historical request used.
+	analysis.Set("decision_system", systemPrompt)
 
 	client, err := pool.Get(decision.Provider, "chat")
 	if err != nil {
-		return fail(err.Error())
+		return "", err
 	}
 	body := mapOf(
 		"model", decision.UpstreamModel,
@@ -235,11 +270,9 @@ func RouteByAI(ctx context.Context, prompt string, cfg *config.RouterConfig, poo
 		"temperature", json.Number("0"),
 		"response_format", mapOf("type", "json_object"),
 	)
-	callCtx, cancel := context.WithTimeout(ctx, time.Duration(cfg.DecisionTimeout*float64(time.Second)))
-	defer cancel()
-	resp, err := client.Create(callCtx, decision.UpstreamModel, body)
+	resp, err := client.Create(ctx, decision.UpstreamModel, body)
 	if err != nil {
-		return fail(err.Error())
+		return "", err
 	}
 
 	raw := ""
@@ -251,7 +284,6 @@ func RouteByAI(ctx context.Context, prompt string, cfg *config.RouterConfig, poo
 		}
 	}
 	analysis.Set("raw_response", raw)
-	analysis.Set("decision_latency_ms", round1(float64(time.Since(start).Microseconds())/1000))
 	if usage := resp.Map("usage"); usage != nil {
 		analysis.Set("decision_usage", mapOf(
 			"prompt_tokens", usage.Value("prompt_tokens"),
@@ -261,21 +293,116 @@ func RouteByAI(ctx context.Context, prompt string, cfg *config.RouterConfig, poo
 
 	value, err := omap.FromJSON([]byte(raw))
 	if err != nil {
-		return fail(err.Error())
+		return "", err
 	}
 	data, ok := value.(*omap.Map)
 	if !ok {
-		return fail("the decision model did not return a JSON object")
+		return "", fmt.Errorf("the decision model did not return a JSON object")
 	}
-	choice := data.Str("model")
 	analysis.Set("rationale", data.Value("rationale"))
-	if cfg.Models.Has(choice) {
-		return choice, "ai-decision", analysis
+	return data.Str("model"), nil
+}
+
+// TypeSafeInstructions is the Choice question Jev answers. Jev reads its instructions
+// literally, so this says exactly what to weigh rather than leaving "best" to interpretation;
+// the model descriptions carry the rest, one per option.
+const TypeSafeInstructions = "Which backend model should handle `user_request`? " +
+	"Pick the option whose description best matches what the request needs. " +
+	"Prefer a cheaper, faster model when the request is simple, and a stronger model only when the request needs it."
+
+// TypeSafeQuestionID is the key the routing question is asked (and answered) under.
+const TypeSafeQuestionID = "model"
+
+// BuildTypeSafeRequest is the /v1/systemone body for one routing decision: the user's request
+// as the state, and a single Choice whose options are the model catalog with each model's
+// description as its rubric. Exported so the console's preview shows the exact request.
+func BuildTypeSafeRequest(truncated string, cfg *config.RouterConfig) *omap.Map {
+	criteria := omap.New()
+	for _, name := range cfg.Models.Keys() {
+		// A model without a description is still a valid option; null is how the API spells
+		// "no rubric", rather than an empty string that reads as a description.
+		if desc := strings.TrimSpace(cfg.ModelMeta(name).Str("description")); desc != "" {
+			criteria.Set(name, desc)
+		} else {
+			criteria.Set(name, nil)
+		}
 	}
-	analysis.Set("error", fmt.Sprintf("the decision model returned unknown model '%s'", choice))
-	log.Printf("WARNING mr: AI decision returned unknown model '%s', falling back to default", choice)
-	analysis.Set("fallback", true)
-	return cfg.DefaultModel(), "ai-fallback-default", analysis
+	return mapOf(
+		"model", cfg.TypeSafe.Model,
+		"state", mapOf("user_request", truncated),
+		"questions", mapOf(
+			TypeSafeQuestionID, mapOf(
+				"type", "choice",
+				"instructions", TypeSafeInstructions,
+				"criteria", criteria,
+			),
+		),
+	)
+}
+
+// decideByTypeSafe asks Jev one Choice over the catalog. There is no free-text rationale to
+// record, so the calibrated probabilities and confidence stand in for it -- they are the more
+// useful record anyway: they show how close the runner-up was.
+func decideByTypeSafe(ctx context.Context, truncated string, cfg *config.RouterConfig,
+	analysis *omap.Map) (string, error) {
+	analysis.Set("decision_model", cfg.TypeSafe.Model)
+	analysis.Set("decision_provider", "typesafe")
+	if cfg.TypeSafe.APIKey == "" {
+		return "", fmt.Errorf("no TypeSafe API key: set ai_router.typesafe.api_key or TYPESAFE_API_KEY")
+	}
+	if n := cfg.Models.Len(); n < 2 || n > config.TypeSafeMaxOptions {
+		// One option is not a decision, and the API rejects more than 255. Either way the
+		// default model is the honest answer, and saying why beats a 422 from upstream.
+		return "", fmt.Errorf("TypeSafe needs between 2 and %d candidate models, got %d", config.TypeSafeMaxOptions, n)
+	}
+	body := BuildTypeSafeRequest(truncated, cfg)
+	question := body.Map("questions").Map(TypeSafeQuestionID)
+	analysis.Set("decision_question", mapOf(
+		"instructions", question.Value("instructions"),
+		"criteria", question.Value("criteria"),
+	))
+
+	resp, err := upstream.TypeSafeSystemOne(ctx, cfg.TypeSafe.BaseURL, cfg.TypeSafe.APIKey, body)
+	if err != nil {
+		return "", err
+	}
+	if version := resp.Str("model"); version != "" {
+		analysis.Set("decision_model_version", version)
+	}
+	if usage := resp.Map("usage"); usage != nil {
+		analysis.Set("decision_usage", mapOf(
+			"prompt_tokens", usage.Value("input_tokens"),
+			"completion_tokens", usage.Value("output_tokens"),
+		))
+	}
+	answer := resp.Map("answers").Map(TypeSafeQuestionID)
+	if answer == nil {
+		return "", fmt.Errorf("TypeSafe returned no answer for the routing question")
+	}
+	if raw, err := json.Marshal(answer); err == nil {
+		analysis.Set("raw_response", string(raw))
+	}
+	choice := answer.Str("choice")
+	analysis.Set("probabilities", answer.Value("probabilities"))
+	analysis.Set("confidence", answer.Value("confidence"))
+	analysis.Set("rationale", fmt.Sprintf("Jev picked %s with p=%s (confidence %s)",
+		choice, numberText(answer.Map("probabilities").Value(choice)), numberText(answer.Value("confidence"))))
+	return choice, nil
+}
+
+func numberText(v any) string {
+	switch n := v.(type) {
+	case json.Number:
+		if f, err := n.Float64(); err == nil {
+			return fmt.Sprintf("%.2f", f)
+		}
+		return n.String()
+	case float64:
+		return fmt.Sprintf("%.2f", n)
+	case nil:
+		return "?"
+	}
+	return fmt.Sprint(v)
 }
 
 func headRunes(s string, n int) string {

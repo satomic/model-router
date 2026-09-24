@@ -40,22 +40,21 @@ python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
 
 ## Containers
 
-Both images are published from the same release tag. **The Go image carries the unsuffixed
-tags** — `docker pull ghcr.io/<owner>/model-router:latest` is the Go backend — and the Python
-image is published alongside it under `-py`:
+Only the Go image is published: `docker pull ghcr.io/<owner>/model-router:latest` is the Go
+backend.
 
 | Tag | Backend | Base | Size |
 |---|---|---|---|
 | `:latest`, `:2.0.0`, `:2.0`, `:2` | Go | `alpine:3.21` | **29 MB** |
-| `:latest-py`, `:2.0.0-py`, `:2.0-py`, `:2-py` | Python | `python:3.11-slim` | 319 MB |
 
 ```bash
-docker run -p 8000:8000 -v mr-data:/data ghcr.io/<owner>/model-router:latest      # Go
-docker run -p 8000:8000 -v mr-data:/data ghcr.io/<owner>/model-router:latest-py   # Python
+docker run -p 8000:8000 -v mr-data:/data ghcr.io/<owner>/model-router:latest
 ```
 
-The two take the same `/data` volume and the same environment variables, so swapping one for the
-other is a change of image tag and nothing else.
+New features land in the Go backend only, so the Python image is no longer built. The `-py` tags
+published by earlier releases (`:latest-py`, `:2.0.0-py`, ...) are still in the registry and
+still take the same `/data` volume, but they stop at the last release that produced them.
+`Dockerfile` still builds the Python image locally for anyone who needs it.
 
 To build locally (BuildKit is required — the Dockerfiles use `$BUILDPLATFORM` to cross-compile
 rather than emulate; with the legacy builder the build fails on that variable):

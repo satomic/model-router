@@ -107,6 +107,17 @@ func (a *App) previewDecisionPrompt(w http.ResponseWriter, r *http.Request) erro
 		defaultModel = draft.DefaultModel()
 	}
 
+	decisionModel := draft.DecisionModel
+	decisionProvider := draft.ResolveDecisionModel().Provider.Name
+	// With TypeSafe selected the decision prompt is not sent at all; what is sent is this
+	// request, built by the same function RouteByAI uses. The key is never part of it.
+	var typesafeRequest any
+	if draft.UsesTypeSafe() {
+		decisionModel = draft.TypeSafe.Model
+		decisionProvider = "typesafe"
+		typesafeRequest = routing.BuildTypeSafeRequest(truncated, draft)
+	}
+
 	writeJSON(w, http.StatusOK, mapOf(
 		"system", system,
 		"catalog", catalog,
@@ -114,8 +125,13 @@ func (a *App) previewDecisionPrompt(w http.ResponseWriter, r *http.Request) erro
 		"sample_truncated", sample != "" && len([]rune(sample)) > draft.MaxPromptChars,
 		"model_count", json.Number(strconv.Itoa(draft.Models.Len())),
 		"candidates", candidates,
-		"decision_model", draft.DecisionModel,
-		"decision_provider", draft.ResolveDecisionModel().Provider.Name,
+		"decision_model", decisionModel,
+		"decision_provider", decisionProvider,
+		"decision_engine", draft.DecisionEngine,
+		"typesafe_request", typesafeRequest,
+		// Whether a key is available without echoing it: the environment may supply one
+		// the draft does not show.
+		"typesafe_key_set", draft.TypeSafe.APIKey != "",
 		"is_default_prompt", draft.DecisionPrompt == config.DefaultDecisionPrompt,
 		"has_placeholder", strings.Contains(draft.DecisionPrompt, config.CatalogPlaceholder),
 		"models_without_description", missingDesc,

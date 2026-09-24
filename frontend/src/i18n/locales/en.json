@@ -1129,7 +1129,12 @@
       "rawOutput": "Raw output",
       "fallback": "Fallback",
       "fellBackToDefault": "fell back to the default model",
-      "interactionReuse": "The model was chosen once for this interaction; this call reused it, so no decision model was called and no decision latency was paid."
+      "interactionReuse": "The model was chosen once for this interaction; this call reused it, so no decision model was called and no decision latency was paid.",
+      "probabilities": "Probabilities",
+      "confidence": "confidence {{value}}",
+      "decisionQuestion": "Choice question",
+      "optionsExpand_one": "{{count}} option, click to expand",
+      "optionsExpand_other": "{{count}} options, click to expand"
     }
   },
   "config": {
@@ -1284,7 +1289,18 @@
       "timeout": "Decision timeout (seconds)",
       "timeoutHint": "a timeout falls back to the default model",
       "maxPromptChars": "Prompt truncation length",
-      "maxPromptCharsHint": "beyond this, half is kept from each end"
+      "maxPromptCharsHint": "beyond this, half is kept from each end",
+      "typesafe": {
+        "toggle": "Use TypeSafe Jev as the decision model",
+        "badge": "fast",
+        "desc": "<link>Jev</link> is a System One model built to pick one option from a fixed set: the model catalog is sent as a single Choice question and Jev returns the pick with calibrated probabilities, typically in 70–500 ms. The decision prompt below is not used. Untick to go back to the LLM decision model; neither side’s settings are lost.",
+        "apiKey": "TypeSafe API key",
+        "apiKeyHint": "from console.typesafe.ai; leave empty to use the TYPESAFE_API_KEY environment variable",
+        "model": "Jev model",
+        "modelHint": "default jev-latest; pin e.g. jev-1.13.0 for stable behaviour",
+        "baseUrl": "API base URL",
+        "baseUrlHint": "default https://api.typesafe.ai"
+      }
     },
     "rules": {
       "title": "Rule routing",
@@ -1348,7 +1364,10 @@
         "refactor": "Refactor this module's architecture for me and split out a separate domain layer",
         "translate": "Translate this passage into English",
         "proof": "Prove: every continuous function on a closed interval is uniformly continuous"
-      }
+      },
+      "jevUnused": "not used by TypeSafe Jev",
+      "jevLead": "TypeSafe Jev takes no system prompt. It is asked one Choice question whose options are the models in the catalog, each described by its <code>description</code> — so the descriptions are what steer it. The template below is kept for when you switch back to the LLM decision model. The preview shows the exact request that is sent (the API key is never part of it).",
+      "jevNoKey": "no API key set"
     },
     "list": {
       "search": "Search",

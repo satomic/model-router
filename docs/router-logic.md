@@ -118,6 +118,38 @@ sent to the decision model**:
    - you can type a sample request to preview what the user message looks like after being truncated
      to `max_prompt_chars`.
 
+   **The TypeSafe Jev decision engine (optional, Go backend)**: ticking "Use TypeSafe Jev as the
+   decision model" on the same page sets `ai_router.decision_engine: typesafe`, and the decision is
+   made by [TypeSafe's Jev](https://typesafe.ai/blog/introducing-system-one-models-and-jev) instead
+   of an LLM. Jev is a "System One" model built to pick one option out of a closed set, which is
+   exactly the routing question — measured end to end from this router it answers in ~300 ms, against
+   ~1.3–1.9 s for `gpt-4.1-mini` on Azure OpenAI. Unticking it goes back to the LLM path; nothing
+   else about routing changes.
+
+   ```yaml
+   ai_router:
+     decision_engine: typesafe      # omitted / "llm" = the LLM decision model above
+     typesafe:
+       api_key: ts_...              # or leave empty and set TYPESAFE_API_KEY in the environment
+       model: jev-latest            # optional; pin e.g. jev-1.13.0 for stable behaviour
+       base_url: https://api.typesafe.ai   # optional
+   ```
+
+   - **What is sent**: one `POST /v1/systemone` with the (truncated) user prompt as the `state`
+     (`{"user_request": "..."}`) and a single **Choice** question whose options are the model catalog,
+     each model's `description` serving as that option's rubric. `decision_prompt`, `decision_model`
+     and `decision_provider` are not used (they are kept in the config for switching back), so with
+     Jev the `description`s are what steer the decision. The preview panel shows this exact request.
+   - **What is recorded**: the trace's `routing.analysis` carries `decision_engine: typesafe`, the
+     versioned model that answered (`decision_model_version`, e.g. `jev-1.13.0`), the question asked
+     (`decision_question`), the full calibrated `probabilities` over the catalog and a `confidence`
+     — which show how close the runner-up was, something the LLM's one-line rationale cannot.
+   - **Unchanged**: `timeout_seconds`, `max_prompt_chars`, the `rule-then-ai` handover, model-policy
+     narrowing (Jev only ever sees the caller's allowed models), stickiness, and the fallback — an
+     error, a timeout, an answer outside the catalog, or a catalog with fewer than 2 or more than 255
+     models all fall back to the default model (`ai-fallback-default`) with the reason in the trace.
+   - Jev reads English best; model descriptions written in English give the most reliable picks.
+
 **4. Both at once (`strategy: rule-then-ai`)**: the rules and the decision model are **both** active
 (`route_combined`). The rules are evaluated first, exactly as in step 2; a match returns that rule's
 model immediately and **no decision call is made**. Only a request no rule matched is handed to the

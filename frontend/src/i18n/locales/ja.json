@@ -1099,7 +1099,11 @@
       "rawOutput": "生の出力",
       "fallback": "フォールバック",
       "fellBackToDefault": "既定モデルにフォールバックしました",
-      "interactionReuse": "このインタラクションではモデルを 1 度だけ選択しており、この呼び出しはそれを再利用しています。判断モデルは呼び出されず、判断のレイテンシも発生していません。"
+      "interactionReuse": "このインタラクションではモデルを 1 度だけ選択しており、この呼び出しはそれを再利用しています。判断モデルは呼び出されず、判断のレイテンシも発生していません。",
+      "probabilities": "確率分布",
+      "confidence": "信頼度 {{value}}",
+      "decisionQuestion": "Choice 質問",
+      "optionsExpand_other": "{{count}} 個の選択肢（クリックで展開）"
     }
   },
   "config": {
@@ -1251,7 +1255,18 @@
       "timeout": "判断のタイムアウト（秒）",
       "timeoutHint": "タイムアウトすると既定モデルにフォールバックします",
       "maxPromptChars": "プロンプトの切り詰め長",
-      "maxPromptCharsHint": "これを超えると先頭と末尾を半分ずつ残します"
+      "maxPromptCharsHint": "これを超えると先頭と末尾を半分ずつ残します",
+      "typesafe": {
+        "toggle": "TypeSafe Jev を判定モデルとして使う",
+        "badge": "高速",
+        "desc": "<link>Jev</link> は固定の選択肢から 1 つを選ぶために作られた System One モデルです。モデルカタログを 1 つの Choice 質問として送り、Jev は選んだモデルと較正済みの確率を通常 70–500 ms で返します。下の判定プロンプトは使われません。チェックを外すと LLM の判定モデルに戻り、どちらの設定も失われません。",
+        "apiKey": "TypeSafe API キー",
+        "apiKeyHint": "console.typesafe.ai で発行。空欄なら環境変数 TYPESAFE_API_KEY を使用",
+        "model": "Jev モデル",
+        "modelHint": "既定は jev-latest。挙動を固定するなら jev-1.13.0 などを指定",
+        "baseUrl": "API ベース URL",
+        "baseUrlHint": "既定は https://api.typesafe.ai"
+      }
     },
     "rules": {
       "title": "ルールルーティング",
@@ -1312,7 +1327,10 @@
         "refactor": "このモジュールのアーキテクチャをリファクタリングして、独立したドメイン層を切り出してください",
         "translate": "この文章を英語に翻訳してください",
         "proof": "証明せよ：閉区間上の任意の連続関数は一様連続である"
-      }
+      },
+      "jevUnused": "TypeSafe Jev では未使用",
+      "jevLead": "TypeSafe Jev はシステムプロンプトを受け取りません。カタログ内のモデルを選択肢とする 1 つの Choice 質問に答え、各選択肢の説明にはモデルの <code>description</code> が使われます。つまり判定を左右するのはモデルの説明です。下のテンプレートは LLM の判定モデルに戻したときのために保持されます。プレビューは実際に送信されるリクエストです（API キーは含みません）。",
+      "jevNoKey": "API キー未設定"
     },
     "list": {
       "search": "検索",

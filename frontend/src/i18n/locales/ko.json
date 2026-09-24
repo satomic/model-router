@@ -1099,7 +1099,11 @@
       "rawOutput": "원본 출력",
       "fallback": "폴백",
       "fellBackToDefault": "기본 모델로 폴백했습니다",
-      "interactionReuse": "이 상호작용에서는 모델을 한 번만 선택했고 이 호출은 그것을 재사용했습니다. 따라서 결정 모델을 호출하지 않았고 결정 지연도 없습니다."
+      "interactionReuse": "이 상호작용에서는 모델을 한 번만 선택했고 이 호출은 그것을 재사용했습니다. 따라서 결정 모델을 호출하지 않았고 결정 지연도 없습니다.",
+      "probabilities": "확률 분포",
+      "confidence": "신뢰도 {{value}}",
+      "decisionQuestion": "Choice 질문",
+      "optionsExpand_other": "선택지 {{count}}개, 클릭하여 펼치기"
     }
   },
   "config": {
@@ -1251,7 +1255,18 @@
       "timeout": "결정 제한 시간(초)",
       "timeoutHint": "제한 시간을 넘기면 기본 모델로 폴백합니다",
       "maxPromptChars": "프롬프트 자르기 길이",
-      "maxPromptCharsHint": "초과하면 앞뒤로 절반씩 남깁니다"
+      "maxPromptCharsHint": "초과하면 앞뒤로 절반씩 남깁니다",
+      "typesafe": {
+        "toggle": "TypeSafe Jev를 결정 모델로 사용",
+        "badge": "고속",
+        "desc": "<link>Jev</link>는 정해진 선택지 중 하나를 고르도록 만들어진 System One 모델입니다. 모델 카탈로그를 하나의 Choice 질문으로 보내면 Jev가 선택한 모델과 보정된 확률을 보통 70–500 ms 안에 반환합니다. 아래 결정 프롬프트는 사용되지 않습니다. 체크를 해제하면 LLM 결정 모델로 돌아가며 양쪽 설정 모두 유지됩니다.",
+        "apiKey": "TypeSafe API 키",
+        "apiKeyHint": "console.typesafe.ai에서 발급. 비워 두면 환경 변수 TYPESAFE_API_KEY 사용",
+        "model": "Jev 모델",
+        "modelHint": "기본값 jev-latest. 동작을 고정하려면 jev-1.13.0 등으로 지정",
+        "baseUrl": "API 기본 URL",
+        "baseUrlHint": "기본값 https://api.typesafe.ai"
+      }
     },
     "rules": {
       "title": "규칙 라우팅",
@@ -1312,7 +1327,10 @@
         "refactor": "이 모듈의 아키텍처를 리팩터링해서 독립적인 도메인 계층을 분리해 주세요",
         "translate": "이 문장을 영어로 번역해 주세요",
         "proof": "증명하시오: 닫힌 구간에서 임의의 연속 함수는 균등 연속이다"
-      }
+      },
+      "jevUnused": "TypeSafe Jev에서는 사용 안 함",
+      "jevLead": "TypeSafe Jev는 시스템 프롬프트를 받지 않습니다. 카탈로그의 모델들을 선택지로 하는 Choice 질문 하나에 답하며, 각 선택지의 설명은 모델의 <code>description</code>에서 가져옵니다. 따라서 결정을 좌우하는 것은 모델 설명입니다. 아래 템플릿은 LLM 결정 모델로 돌아갈 때를 위해 유지됩니다. 미리보기는 실제로 전송되는 요청입니다(API 키는 포함되지 않음).",
+      "jevNoKey": "API 키 미설정"
     },
     "list": {
       "search": "검색",

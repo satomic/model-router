@@ -31,6 +31,16 @@ export interface RuleStep {
   skipped?: string
 }
 
+export type DecisionEngine = 'llm' | 'typesafe'
+
+export interface TypeSafeSettings {
+  api_key?: string
+  /** Defaults to jev-latest. */
+  model?: string
+  /** Defaults to https://api.typesafe.ai. */
+  base_url?: string
+}
+
 export interface RoutingAnalysis {
   type: 'rule' | 'ai' | 'session' | 'rule-then-ai' | 'gate'
   /** `rule-then-ai` only: which of the two strategies actually produced the model, and the two
@@ -55,6 +65,15 @@ export interface RoutingAnalysis {
   rationale?: string
   decision_latency_ms?: number
   decision_usage?: { prompt_tokens: number; completion_tokens: number }
+  /** Which engine made an AI decision. Absent on traces written before the choice existed,
+   *  which were all made by an LLM. */
+  decision_engine?: DecisionEngine
+  /** TypeSafe only: the versioned model that answered (e.g. jev-1.13.0), the Choice question
+   *  that was asked, and the calibrated answer. */
+  decision_model_version?: string
+  decision_question?: { instructions: string; criteria: Record<string, string | null> }
+  probabilities?: Record<string, number>
+  confidence?: number
   error?: string
   session_bound?: string
   interaction_bound?: string
@@ -251,6 +270,11 @@ export interface RouterConfig {
   strategy: Strategy
   session: { sticky: boolean; ttl_seconds: number; max_sessions: number }
   ai_router: {
+    /** What makes the AI decision: an LLM through a provider (the default, also when absent)
+     *  or TypeSafe's Jev. */
+    decision_engine?: DecisionEngine
+    /** Where the TypeSafe engine is reached. Kept when the engine is switched back to llm. */
+    typesafe?: TypeSafeSettings
     decision_model: string
     decision_provider?: string
     timeout_seconds: number
@@ -523,6 +547,11 @@ export interface PromptPreview {
   models_without_description: string[]
   default_model: string | null
   chars: number
+  decision_engine: DecisionEngine
+  /** The exact /v1/systemone body a TypeSafe decision would send (null for the LLM engine). */
+  typesafe_request: Record<string, unknown> | null
+  /** Whether a TypeSafe key is available, including one from TYPESAFE_API_KEY. */
+  typesafe_key_set: boolean
 }
 
 /** Render the preview from the **unsaved draft**: models / ai_router are posted as-is, so there is

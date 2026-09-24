@@ -183,8 +183,8 @@ The GitHub OAuth App's callback URL must match the public address — see
 > 10.0.0.2`. The 2.0 image has no uvicorn in it and rejects those flags outright — the container
 > exits with `flag provided but not defined: -proxy-headers` — so this line has to be updated
 > before pulling. `--proxy-headers` has no equivalent because the behaviour it enabled is now
-> always on, gated on `--forwarded-allow-ips` instead. To stay on the Python backend, pull
-> `:latest-py` and keep the old command unchanged.
+> always on, gated on `--forwarded-allow-ips` instead. The last published Python image is still
+> pullable as `:latest-py` (it is no longer updated) and takes the old command unchanged.
 
 ## The image
 
@@ -193,7 +193,7 @@ The GitHub OAuth App's callback URL must match the public address — see
 | Registry | `ghcr.io/satomic/model-router` |
 | Platforms | `linux/amd64`, `linux/arm64` |
 | Base | `alpine:3.21` (the console is built in a discarded `node:22-alpine` stage and embedded in the binary) |
-| Size | ~29 MB — the Python image is published as `:latest-py`, ~319 MB |
+| Size | ~29 MB |
 | Runs as | uid `10001`, non-root |
 | Published by | [.github/workflows/docker-publish.yml](../.github/workflows/docker-publish.yml) on a `v*` tag |
 

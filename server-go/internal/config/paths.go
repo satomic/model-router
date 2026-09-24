@@ -47,6 +47,9 @@ var (
 	EnvAPIKey     string
 	EnvAPIVersion string
 
+	// The TypeSafe decision engine's key when ai_router.typesafe.api_key is empty.
+	EnvTypeSafeAPIKey string
+
 	legacyConfigPath string
 	legacyLogDir     string
 )
@@ -58,6 +61,7 @@ func init() {
 	EnvEndpoint = os.Getenv("AZURE_OPENAI_ENDPOINT")
 	EnvAPIKey = os.Getenv("AZURE_OPENAI_API_KEY")
 	EnvAPIVersion = os.Getenv("AZURE_OPENAI_API_VERSION")
+	EnvTypeSafeAPIKey = os.Getenv("TYPESAFE_API_KEY")
 	if EnvAPIVersion == "" {
 		EnvAPIVersion = "2024-12-01-preview"
 	}

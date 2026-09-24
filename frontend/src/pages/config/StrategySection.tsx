@@ -1,4 +1,6 @@
+import { useState } from 'react'
 import { Trans, useTranslation } from 'react-i18next'
+import type { TypeSafeSettings } from '../../api'
 import { aiRouterActive } from './strategy'
 import DecisionPromptPanel from './DecisionPromptPanel'
 import RoutingFlow from './RoutingFlow'
@@ -9,6 +11,20 @@ import type { SectionProps } from './types'
 export default function StrategySection({ cfg, set, notify, goto }: SectionProps) {
   const { t } = useTranslation()
   const providerNames = Object.keys(cfg.providers ?? {})
+  const [revealKey, setRevealKey] = useState(false)
+  const useJev = cfg.ai_router.decision_engine === 'typesafe'
+  const typesafe = cfg.ai_router.typesafe ?? {}
+
+  /** Empty strings are stored as undefined, so config.yaml keeps no empty field and the
+   *  backend's defaults (jev-latest, api.typesafe.ai, TYPESAFE_API_KEY) apply. */
+  const setTypeSafe = (patch: Partial<TypeSafeSettings>) => {
+    const next: TypeSafeSettings = { ...typesafe }
+    for (const [k, v] of Object.entries(patch) as [keyof TypeSafeSettings, string][]) {
+      if (v) next[k] = v
+      else delete next[k]
+    }
+    set({ ai_router: { ...cfg.ai_router, typesafe: Object.keys(next).length ? next : undefined } })
+  }
 
   /** The rules link inside a choice card's description. The card is a `<label>`, so a click on
    *  the button would also select its radio -- hence the stopPropagation. */
@@ -132,41 +148,129 @@ export default function StrategySection({ cfg, set, notify, goto }: SectionProps
           )}
         </div>
         <div className="panel-body">
-          <div className="row">
-            <label className="field">
-              <span className="field-name">
-                {t('config.aiRouter.decisionModel')}
-                <span className="field-hint">{t('config.aiRouter.decisionModelHint')}</span>
+          {/* The engine switch. Unticking it returns to the LLM fields below, which were never
+              cleared -- and the TypeSafe settings are kept too, so flipping back and forth to
+              compare the two costs nothing. */}
+          <label className={`choice ${useJev ? 'selected' : ''}`} style={{ marginBottom: 12 }}>
+            <input
+              type="checkbox"
+              checked={useJev}
+              onChange={(e) =>
+                set({
+                  ai_router: {
+                    ...cfg.ai_router,
+                    decision_engine: e.target.checked ? 'typesafe' : undefined,
+                  },
+                })
+              }
+            />
+            <span>
+              <span className="choice-title">
+                {t('config.aiRouter.typesafe.toggle')}
+                <span className="badge ok">{t('config.aiRouter.typesafe.badge')}</span>
               </span>
-              <input
-                type="text"
-                className="mono"
-                value={cfg.ai_router.decision_model}
-                onChange={(e) => set({ ai_router: { ...cfg.ai_router, decision_model: e.target.value } })}
-              />
-            </label>
-            <label className="field">
-              <span className="field-name">{t('config.aiRouter.decisionProvider')}</span>
-              <select
-                value={cfg.ai_router.decision_provider ?? ''}
-                onChange={(e) =>
-                  set({
-                    ai_router: {
-                      ...cfg.ai_router,
-                      decision_provider: e.target.value || undefined,
-                    },
-                  })
-                }
-              >
-                <option value="">
-                  {t('config.models.followDefault', { name: cfg.default_provider })}
-                </option>
-                {providerNames.map((n) => (
-                  <option key={n} value={n}>{n}</option>
-                ))}
-              </select>
-            </label>
-          </div>
+              <span className="choice-desc">
+                <Trans
+                  i18nKey="config.aiRouter.typesafe.desc"
+                  components={{
+                    link: <a href="https://typesafe.ai/blog/introducing-system-one-models-and-jev" target="_blank" rel="noreferrer" />,
+                  }}
+                />
+              </span>
+            </span>
+          </label>
+
+          {useJev ? (
+            <>
+              <label className="field">
+                <span className="field-name">
+                  {t('config.aiRouter.typesafe.apiKey')}
+                  <span className="field-hint">{t('config.aiRouter.typesafe.apiKeyHint')}</span>
+                </span>
+                <span style={{ display: 'flex', gap: 8 }}>
+                  <input
+                    type={revealKey ? 'text' : 'password'}
+                    className="mono"
+                    value={typesafe.api_key ?? ''}
+                    placeholder="TYPESAFE_API_KEY"
+                    autoComplete="off"
+                    onChange={(e) => setTypeSafe({ api_key: e.target.value.trim() })}
+                  />
+                  <button
+                    className="btn ghost sm"
+                    style={{ flex: 'none' }}
+                    onClick={() => setRevealKey((v) => !v)}
+                  >
+                    {revealKey ? t('common.hide') : t('common.show')}
+                  </button>
+                </span>
+              </label>
+              <div className="row">
+                <label className="field">
+                  <span className="field-name">
+                    {t('config.aiRouter.typesafe.model')}
+                    <span className="field-hint">{t('config.aiRouter.typesafe.modelHint')}</span>
+                  </span>
+                  <input
+                    type="text"
+                    className="mono"
+                    value={typesafe.model ?? ''}
+                    placeholder="jev-latest"
+                    onChange={(e) => setTypeSafe({ model: e.target.value.trim() })}
+                  />
+                </label>
+                <label className="field">
+                  <span className="field-name">
+                    {t('config.aiRouter.typesafe.baseUrl')}
+                    <span className="field-hint">{t('config.aiRouter.typesafe.baseUrlHint')}</span>
+                  </span>
+                  <input
+                    type="text"
+                    className="mono"
+                    value={typesafe.base_url ?? ''}
+                    placeholder="https://api.typesafe.ai"
+                    onChange={(e) => setTypeSafe({ base_url: e.target.value.trim() })}
+                  />
+                </label>
+              </div>
+            </>
+          ) : (
+            <div className="row">
+              <label className="field">
+                <span className="field-name">
+                  {t('config.aiRouter.decisionModel')}
+                  <span className="field-hint">{t('config.aiRouter.decisionModelHint')}</span>
+                </span>
+                <input
+                  type="text"
+                  className="mono"
+                  value={cfg.ai_router.decision_model}
+                  onChange={(e) => set({ ai_router: { ...cfg.ai_router, decision_model: e.target.value } })}
+                />
+              </label>
+              <label className="field">
+                <span className="field-name">{t('config.aiRouter.decisionProvider')}</span>
+                <select
+                  value={cfg.ai_router.decision_provider ?? ''}
+                  onChange={(e) =>
+                    set({
+                      ai_router: {
+                        ...cfg.ai_router,
+                        decision_provider: e.target.value || undefined,
+                      },
+                    })
+                  }
+                >
+                  <option value="">
+                    {t('config.models.followDefault', { name: cfg.default_provider })}
+                  </option>
+                  {providerNames.map((n) => (
+                    <option key={n} value={n}>{n}</option>
+                  ))}
+                </select>
+              </label>
+            </div>
+          )}
           <div className="row">
             <label className="field" style={{ marginBottom: 0 }}>
               <span className="field-name">

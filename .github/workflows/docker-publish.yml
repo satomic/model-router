@@ -12,11 +12,8 @@ on:
   # granting a fork's PR the ability to publish under this repository's name.
   pull_request:
     paths:
-      - Dockerfile
       - Dockerfile.go
       - .dockerignore
-      - requirements.txt
-      - app/**
       - server-go/**
       - frontend/**
       - .github/workflows/docker-publish.yml
@@ -40,28 +37,22 @@ jobs:
       packages: write
 
     strategy:
-      # Both images are published from one run so a release can never ship half of itself, and
-      # fail-fast is off so a break in one backend still produces the other -- the two are
-      # independent implementations and a fault in one says nothing about the other.
-      fail-fast: false
       matrix:
         include:
           # The Go backend carries the unsuffixed tags, so `docker pull <image>:latest` and
-          # `:2.0.0` are the Go image. It is the default because it is what a deployment should
-          # run: it holds roughly twice the concurrent in-flight requests at a fraction of the
-          # latency and memory. See docs/backend-benchmark.md.
+          # `:2.0.0` are the Go image. It is what a deployment should run: it holds roughly twice
+          # the concurrent in-flight requests at a fraction of the latency and memory. See
+          # docs/backend-benchmark.md.
+          #
+          # The Python image is no longer published: new features land in the Go backend only,
+          # so a `-py` tag would advertise an image that quietly lacks them. The `-py` tags
+          # already in the registry stay pullable; they just stop moving. Kept as a one-entry
+          # matrix so the per-backend cache scope and the smoke-test volume name stay unchanged.
           - backend: go
             dockerfile: Dockerfile.go
-            # No flavor at all rather than an empty suffix=: the unsuffixed leg should not be
-            # relying on how the action reads a blank value.
+            # No flavor at all rather than an empty suffix=: this leg should not be relying on
+            # how the action reads a blank value.
             flavor: ""
-          # The Python backend stays published under -py, so an existing deployment that wants
-          # the reference implementation can pin `:latest-py` / `:2.0.0-py` and keep it.
-          - backend: python
-            dockerfile: Dockerfile
-            # onlatest is what carries the suffix onto `latest` too, so this leg publishes
-            # `latest-py` instead of fighting the Go leg for `latest`.
-            flavor: "suffix=-py,onlatest=true"
 
     name: ${{ matrix.backend }}
 

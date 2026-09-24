@@ -75,6 +75,10 @@ export default function DecisionPromptPanel({ cfg, set, notify, goto }: SectionP
   }
 
   const missing = preview?.models_without_description ?? []
+  /** Jev takes no system prompt: it answers one Choice question whose options are the catalog.
+   *  The template is kept (and editable) for when the engine is switched back, but the preview
+   *  shows the request that is actually sent. */
+  const useJev = cfg.ai_router.decision_engine === 'typesafe'
 
   return (
     <div className="panel">
@@ -83,9 +87,18 @@ export default function DecisionPromptPanel({ cfg, set, notify, goto }: SectionP
         {!aiRouterActive(cfg.strategy) && (
           <span className="badge">{t('config.aiRouter.inactive')}</span>
         )}
-        {preview?.is_default_prompt && <span className="badge">{t('config.prompt.usingDefault')}</span>}
+        {!useJev && preview?.is_default_prompt && (
+          <span className="badge">{t('config.prompt.usingDefault')}</span>
+        )}
+        {useJev && <span className="badge">{t('config.prompt.jevUnused')}</span>}
       </div>
       <div className="panel-body">
+        {useJev && (
+          <p className="panel-note">
+            <Trans i18nKey="config.prompt.jevLead" components={{ code: <code /> }} />
+          </p>
+        )}
+        {!useJev && (<>
         <p className="panel-note">
           <Trans
             i18nKey="config.prompt.lead"
@@ -141,6 +154,7 @@ export default function DecisionPromptPanel({ cfg, set, notify, goto }: SectionP
             />
           </div>
         )}
+        </>)}
 
         {missing.length > 0 && (
           <div className="toast warn">
@@ -187,15 +201,29 @@ export default function DecisionPromptPanel({ cfg, set, notify, goto }: SectionP
                 </>
               )}
               <span className="spacer" />
-              <span className="dim mono">
-                {t('config.prompt.metaRenderedChars', { count: preview.chars })}
-              </span>
+              {!useJev && (
+                <span className="dim mono">
+                  {t('config.prompt.metaRenderedChars', { count: preview.chars })}
+                </span>
+              )}
             </div>
 
-            <div className="prompt-preview">
-              <div className="msg-role">system</div>
-              <pre className="code">{preview.system}</pre>
-            </div>
+            {useJev && preview.typesafe_request ? (
+              <div className="prompt-preview">
+                <div className="msg-role">
+                  POST /v1/systemone
+                  {!preview.typesafe_key_set && (
+                    <span className="badge warn">{t('config.prompt.jevNoKey')}</span>
+                  )}
+                </div>
+                <pre className="code">{JSON.stringify(preview.typesafe_request, null, 2)}</pre>
+              </div>
+            ) : (
+              <div className="prompt-preview">
+                <div className="msg-role">system</div>
+                <pre className="code">{preview.system}</pre>
+              </div>
+            )}
 
             <label className="field" style={{ marginTop: 14 }}>
               <span className="field-name">
@@ -225,7 +253,7 @@ export default function DecisionPromptPanel({ cfg, set, notify, goto }: SectionP
               })}
             </div>
 
-            {preview.user && (
+            {preview.user && !useJev && (
               <div className="prompt-preview">
                 <div className="msg-role">
                   user

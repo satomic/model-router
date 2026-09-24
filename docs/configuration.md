@@ -28,7 +28,7 @@ The 5 sub-pages of "Routing configuration":
 |---|---|---|
 | Backend connections | `providers` / `default_provider` | address, key, `api_type`, `api_version` |
 | Model catalog | `models` | the `provider` binding, the upstream `model_name`, `description` for the AI decision to reason about, and the `default` / `reasoning` / `api: responses` flags |
-| Routing strategy | `strategy` / `session` / `ai_router` | `rule`, `ai`, or `rule-then-ai` (both active: the rules decide when one matches, and only an unmatched request pays for a decision call); the stickiness toggle and capacity (one decision per interaction / per session); the decision model, its provider, timeout and prompt truncation length; the **AI decision prompt** (`ai_router.decision_prompt`) editor plus a preview rendered against the real model catalog |
+| Routing strategy | `strategy` / `session` / `ai_router` | `rule`, `ai`, or `rule-then-ai` (both active: the rules decide when one matches, and only an unmatched request pays for a decision call); the stickiness toggle and capacity (one decision per interaction / per session); the decision model, its provider, timeout and prompt truncation length, or — ticking "Use TypeSafe Jev" — `ai_router.decision_engine: typesafe` with the TypeSafe key/model (see [router logic](router-logic.md)); the **AI decision prompt** (`ai_router.decision_prompt`) editor plus a preview rendered against the real model catalog |
 | Rule routing | `rules` | keywords / prompt length, matched in order |
 | Model policy | `model_groups` / `model_policy` | named model groups ticked off the catalog, and which group each user / team / organization gets — see [model policy](model-policy.md) |
 

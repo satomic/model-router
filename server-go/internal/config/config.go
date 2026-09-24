@@ -34,6 +34,26 @@ var PolicyScopes = []string{"user", "team", "organization"}
 // of them matches, and only an unmatched request costs a decision call.
 var Strategies = []string{"rule", "ai", "rule-then-ai"}
 
+// DecisionEngines are what makes the AI routing decision. "llm" asks a chat model through a
+// configured provider, with the decision prompt; "typesafe" asks TypeSafe's Jev -- a System One
+// model built for picking one option out of a closed set -- a single Choice question whose
+// options are the model catalog. Missing means "llm", so an existing config.yaml is unchanged.
+var DecisionEngines = []string{"llm", "typesafe"}
+
+const (
+	TypeSafeDefaultBaseURL = "https://api.typesafe.ai"
+	TypeSafeDefaultModel   = "jev-latest"
+	// TypeSafeMaxOptions is the most options one Choice question accepts.
+	TypeSafeMaxOptions = 255
+)
+
+// TypeSafe is the ai_router.typesafe section: where the Jev decision engine is reached.
+type TypeSafe struct {
+	APIKey  string
+	Model   string
+	BaseURL string
+}
+
 // CatalogPlaceholder stands for the model catalog inside the AI decision prompt.
 // Rendering does a **literal replacement** rather than a format call: a custom prompt almost
 // always contains JSON braces, which a formatter would treat as placeholders and then fail on.
@@ -143,6 +163,8 @@ type RouterConfig struct {
 	DecisionTimeout      float64
 	MaxPromptChars       int
 	DecisionPrompt       string
+	DecisionEngine       string
+	TypeSafe             TypeSafe
 
 	Providers           *omap.Map // name -> *Provider
 	DefaultProviderName string
@@ -200,6 +222,27 @@ func New(raw *omap.Map) *RouterConfig {
 	c.DecisionPrompt = strings.TrimSpace(ai.Str("decision_prompt"))
 	if c.DecisionPrompt == "" {
 		c.DecisionPrompt = DefaultDecisionPrompt
+	}
+	c.DecisionEngine = strings.TrimSpace(ai.Str("decision_engine"))
+	if c.DecisionEngine == "" {
+		c.DecisionEngine = "llm"
+	}
+	ts := orEmpty(ai.Map("typesafe"))
+	c.TypeSafe = TypeSafe{
+		APIKey:  strings.TrimSpace(ts.Str("api_key")),
+		Model:   strings.TrimSpace(ts.Str("model")),
+		BaseURL: strings.TrimRight(strings.TrimSpace(ts.Str("base_url")), "/"),
+	}
+	// The same fallback the TypeSafe SDKs use, and the same one AZURE_OPENAI_API_KEY gets: a
+	// key in the environment keeps the secret out of config.yaml.
+	if c.TypeSafe.APIKey == "" {
+		c.TypeSafe.APIKey = EnvTypeSafeAPIKey
+	}
+	if c.TypeSafe.Model == "" {
+		c.TypeSafe.Model = TypeSafeDefaultModel
+	}
+	if c.TypeSafe.BaseURL == "" {
+		c.TypeSafe.BaseURL = TypeSafeDefaultBaseURL
 	}
 
 	c.Providers = omap.New()
@@ -489,6 +532,11 @@ func (c *RouterConfig) RenderDecisionPrompt(catalog string) string {
 		return strings.ReplaceAll(c.DecisionPrompt, CatalogPlaceholder, catalog)
 	}
 	return c.DecisionPrompt + "\n\nAvailable models:\n" + catalog
+}
+
+// UsesTypeSafe reports whether the AI decision is made by TypeSafe's Jev rather than an LLM.
+func (c *RouterConfig) UsesTypeSafe() bool {
+	return c.DecisionEngine == "typesafe"
 }
 
 // ResolveDecisionModel prefers the decision model's metadata from `models`, otherwise treats

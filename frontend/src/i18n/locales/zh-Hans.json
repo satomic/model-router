@@ -1099,7 +1099,11 @@
       "rawOutput": "原始输出",
       "fallback": "回退",
       "fellBackToDefault": "已回退到默认模型",
-      "interactionReuse": "本次交互只选型一次；此次调用直接复用，因此未调用决策模型，也没有产生决策延迟。"
+      "interactionReuse": "本次交互只选型一次；此次调用直接复用，因此未调用决策模型，也没有产生决策延迟。",
+      "probabilities": "概率分布",
+      "confidence": "置信度 {{value}}",
+      "decisionQuestion": "Choice 问题",
+      "optionsExpand_other": "{{count}} 个选项，点击展开"
     }
   },
   "config": {
@@ -1251,7 +1255,18 @@
       "timeout": "决策超时（秒）",
       "timeoutHint": "超时则回退默认模型",
       "maxPromptChars": "Prompt 截断长度",
-      "maxPromptCharsHint": "超出则首尾各留一半"
+      "maxPromptCharsHint": "超出则首尾各留一半",
+      "typesafe": {
+        "toggle": "使用 TypeSafe Jev 作为决策模型",
+        "badge": "高速",
+        "desc": "<link>Jev</link> 是专为「在固定集合中选一项」设计的 System One 模型：模型目录作为一个 Choice 问题发送，Jev 返回所选模型及校准后的概率，通常 70–500 毫秒。启用后不使用下方的决策提示词。取消勾选即回到 LLM 决策模型，两边的设置都会保留。",
+        "apiKey": "TypeSafe API Key",
+        "apiKeyHint": "在 console.typesafe.ai 创建；留空则使用环境变量 TYPESAFE_API_KEY",
+        "model": "Jev 模型",
+        "modelHint": "默认 jev-latest；需要稳定行为时可固定为 jev-1.13.0 等版本",
+        "baseUrl": "API 地址",
+        "baseUrlHint": "默认 https://api.typesafe.ai"
+      }
     },
     "rules": {
       "title": "规则路由",
@@ -1312,7 +1327,10 @@
         "refactor": "帮我把这个模块的架构重构一下，拆出独立的领域层",
         "translate": "把这段话翻译成英文",
         "proof": "证明：任意连续函数在闭区间上一致连续"
-      }
+      },
+      "jevUnused": "TypeSafe Jev 不使用",
+      "jevLead": "TypeSafe Jev 不接收系统提示词。它回答一个 Choice 问题，选项是模型目录中的各个模型，每个选项的说明取自该模型的 <code>description</code>——因此真正影响决策的是模型描述。下方模板会保留，切回 LLM 决策模型时继续生效。预览展示的是实际发送的请求（不含 API Key）。",
+      "jevNoKey": "未设置 API Key"
     },
     "list": {
       "search": "搜索",

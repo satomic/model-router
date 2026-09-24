@@ -11,9 +11,9 @@ docker run -d --name model-router \
 ```
 
 `:latest` is the Go backend — a 29 MB Alpine image with a shell in it, so a container can still
-be opened with `docker exec -it model-router sh`. The Python backend is published from the
-same release under `:latest-py` for anyone who wants the reference implementation; the two share
-the `/data` volume, so switching is a change of tag. See [the two backends](docs/backends.md).
+be opened with `docker exec -it model-router sh`. The Python backend is no longer published as an
+image (the `:*-py` tags already in the registry stay pullable but no longer move); it can still be
+run from source. See [the two backends](docs/backends.md).
 
 Nothing to prepare: the configuration is created from the template on first start, and the single
 `/data` volume holds all of it (the configuration, the sign-in state, the keys and the traces), so

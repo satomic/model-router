@@ -142,6 +142,15 @@ models:
   #   description: Strong reasoning and long-context model. Good for large refactors and deep analysis.
 
 ai_router:
+  # What makes the AI decision: "llm" (the default) asks decision_model through a provider with
+  # decision_prompt; "typesafe" asks TypeSafe's Jev one Choice question over the model catalog
+  # (~300 ms), using each model's description as the option's rubric. The LLM fields below are
+  # then unused but kept, so switching back is one change.
+  # decision_engine: typesafe
+  # typesafe:
+  #   api_key: ''              # empty = the TYPESAFE_API_KEY environment variable
+  #   model: jev-latest        # optional
+  #   base_url: https://api.typesafe.ai   # optional
   decision_model: gpt-4.1
   decision_provider: foundry   # Optional; omit to use default_provider
   timeout_seconds: 5

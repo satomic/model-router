@@ -183,6 +183,31 @@ func validateAIRouter(value any, providers *omap.Map) []string {
 			errors = append(errors, fmt.Sprintf("ai_router.%s must be a number greater than %g", field.name, field.low))
 		}
 	}
+	engine := strings.TrimSpace(ai.Str("decision_engine"))
+	if ai.Value("decision_engine") != nil && !contains(DecisionEngines, engine) {
+		errors = append(errors, fmt.Sprintf("ai_router.decision_engine must be one of %s",
+			strings.Join(DecisionEngines, ", ")))
+	}
+	if ts := ai.Value("typesafe"); ts != nil {
+		if tsMap, ok := ts.(*omap.Map); !ok {
+			errors = append(errors, "ai_router.typesafe must be an object")
+		} else if engine == "typesafe" {
+			// A missing key is only an error when the engine is actually selected, and only
+			// when the environment does not supply one either: an operator switching back to
+			// "llm" should not have to clear a section they may switch to again.
+			if strings.TrimSpace(tsMap.Str("api_key")) == "" && EnvTypeSafeAPIKey == "" {
+				errors = append(errors, "ai_router.typesafe.api_key is required when decision_engine is typesafe "+
+					"(or set TYPESAFE_API_KEY in the environment)")
+			}
+			if raw := strings.TrimSpace(tsMap.Str("base_url")); raw != "" &&
+				!strings.HasPrefix(raw, "https://") && !strings.HasPrefix(raw, "http://") {
+				errors = append(errors, "ai_router.typesafe.base_url must start with http:// or https://")
+			}
+		}
+	} else if engine == "typesafe" && EnvTypeSafeAPIKey == "" {
+		errors = append(errors, "ai_router.typesafe.api_key is required when decision_engine is typesafe "+
+			"(or set TYPESAFE_API_KEY in the environment)")
+	}
 	if ai.Has("decision_prompt") && ai.Value("decision_prompt") != nil {
 		prompt, ok := ai.Value("decision_prompt").(string)
 		if !ok {
