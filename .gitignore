@@ -69,3 +69,5 @@ perf/
 diagrams/
 customers/
 release-notes/
+# Promotional articles and their screenshots -- drafts kept out of the repository.
+articles/

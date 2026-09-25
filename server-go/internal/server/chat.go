@@ -2,6 +2,8 @@ package server
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -72,6 +74,27 @@ func interactionID(r *http.Request) any {
 		}
 	}
 	return nil
+}
+
+// derivedInteractionID stands in for the interaction header on clients that mark their turns
+// but do not number them.
+//
+// The Copilot CLI over BYOK is that client: it talks through the stock OpenAI SDK, so none of
+// interactionHeaders arrives, but every request carries `x-initiator` -- `user` for the turn a
+// person typed, `agent` for each follow-up of its tool-call loop -- and every turn of one loop
+// resends the same last user message, down to the `<current_datetime>` stamp the CLI puts in
+// it. That message, scoped to the API key, identifies the interaction as well as a header
+// would: the loop routes once and is recorded as one trace, while the next question (a new
+// message, a new stamp) gets a fresh decision.
+//
+// Gated on `x-initiator` so a client that never claimed to run a loop keeps a decision per
+// request: two identical curl calls are two interactions, not one.
+func derivedInteractionID(r *http.Request, key *omap.Map, prompt string) any {
+	if strings.TrimSpace(r.Header.Get("x-initiator")) == "" || strings.TrimSpace(prompt) == "" {
+		return nil
+	}
+	sum := sha256.Sum256([]byte(key.Str("id") + "\x00" + prompt))
+	return "derived-" + hex.EncodeToString(sum[:8])
 }
 
 func headerOrNil(r *http.Request, name string) any {
@@ -180,6 +203,9 @@ func (a *App) prepareCall(r *http.Request, body, key *omap.Map, start time.Time,
 	messages := body.Slice("messages")
 	prompt := routing.ExtractUserPrompt(messages)
 	interaction := interactionID(r)
+	if interaction == nil {
+		interaction = derivedInteractionID(r, key, prompt)
+	}
 	sessionID := strings.TrimSpace(r.Header.Get("x-session-id"))
 
 	// The AI-credit gate comes before everything else on purpose: while the caller's Copilot

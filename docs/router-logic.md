@@ -59,7 +59,18 @@ original prompt — for a four-call loop that was ~8 s of pure added latency and
 tokens, for a decision that could not legitimately come out differently. With it, the model is
 chosen once and held for the rest of the interaction.
 
-A client that sends no such header is unaffected: every request is then its own interaction.
+**The Copilot CLI over BYOK sends none of these headers** (Go backend). It talks through the stock
+OpenAI SDK, and neither its headers nor its body carry a session or interaction id. What it does send
+is `x-initiator`: `user` on the turn a person typed, `agent` on every follow-up of the tool-call
+loop. Every turn of one loop also resends the same last user message, including the
+`<current_datetime>` stamp the CLI puts in it. So when a request carries `x-initiator` but no
+interaction header, the router derives the interaction id itself: `derived-` plus a hash of the API
+key and that message. The loop is then routed once and recorded as one trace, the next question
+(a new message with a new stamp) gets a fresh decision, and two CLI sessions on the same key stay
+apart.
+
+A client that sends neither an interaction header nor `x-initiator` is unaffected: every request is
+then its own interaction.
 
 **2. Rule routing (`strategy: rule`)**: the `rules` list in `config.yaml` is evaluated **in order**
 (`route_by_rules` in [app/routing.py](../app/routing.py)):
