@@ -109,13 +109,18 @@ func (a *App) previewDecisionPrompt(w http.ResponseWriter, r *http.Request) erro
 
 	decisionModel := draft.DecisionModel
 	decisionProvider := draft.ResolveDecisionModel().Provider.Name
-	// With TypeSafe selected the decision prompt is not sent at all; what is sent is this
+	// With Jev or Laya selected the decision prompt is not sent at all; what is sent is this
 	// request, built by the same function RouteByAI uses. The key is never part of it.
-	var typesafeRequest any
-	if draft.UsesTypeSafe() {
-		decisionModel = draft.TypeSafe.Model
-		decisionProvider = "typesafe"
-		typesafeRequest = routing.BuildTypeSafeRequest(truncated, draft)
+	var systemOneRequest any
+	keyMissing := false
+	if endpoint, ok := draft.SystemOne(); ok {
+		decisionModel = endpoint.Model
+		if decisionModel == "" {
+			decisionModel = "auto"
+		}
+		decisionProvider = endpoint.Engine
+		systemOneRequest = routing.BuildSystemOneRequest(truncated, draft, endpoint)
+		keyMissing = endpoint.KeyNeeded && endpoint.APIKey == ""
 	}
 
 	writeJSON(w, http.StatusOK, mapOf(
@@ -128,10 +133,10 @@ func (a *App) previewDecisionPrompt(w http.ResponseWriter, r *http.Request) erro
 		"decision_model", decisionModel,
 		"decision_provider", decisionProvider,
 		"decision_engine", draft.DecisionEngine,
-		"typesafe_request", typesafeRequest,
-		// Whether a key is available without echoing it: the environment may supply one
-		// the draft does not show.
-		"typesafe_key_set", draft.TypeSafe.APIKey != "",
+		"systemone_request", systemOneRequest,
+		// Whether a required key is missing, without echoing it: the environment may supply
+		// one the draft does not show. Laya's key is optional, so it is never "missing".
+		"systemone_key_missing", keyMissing,
 		"is_default_prompt", draft.DecisionPrompt == config.DefaultDecisionPrompt,
 		"has_placeholder", strings.Contains(draft.DecisionPrompt, config.CatalogPlaceholder),
 		"models_without_description", missingDesc,

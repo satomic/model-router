@@ -31,7 +31,7 @@ export interface RuleStep {
   skipped?: string
 }
 
-export type DecisionEngine = 'llm' | 'typesafe'
+export type DecisionEngine = 'llm' | 'typesafe' | 'laya'
 
 export interface TypeSafeSettings {
   api_key?: string
@@ -39,6 +39,16 @@ export interface TypeSafeSettings {
   model?: string
   /** Defaults to https://api.typesafe.ai. */
   base_url?: string
+}
+
+/** A self-hosted Laya (laya-serve), which speaks Jev's /v1/systemone protocol. */
+export interface LayaSettings {
+  /** e.g. http://127.0.0.1:8100. Required while the engine is selected. */
+  base_url?: string
+  /** Only needed when laya-serve was started with LAYA_API_KEY. */
+  api_key?: string
+  /** english / multilingual / typed-decisions; empty lets Laya pick by language. */
+  model?: string
 }
 
 export interface RoutingAnalysis {
@@ -72,6 +82,8 @@ export interface RoutingAnalysis {
    *  that was asked, and the calibrated answer. */
   decision_model_version?: string
   decision_question?: { instructions: string; criteria: Record<string, string | null> }
+  /** Laya only: which of its checkpoints answered, and why (the request's language). */
+  decision_checkpoint?: { model: string; reason?: string }
   probabilities?: Record<string, number>
   confidence?: number
   error?: string
@@ -275,6 +287,8 @@ export interface RouterConfig {
     decision_engine?: DecisionEngine
     /** Where the TypeSafe engine is reached. Kept when the engine is switched back to llm. */
     typesafe?: TypeSafeSettings
+    /** Where the self-hosted Laya engine is reached. Kept when another engine is selected. */
+    laya?: LayaSettings
     decision_model: string
     decision_provider?: string
     timeout_seconds: number
@@ -548,10 +562,11 @@ export interface PromptPreview {
   default_model: string | null
   chars: number
   decision_engine: DecisionEngine
-  /** The exact /v1/systemone body a TypeSafe decision would send (null for the LLM engine). */
-  typesafe_request: Record<string, unknown> | null
-  /** Whether a TypeSafe key is available, including one from TYPESAFE_API_KEY. */
-  typesafe_key_set: boolean
+  /** The exact /v1/systemone body a Jev or Laya decision would send (null for the LLM engine). */
+  systemone_request: Record<string, unknown> | null
+  /** True when the engine needs a key and none is available (TypeSafe, with no key in the
+   *  config or in TYPESAFE_API_KEY). Laya's key is optional, so it is never missing. */
+  systemone_key_missing: boolean
 }
 
 /** Render the preview from the **unsaved draft**: models / ai_router are posted as-is, so there is

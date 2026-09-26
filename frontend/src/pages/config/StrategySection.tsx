@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Trans, useTranslation } from 'react-i18next'
-import type { TypeSafeSettings } from '../../api'
+import type { LayaSettings, TypeSafeSettings } from '../../api'
 import { aiRouterActive } from './strategy'
 import DecisionPromptPanel from './DecisionPromptPanel'
 import RoutingFlow from './RoutingFlow'
@@ -12,19 +12,37 @@ export default function StrategySection({ cfg, set, notify, goto }: SectionProps
   const { t } = useTranslation()
   const providerNames = Object.keys(cfg.providers ?? {})
   const [revealKey, setRevealKey] = useState(false)
-  const useJev = cfg.ai_router.decision_engine === 'typesafe'
+  const engine = cfg.ai_router.decision_engine
+  /** Jev and Laya are both System One engines on the same protocol, so one switch covers them
+   *  and a second choice picks which. */
+  const systemOne = engine === 'typesafe' || engine === 'laya'
+  /** Which of the two the switch turns back on: the one last selected in this session. */
+  const [lastSystemOne, setLastSystemOne] = useState<'typesafe' | 'laya'>(
+    engine === 'laya' ? 'laya' : 'typesafe',
+  )
   const typesafe = cfg.ai_router.typesafe ?? {}
+  const laya = cfg.ai_router.laya ?? {}
+
+  const setEngine = (next: 'typesafe' | 'laya' | undefined) => {
+    if (next) setLastSystemOne(next)
+    set({ ai_router: { ...cfg.ai_router, decision_engine: next } })
+  }
 
   /** Empty strings are stored as undefined, so config.yaml keeps no empty field and the
-   *  backend's defaults (jev-latest, api.typesafe.ai, TYPESAFE_API_KEY) apply. */
-  const setTypeSafe = (patch: Partial<TypeSafeSettings>) => {
-    const next: TypeSafeSettings = { ...typesafe }
-    for (const [k, v] of Object.entries(patch) as [keyof TypeSafeSettings, string][]) {
+   *  backend's defaults (jev-latest, api.typesafe.ai, TYPESAFE_API_KEY; Laya's automatic
+   *  checkpoint) apply. */
+  function patched<T extends object>(current: T, patch: Partial<T>): T | undefined {
+    const next = { ...current } as Record<string, unknown>
+    for (const [k, v] of Object.entries(patch)) {
       if (v) next[k] = v
       else delete next[k]
     }
-    set({ ai_router: { ...cfg.ai_router, typesafe: Object.keys(next).length ? next : undefined } })
+    return Object.keys(next).length ? (next as T) : undefined
   }
+  const setTypeSafe = (patch: Partial<TypeSafeSettings>) =>
+    set({ ai_router: { ...cfg.ai_router, typesafe: patched(typesafe, patch) } })
+  const setLaya = (patch: Partial<LayaSettings>) =>
+    set({ ai_router: { ...cfg.ai_router, laya: patched(laya, patch) } })
 
   /** The rules link inside a choice card's description. The card is a `<label>`, so a click on
    *  the button would also select its radio -- hence the stopPropagation. */
@@ -149,20 +167,13 @@ export default function StrategySection({ cfg, set, notify, goto }: SectionProps
         </div>
         <div className="panel-body">
           {/* The engine switch. Unticking it returns to the LLM fields below, which were never
-              cleared -- and the TypeSafe settings are kept too, so flipping back and forth to
-              compare the two costs nothing. */}
-          <label className={`choice ${useJev ? 'selected' : ''}`} style={{ marginBottom: 12 }}>
+              cleared -- and the TypeSafe and Laya settings are kept too, so flipping back and
+              forth to compare them costs nothing. */}
+          <label className={`choice ${systemOne ? 'selected' : ''}`} style={{ marginBottom: 12 }}>
             <input
               type="checkbox"
-              checked={useJev}
-              onChange={(e) =>
-                set({
-                  ai_router: {
-                    ...cfg.ai_router,
-                    decision_engine: e.target.checked ? 'typesafe' : undefined,
-                  },
-                })
-              }
+              checked={systemOne}
+              onChange={(e) => setEngine(e.target.checked ? lastSystemOne : undefined)}
             />
             <span>
               <span className="choice-title">
@@ -173,66 +184,153 @@ export default function StrategySection({ cfg, set, notify, goto }: SectionProps
                 <Trans
                   i18nKey="config.aiRouter.typesafe.desc"
                   components={{
-                    link: <a href="https://typesafe.ai/blog/introducing-system-one-models-and-jev" target="_blank" rel="noreferrer" />,
+                    // Not `link`: that is a void HTML element, which Trans renders empty and
+                    // leaves the text outside the anchor.
+                    jev: <a href="https://typesafe.ai/blog/introducing-system-one-models-and-jev" target="_blank" rel="noreferrer" />,
+                    laya: <a href="https://github.com/NandhaKishorM/laya" target="_blank" rel="noreferrer" />,
                   }}
                 />
               </span>
             </span>
           </label>
 
-          {useJev ? (
+          {systemOne ? (
             <>
-              <label className="field">
-                <span className="field-name">
-                  {t('config.aiRouter.typesafe.apiKey')}
-                  <span className="field-hint">{t('config.aiRouter.typesafe.apiKeyHint')}</span>
-                </span>
-                <span style={{ display: 'flex', gap: 8 }}>
+              <div className="choice-list" style={{ marginBottom: 12 }}>
+                <label className={`choice ${engine === 'typesafe' ? 'selected' : ''}`}>
                   <input
-                    type={revealKey ? 'text' : 'password'}
-                    className="mono"
-                    value={typesafe.api_key ?? ''}
-                    placeholder="TYPESAFE_API_KEY"
-                    autoComplete="off"
-                    onChange={(e) => setTypeSafe({ api_key: e.target.value.trim() })}
+                    type="radio"
+                    name="system-one-engine"
+                    checked={engine === 'typesafe'}
+                    onChange={() => setEngine('typesafe')}
                   />
-                  <button
-                    className="btn ghost sm"
-                    style={{ flex: 'none' }}
-                    onClick={() => setRevealKey((v) => !v)}
-                  >
-                    {revealKey ? t('common.hide') : t('common.show')}
-                  </button>
-                </span>
-              </label>
-              <div className="row">
-                <label className="field">
-                  <span className="field-name">
-                    {t('config.aiRouter.typesafe.model')}
-                    <span className="field-hint">{t('config.aiRouter.typesafe.modelHint')}</span>
+                  <span>
+                    <span className="choice-title">{t('config.aiRouter.systemOne.typesafe')}</span>
+                    <span className="choice-desc">{t('config.aiRouter.systemOne.typesafeDesc')}</span>
                   </span>
-                  <input
-                    type="text"
-                    className="mono"
-                    value={typesafe.model ?? ''}
-                    placeholder="jev-latest"
-                    onChange={(e) => setTypeSafe({ model: e.target.value.trim() })}
-                  />
                 </label>
-                <label className="field">
-                  <span className="field-name">
-                    {t('config.aiRouter.typesafe.baseUrl')}
-                    <span className="field-hint">{t('config.aiRouter.typesafe.baseUrlHint')}</span>
-                  </span>
+                <label className={`choice ${engine === 'laya' ? 'selected' : ''}`}>
                   <input
-                    type="text"
-                    className="mono"
-                    value={typesafe.base_url ?? ''}
-                    placeholder="https://api.typesafe.ai"
-                    onChange={(e) => setTypeSafe({ base_url: e.target.value.trim() })}
+                    type="radio"
+                    name="system-one-engine"
+                    checked={engine === 'laya'}
+                    onChange={() => setEngine('laya')}
                   />
+                  <span>
+                    <span className="choice-title">{t('config.aiRouter.systemOne.laya')}</span>
+                    <span className="choice-desc">{t('config.aiRouter.systemOne.layaDesc')}</span>
+                  </span>
                 </label>
               </div>
+
+              {engine === 'typesafe' ? (
+                <>
+                  <label className="field">
+                    <span className="field-name">
+                      {t('config.aiRouter.typesafe.apiKey')}
+                      <span className="field-hint">{t('config.aiRouter.typesafe.apiKeyHint')}</span>
+                    </span>
+                    <span style={{ display: 'flex', gap: 8 }}>
+                      <input
+                        type={revealKey ? 'text' : 'password'}
+                        className="mono"
+                        value={typesafe.api_key ?? ''}
+                        placeholder="TYPESAFE_API_KEY"
+                        autoComplete="off"
+                        onChange={(e) => setTypeSafe({ api_key: e.target.value.trim() })}
+                      />
+                      <button
+                        className="btn ghost sm"
+                        style={{ flex: 'none' }}
+                        onClick={() => setRevealKey((v) => !v)}
+                      >
+                        {revealKey ? t('common.hide') : t('common.show')}
+                      </button>
+                    </span>
+                  </label>
+                  <div className="row">
+                    <label className="field">
+                      <span className="field-name">
+                        {t('config.aiRouter.typesafe.model')}
+                        <span className="field-hint">{t('config.aiRouter.typesafe.modelHint')}</span>
+                      </span>
+                      <input
+                        type="text"
+                        className="mono"
+                        value={typesafe.model ?? ''}
+                        placeholder="jev-latest"
+                        onChange={(e) => setTypeSafe({ model: e.target.value.trim() })}
+                      />
+                    </label>
+                    <label className="field">
+                      <span className="field-name">
+                        {t('config.aiRouter.typesafe.baseUrl')}
+                        <span className="field-hint">{t('config.aiRouter.typesafe.baseUrlHint')}</span>
+                      </span>
+                      <input
+                        type="text"
+                        className="mono"
+                        value={typesafe.base_url ?? ''}
+                        placeholder="https://api.typesafe.ai"
+                        onChange={(e) => setTypeSafe({ base_url: e.target.value.trim() })}
+                      />
+                    </label>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <label className="field">
+                    <span className="field-name">
+                      {t('config.aiRouter.laya.baseUrl')}
+                      <span className="field-hint">{t('config.aiRouter.laya.baseUrlHint')}</span>
+                    </span>
+                    <input
+                      type="text"
+                      className="mono"
+                      value={laya.base_url ?? ''}
+                      placeholder="http://127.0.0.1:8100"
+                      onChange={(e) => setLaya({ base_url: e.target.value.trim() })}
+                    />
+                  </label>
+                  <div className="row">
+                    <label className="field">
+                      <span className="field-name">
+                        {t('config.aiRouter.laya.apiKey')}
+                        <span className="field-hint">{t('config.aiRouter.laya.apiKeyHint')}</span>
+                      </span>
+                      <span style={{ display: 'flex', gap: 8 }}>
+                        <input
+                          type={revealKey ? 'text' : 'password'}
+                          className="mono"
+                          value={laya.api_key ?? ''}
+                          placeholder="LAYA_API_KEY"
+                          autoComplete="off"
+                          onChange={(e) => setLaya({ api_key: e.target.value.trim() })}
+                        />
+                        <button
+                          className="btn ghost sm"
+                          style={{ flex: 'none' }}
+                          onClick={() => setRevealKey((v) => !v)}
+                        >
+                          {revealKey ? t('common.hide') : t('common.show')}
+                        </button>
+                      </span>
+                    </label>
+                    <label className="field">
+                      <span className="field-name">
+                        {t('config.aiRouter.laya.model')}
+                        <span className="field-hint">{t('config.aiRouter.laya.modelHint')}</span>
+                      </span>
+                      <select value={laya.model ?? ''} onChange={(e) => setLaya({ model: e.target.value })}>
+                        <option value="">{t('config.aiRouter.laya.modelAuto')}</option>
+                        <option value="english">english</option>
+                        <option value="multilingual">multilingual</option>
+                        <option value="typed-decisions">typed-decisions</option>
+                      </select>
+                    </label>
+                  </div>
+                </>
+              )}
             </>
           ) : (
             <div className="row">

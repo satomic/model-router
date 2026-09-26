@@ -37,8 +37,10 @@ var Strategies = []string{"rule", "ai", "rule-then-ai"}
 // DecisionEngines are what makes the AI routing decision. "llm" asks a chat model through a
 // configured provider, with the decision prompt; "typesafe" asks TypeSafe's Jev -- a System One
 // model built for picking one option out of a closed set -- a single Choice question whose
-// options are the model catalog. Missing means "llm", so an existing config.yaml is unchanged.
-var DecisionEngines = []string{"llm", "typesafe"}
+// options are the model catalog; "laya" asks the same question of a self-hosted Laya
+// (github.com/NandhaKishorM/laya), whose laya-serve speaks Jev's /v1/systemone protocol.
+// Missing means "llm", so an existing config.yaml is unchanged.
+var DecisionEngines = []string{"llm", "typesafe", "laya"}
 
 const (
 	TypeSafeDefaultBaseURL = "https://api.typesafe.ai"
@@ -47,11 +49,36 @@ const (
 	TypeSafeMaxOptions = 255
 )
 
+// LayaMaxOptions is the most options laya-serve accepts in one Choice question. Accuracy falls
+// off well before that (options share a fixed token budget), but past it the request is refused.
+const LayaMaxOptions = 100
+
 // TypeSafe is the ai_router.typesafe section: where the Jev decision engine is reached.
 type TypeSafe struct {
 	APIKey  string
 	Model   string
 	BaseURL string
+}
+
+// Laya is the ai_router.laya section: a self-hosted laya-serve. There is no default address --
+// it is wherever the operator deployed it -- and the key is optional, because laya-serve only
+// checks one when it was started with LAYA_API_KEY. An empty Model lets laya pick the
+// checkpoint by the request's language.
+type Laya struct {
+	BaseURL string
+	APIKey  string
+	Model   string
+}
+
+// SystemOneEndpoint is one resolved /v1/systemone service, whichever engine it belongs to.
+type SystemOneEndpoint struct {
+	Engine     string // "typesafe" or "laya"
+	Label      string // for the trace and error messages
+	BaseURL    string
+	APIKey     string
+	Model      string // sent as the request's model; empty = omitted
+	KeyNeeded  bool
+	MaxOptions int
 }
 
 // CatalogPlaceholder stands for the model catalog inside the AI decision prompt.
@@ -165,6 +192,7 @@ type RouterConfig struct {
 	DecisionPrompt       string
 	DecisionEngine       string
 	TypeSafe             TypeSafe
+	Laya                 Laya
 
 	Providers           *omap.Map // name -> *Provider
 	DefaultProviderName string
@@ -243,6 +271,12 @@ func New(raw *omap.Map) *RouterConfig {
 	}
 	if c.TypeSafe.BaseURL == "" {
 		c.TypeSafe.BaseURL = TypeSafeDefaultBaseURL
+	}
+	laya := orEmpty(ai.Map("laya"))
+	c.Laya = Laya{
+		BaseURL: strings.TrimRight(strings.TrimSpace(laya.Str("base_url")), "/"),
+		APIKey:  strings.TrimSpace(laya.Str("api_key")),
+		Model:   strings.TrimSpace(laya.Str("model")),
 	}
 
 	c.Providers = omap.New()
@@ -534,9 +568,19 @@ func (c *RouterConfig) RenderDecisionPrompt(catalog string) string {
 	return c.DecisionPrompt + "\n\nAvailable models:\n" + catalog
 }
 
-// UsesTypeSafe reports whether the AI decision is made by TypeSafe's Jev rather than an LLM.
-func (c *RouterConfig) UsesTypeSafe() bool {
-	return c.DecisionEngine == "typesafe"
+// SystemOne returns the /v1/systemone service the AI decision goes to, and false when the
+// engine is the LLM. Jev and Laya share the protocol and so the whole decision path; only where
+// the request goes, what it is signed with, and how many options it may carry differ.
+func (c *RouterConfig) SystemOne() (SystemOneEndpoint, bool) {
+	switch c.DecisionEngine {
+	case "typesafe":
+		return SystemOneEndpoint{Engine: "typesafe", Label: "TypeSafe", BaseURL: c.TypeSafe.BaseURL,
+			APIKey: c.TypeSafe.APIKey, Model: c.TypeSafe.Model, KeyNeeded: true, MaxOptions: TypeSafeMaxOptions}, true
+	case "laya":
+		return SystemOneEndpoint{Engine: "laya", Label: "Laya", BaseURL: c.Laya.BaseURL,
+			APIKey: c.Laya.APIKey, Model: c.Laya.Model, MaxOptions: LayaMaxOptions}, true
+	}
+	return SystemOneEndpoint{}, false
 }
 
 // ResolveDecisionModel prefers the decision model's metadata from `models`, otherwise treats

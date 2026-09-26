@@ -154,7 +154,7 @@ func TestRouteByAITypeSafeFallsBack(t *testing.T) {
 // TypeSafe section sitting unused in config.yaml changes nothing.
 func TestDecisionEngineDefaultsToLLM(t *testing.T) {
 	cfg := config.New(fromYAML(t, "ai_router:\n  typesafe:\n    api_key: x\n"))
-	if cfg.UsesTypeSafe() || cfg.DecisionEngine != "llm" {
+	if _, ok := cfg.SystemOne(); ok || cfg.DecisionEngine != "llm" {
 		t.Fatalf("engine = %q, want llm", cfg.DecisionEngine)
 	}
 	if cfg.TypeSafe.Model != config.TypeSafeDefaultModel || cfg.TypeSafe.BaseURL != config.TypeSafeDefaultBaseURL {

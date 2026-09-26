@@ -116,6 +116,15 @@ function AnalysisView({ analysis }: { analysis: RoutingAnalysis }) {
         {analysis.decision_engine === 'typesafe' && (
           <span className="badge ok" style={{ marginLeft: 6 }}>TypeSafe</span>
         )}
+        {analysis.decision_engine === 'laya' && (
+          <span className="badge ok" style={{ marginLeft: 6 }}>Laya</span>
+        )}
+        {analysis.decision_checkpoint?.model && (
+          <span className="dim">
+            {' '}
+            · {t('traces.analysis.layaCheckpoint', { model: analysis.decision_checkpoint.model })}
+          </span>
+        )}
       </dd>
       {analysis.probabilities && (
         <>

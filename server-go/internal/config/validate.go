@@ -208,6 +208,7 @@ func validateAIRouter(value any, providers *omap.Map) []string {
 		errors = append(errors, "ai_router.typesafe.api_key is required when decision_engine is typesafe "+
 			"(or set TYPESAFE_API_KEY in the environment)")
 	}
+	errors = append(errors, validateLaya(ai, engine)...)
 	if ai.Has("decision_prompt") && ai.Value("decision_prompt") != nil {
 		prompt, ok := ai.Value("decision_prompt").(string)
 		if !ok {
@@ -216,6 +217,38 @@ func validateAIRouter(value any, providers *omap.Map) []string {
 			errors = append(errors, "ai_router.decision_prompt is too short for the decision model to "+
 				"reliably emit JSON (leave it empty to use the built-in default)")
 		}
+	}
+	return errors
+}
+
+// LayaCheckpoints are the values ai_router.laya.model may name; empty lets laya choose.
+var LayaCheckpoints = []string{"english", "multilingual", "typed-decisions"}
+
+// validateLaya checks ai_router.laya. As with the TypeSafe section, the address is only
+// required while the engine is selected, so switching away never demands clearing it.
+func validateLaya(ai *omap.Map, engine string) []string {
+	raw := ai.Value("laya")
+	if raw == nil {
+		if engine == "laya" {
+			return []string{"ai_router.laya.base_url is required when decision_engine is laya"}
+		}
+		return nil
+	}
+	laya, ok := raw.(*omap.Map)
+	if !ok {
+		return []string{"ai_router.laya must be an object"}
+	}
+	var errors []string
+	base := strings.TrimSpace(laya.Str("base_url"))
+	switch {
+	case base == "" && engine == "laya":
+		errors = append(errors, "ai_router.laya.base_url is required when decision_engine is laya")
+	case base != "" && !strings.HasPrefix(base, "https://") && !strings.HasPrefix(base, "http://"):
+		errors = append(errors, "ai_router.laya.base_url must start with http:// or https://")
+	}
+	if model := strings.TrimSpace(laya.Str("model")); model != "" && !contains(LayaCheckpoints, model) {
+		errors = append(errors, fmt.Sprintf("ai_router.laya.model must be one of %s (or empty for automatic)",
+			strings.Join(LayaCheckpoints, ", ")))
 	}
 	return errors
 }

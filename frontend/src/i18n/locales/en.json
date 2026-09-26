@@ -1134,7 +1134,8 @@
       "confidence": "confidence {{value}}",
       "decisionQuestion": "Choice question",
       "optionsExpand_one": "{{count}} option, click to expand",
-      "optionsExpand_other": "{{count}} options, click to expand"
+      "optionsExpand_other": "{{count}} options, click to expand",
+      "layaCheckpoint": "checkpoint {{model}}"
     }
   },
   "config": {
@@ -1291,15 +1292,30 @@
       "maxPromptChars": "Prompt truncation length",
       "maxPromptCharsHint": "beyond this, half is kept from each end",
       "typesafe": {
-        "toggle": "Use TypeSafe Jev as the decision model",
+        "toggle": "Use a System One decision model (TypeSafe Jev or self-hosted Laya)",
         "badge": "fast",
-        "desc": "<link>Jev</link> is a System One model built to pick one option from a fixed set: the model catalog is sent as a single Choice question and Jev returns the pick with calibrated probabilities, typically in 70–500 ms. The decision prompt below is not used. Untick to go back to the LLM decision model; neither side’s settings are lost.",
+        "desc": "System One models are built to pick one option from a fixed set: the model catalog is sent as a single Choice question and the model returns the pick with a probability for every option. Choose the hosted <jev>TypeSafe Jev</jev> API, or a <laya>Laya</laya> you run yourself on the same protocol. The decision prompt below is not used. Untick to go back to the LLM decision model; no settings are lost.",
         "apiKey": "TypeSafe API key",
         "apiKeyHint": "from console.typesafe.ai; leave empty to use the TYPESAFE_API_KEY environment variable",
         "model": "Jev model",
         "modelHint": "default jev-latest; pin e.g. jev-1.13.0 for stable behaviour",
         "baseUrl": "API base URL",
         "baseUrlHint": "default https://api.typesafe.ai"
+      },
+      "systemOne": {
+        "typesafe": "TypeSafe Jev (hosted API)",
+        "typesafeDesc": "TypeSafe’s cloud API. Needs a TypeSafe API key; the most accurate for model routing.",
+        "laya": "Self-hosted Laya",
+        "layaDesc": "An open-source Jev alternative running on your own machine (laya-serve). No per-call cost and no data leaves your network; its base checkpoints are less accurate for routing."
+      },
+      "laya": {
+        "baseUrl": "Laya address",
+        "baseUrlHint": "the laya-serve base URL, e.g. http://127.0.0.1:8100",
+        "apiKey": "API key",
+        "apiKeyHint": "only if laya-serve was started with LAYA_API_KEY",
+        "model": "Checkpoint",
+        "modelHint": "automatic picks english or multilingual by the request’s language",
+        "modelAuto": "automatic (by language)"
       }
     },
     "rules": {
@@ -1365,8 +1381,8 @@
         "translate": "Translate this passage into English",
         "proof": "Prove: every continuous function on a closed interval is uniformly continuous"
       },
-      "jevUnused": "not used by TypeSafe Jev",
-      "jevLead": "TypeSafe Jev takes no system prompt. It is asked one Choice question whose options are the models in the catalog, each described by its <code>description</code> — so the descriptions are what steer it. The template below is kept for when you switch back to the LLM decision model. The preview shows the exact request that is sent (the API key is never part of it).",
+      "jevUnused": "not used by System One models",
+      "jevLead": "TypeSafe Jev and Laya take no system prompt. They are asked one Choice question whose options are the models in the catalog, each described by its <code>description</code> — so the descriptions are what steer them. The template below is kept for when you switch back to the LLM decision model. The preview shows the exact request that is sent (the API key is never part of it).",
       "jevNoKey": "no API key set"
     },
     "list": {

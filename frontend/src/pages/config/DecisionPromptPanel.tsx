@@ -78,7 +78,7 @@ export default function DecisionPromptPanel({ cfg, set, notify, goto }: SectionP
   /** Jev takes no system prompt: it answers one Choice question whose options are the catalog.
    *  The template is kept (and editable) for when the engine is switched back, but the preview
    *  shows the request that is actually sent. */
-  const useJev = cfg.ai_router.decision_engine === 'typesafe'
+  const useJev = cfg.ai_router.decision_engine === 'typesafe' || cfg.ai_router.decision_engine === 'laya'
 
   return (
     <div className="panel">
@@ -208,15 +208,15 @@ export default function DecisionPromptPanel({ cfg, set, notify, goto }: SectionP
               )}
             </div>
 
-            {useJev && preview.typesafe_request ? (
+            {useJev && preview.systemone_request ? (
               <div className="prompt-preview">
                 <div className="msg-role">
                   POST /v1/systemone
-                  {!preview.typesafe_key_set && (
+                  {preview.systemone_key_missing && (
                     <span className="badge warn">{t('config.prompt.jevNoKey')}</span>
                   )}
                 </div>
-                <pre className="code">{JSON.stringify(preview.typesafe_request, null, 2)}</pre>
+                <pre className="code">{JSON.stringify(preview.systemone_request, null, 2)}</pre>
               </div>
             ) : (
               <div className="prompt-preview">

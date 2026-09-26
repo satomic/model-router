@@ -188,9 +188,9 @@ func RouteCombined(ctx context.Context, prompt string, cfg *config.RouterConfig,
 // RouteByAI returns (model, reason, analysis). The analysis records the decision model's
 // input, output and rationale.
 //
-// Two engines make the decision (ai_router.decision_engine): an LLM reached through the
-// connection pool -- so it can use a different endpoint/key than the serving models -- or
-// TypeSafe's Jev. Both share the analysis skeleton, the fallback to the default model, and the
+// Three engines make the decision (ai_router.decision_engine): an LLM reached through the
+// connection pool -- so it can use a different endpoint/key than the serving models --
+// TypeSafe's hosted Jev, or a self-hosted Laya on the same protocol. All share the analysis skeleton, the fallback to the default model, and the
 // rule that an answer outside the catalog is a failure, so the strategy above them cannot tell
 // which one ran.
 func RouteByAI(ctx context.Context, prompt string, cfg *config.RouterConfig, pool *upstream.Pool) (string, string, *omap.Map) {
@@ -220,8 +220,8 @@ func RouteByAI(ctx context.Context, prompt string, cfg *config.RouterConfig, poo
 	defer cancel()
 
 	var choice string
-	if cfg.UsesTypeSafe() {
-		picked, err := decideByTypeSafe(callCtx, truncated, cfg, analysis)
+	if endpoint, ok := cfg.SystemOne(); ok {
+		picked, err := decideBySystemOne(callCtx, truncated, cfg, endpoint, analysis)
 		if err != nil {
 			return fail(err.Error())
 		}
@@ -303,20 +303,22 @@ func decideByLLM(ctx context.Context, truncated string, cfg *config.RouterConfig
 	return data.Str("model"), nil
 }
 
-// TypeSafeInstructions is the Choice question Jev answers. Jev reads its instructions
-// literally, so this says exactly what to weigh rather than leaving "best" to interpretation;
-// the model descriptions carry the rest, one per option.
-const TypeSafeInstructions = "Which backend model should handle `user_request`? " +
+// SystemOneInstructions is the Choice question Jev (or Laya) answers. Jev reads its
+// instructions literally, so this says exactly what to weigh rather than leaving "best" to
+// interpretation; the model descriptions carry the rest, one per option.
+const SystemOneInstructions = "Which backend model should handle `user_request`? " +
 	"Pick the option whose description best matches what the request needs. " +
 	"Prefer a cheaper, faster model when the request is simple, and a stronger model only when the request needs it."
 
-// TypeSafeQuestionID is the key the routing question is asked (and answered) under.
-const TypeSafeQuestionID = "model"
+// SystemOneQuestionID is the key the routing question is asked (and answered) under.
+const SystemOneQuestionID = "model"
 
-// BuildTypeSafeRequest is the /v1/systemone body for one routing decision: the user's request
+// BuildSystemOneRequest is the /v1/systemone body for one routing decision: the user's request
 // as the state, and a single Choice whose options are the model catalog with each model's
-// description as its rubric. Exported so the console's preview shows the exact request.
-func BuildTypeSafeRequest(truncated string, cfg *config.RouterConfig) *omap.Map {
+// description as its rubric. Jev and Laya get the same body, bar the model field -- Laya is
+// asked without one when no checkpoint is pinned, so it picks by the request's language.
+// Exported so the console's preview shows the exact request.
+func BuildSystemOneRequest(truncated string, cfg *config.RouterConfig, endpoint config.SystemOneEndpoint) *omap.Map {
 	criteria := omap.New()
 	for _, name := range cfg.Models.Keys() {
 		// A model without a description is still a valid option; null is how the API spells
@@ -327,47 +329,60 @@ func BuildTypeSafeRequest(truncated string, cfg *config.RouterConfig) *omap.Map 
 			criteria.Set(name, nil)
 		}
 	}
-	return mapOf(
-		"model", cfg.TypeSafe.Model,
-		"state", mapOf("user_request", truncated),
-		"questions", mapOf(
-			TypeSafeQuestionID, mapOf(
-				"type", "choice",
-				"instructions", TypeSafeInstructions,
-				"criteria", criteria,
-			),
+	body := omap.New()
+	if endpoint.Model != "" {
+		body.Set("model", endpoint.Model)
+	}
+	body.Set("state", mapOf("user_request", truncated))
+	body.Set("questions", mapOf(
+		SystemOneQuestionID, mapOf(
+			"type", "choice",
+			"instructions", SystemOneInstructions,
+			"criteria", criteria,
 		),
-	)
+	))
+	return body
 }
 
-// decideByTypeSafe asks Jev one Choice over the catalog. There is no free-text rationale to
-// record, so the calibrated probabilities and confidence stand in for it -- they are the more
-// useful record anyway: they show how close the runner-up was.
-func decideByTypeSafe(ctx context.Context, truncated string, cfg *config.RouterConfig,
-	analysis *omap.Map) (string, error) {
-	analysis.Set("decision_model", cfg.TypeSafe.Model)
-	analysis.Set("decision_provider", "typesafe")
-	if cfg.TypeSafe.APIKey == "" {
+// decideBySystemOne asks Jev or Laya one Choice over the catalog. There is no free-text
+// rationale to record, so the probabilities and confidence stand in for it -- they are the
+// more useful record anyway: they show how close the runner-up was.
+func decideBySystemOne(ctx context.Context, truncated string, cfg *config.RouterConfig,
+	endpoint config.SystemOneEndpoint, analysis *omap.Map) (string, error) {
+	model := endpoint.Model
+	if model == "" {
+		model = "auto"
+	}
+	analysis.Set("decision_model", model)
+	analysis.Set("decision_provider", endpoint.Engine)
+	if endpoint.KeyNeeded && endpoint.APIKey == "" {
 		return "", fmt.Errorf("no TypeSafe API key: set ai_router.typesafe.api_key or TYPESAFE_API_KEY")
 	}
-	if n := cfg.Models.Len(); n < 2 || n > config.TypeSafeMaxOptions {
-		// One option is not a decision, and the API rejects more than 255. Either way the
-		// default model is the honest answer, and saying why beats a 422 from upstream.
-		return "", fmt.Errorf("TypeSafe needs between 2 and %d candidate models, got %d", config.TypeSafeMaxOptions, n)
+	if endpoint.BaseURL == "" {
+		return "", fmt.Errorf("no %s address: set ai_router.%s.base_url", endpoint.Label, endpoint.Engine)
 	}
-	body := BuildTypeSafeRequest(truncated, cfg)
-	question := body.Map("questions").Map(TypeSafeQuestionID)
+	if n := cfg.Models.Len(); n < 2 || n > endpoint.MaxOptions {
+		// One option is not a decision, and past the service's cap the request is refused.
+		// Either way the default model is the honest answer, and saying why beats a 4xx.
+		return "", fmt.Errorf("%s needs between 2 and %d candidate models, got %d", endpoint.Label, endpoint.MaxOptions, n)
+	}
+	body := BuildSystemOneRequest(truncated, cfg, endpoint)
+	question := body.Map("questions").Map(SystemOneQuestionID)
 	analysis.Set("decision_question", mapOf(
 		"instructions", question.Value("instructions"),
 		"criteria", question.Value("criteria"),
 	))
 
-	resp, err := upstream.TypeSafeSystemOne(ctx, cfg.TypeSafe.BaseURL, cfg.TypeSafe.APIKey, body)
+	resp, err := upstream.SystemOne(ctx, endpoint.BaseURL, endpoint.APIKey, body)
 	if err != nil {
 		return "", err
 	}
 	if version := resp.Str("model"); version != "" {
 		analysis.Set("decision_model_version", version)
+	}
+	// Laya reports which of its checkpoints answered and why (the request's language).
+	if routed := resp.Map("routing"); routed != nil {
+		analysis.Set("decision_checkpoint", mapOf("model", routed.Value("model"), "reason", routed.Value("reason")))
 	}
 	if usage := resp.Map("usage"); usage != nil {
 		analysis.Set("decision_usage", mapOf(
@@ -375,9 +390,9 @@ func decideByTypeSafe(ctx context.Context, truncated string, cfg *config.RouterC
 			"completion_tokens", usage.Value("output_tokens"),
 		))
 	}
-	answer := resp.Map("answers").Map(TypeSafeQuestionID)
+	answer := resp.Map("answers").Map(SystemOneQuestionID)
 	if answer == nil {
-		return "", fmt.Errorf("TypeSafe returned no answer for the routing question")
+		return "", fmt.Errorf("%s returned no answer for the routing question", endpoint.Label)
 	}
 	if raw, err := json.Marshal(answer); err == nil {
 		analysis.Set("raw_response", string(raw))
@@ -385,8 +400,12 @@ func decideByTypeSafe(ctx context.Context, truncated string, cfg *config.RouterC
 	choice := answer.Str("choice")
 	analysis.Set("probabilities", answer.Value("probabilities"))
 	analysis.Set("confidence", answer.Value("confidence"))
-	analysis.Set("rationale", fmt.Sprintf("Jev picked %s with p=%s (confidence %s)",
-		choice, numberText(answer.Map("probabilities").Value(choice)), numberText(answer.Value("confidence"))))
+	name := "Jev"
+	if endpoint.Engine == "laya" {
+		name = "Laya"
+	}
+	analysis.Set("rationale", fmt.Sprintf("%s picked %s with p=%s (confidence %s)",
+		name, choice, numberText(answer.Map("probabilities").Value(choice)), numberText(answer.Value("confidence"))))
 	return choice, nil
 }
 

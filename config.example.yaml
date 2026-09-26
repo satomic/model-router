@@ -146,11 +146,17 @@ ai_router:
   # decision_prompt; "typesafe" asks TypeSafe's Jev one Choice question over the model catalog
   # (~300 ms), using each model's description as the option's rubric. The LLM fields below are
   # then unused but kept, so switching back is one change.
+  # "laya" asks the same question of a self-hosted Laya (github.com/NandhaKishorM/laya), whose
+  # laya-serve speaks the same /v1/systemone protocol.
   # decision_engine: typesafe
   # typesafe:
   #   api_key: ''              # empty = the TYPESAFE_API_KEY environment variable
   #   model: jev-latest        # optional
   #   base_url: https://api.typesafe.ai   # optional
+  # laya:
+  #   base_url: http://127.0.0.1:8100   # required when decision_engine is laya
+  #   api_key: ''              # only if laya-serve was started with LAYA_API_KEY
+  #   model: ''                # optional: english / multilingual / typed-decisions; empty = by language
   decision_model: gpt-4.1
   decision_provider: foundry   # Optional; omit to use default_provider
   timeout_seconds: 5

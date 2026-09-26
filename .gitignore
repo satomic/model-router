@@ -71,3 +71,7 @@ customers/
 release-notes/
 # Promotional articles and their screenshots -- drafts kept out of the repository.
 articles/
+
+# Local AI services deployed next to the router (e.g. self-hosted Laya) -- scripts, venvs,
+# model caches and keys. Independent of this project and never committed.
+local-services/

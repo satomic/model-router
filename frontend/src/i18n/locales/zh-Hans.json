@@ -1103,7 +1103,8 @@
       "probabilities": "概率分布",
       "confidence": "置信度 {{value}}",
       "decisionQuestion": "Choice 问题",
-      "optionsExpand_other": "{{count}} 个选项，点击展开"
+      "optionsExpand_other": "{{count}} 个选项，点击展开",
+      "layaCheckpoint": "检查点 {{model}}"
     }
   },
   "config": {
@@ -1257,15 +1258,30 @@
       "maxPromptChars": "Prompt 截断长度",
       "maxPromptCharsHint": "超出则首尾各留一半",
       "typesafe": {
-        "toggle": "使用 TypeSafe Jev 作为决策模型",
+        "toggle": "使用 System One 决策模型（TypeSafe Jev 或自部署 Laya）",
         "badge": "高速",
-        "desc": "<link>Jev</link> 是专为「在固定集合中选一项」设计的 System One 模型：模型目录作为一个 Choice 问题发送，Jev 返回所选模型及校准后的概率，通常 70–500 毫秒。启用后不使用下方的决策提示词。取消勾选即回到 LLM 决策模型，两边的设置都会保留。",
+        "desc": "System One 模型专为「在固定集合中选一项」设计：模型目录作为一个 Choice 问题发送，返回所选模型以及每个选项的概率。可以使用云端的 <jev>TypeSafe Jev</jev> API，也可以使用自己部署、协议相同的 <laya>Laya</laya>。启用后不使用下方的决策提示词。取消勾选即回到 LLM 决策模型，所有设置都会保留。",
         "apiKey": "TypeSafe API Key",
         "apiKeyHint": "在 console.typesafe.ai 创建；留空则使用环境变量 TYPESAFE_API_KEY",
         "model": "Jev 模型",
         "modelHint": "默认 jev-latest；需要稳定行为时可固定为 jev-1.13.0 等版本",
         "baseUrl": "API 地址",
         "baseUrlHint": "默认 https://api.typesafe.ai"
+      },
+      "systemOne": {
+        "typesafe": "TypeSafe Jev（云端 API）",
+        "typesafeDesc": "TypeSafe 的云端 API，需要 TypeSafe API Key；做模型路由时最准确。",
+        "laya": "自部署 Laya",
+        "layaDesc": "运行在你自己机器上的开源 Jev 替代品（laya-serve）。不按次计费，数据不出内网；基础检查点做模型路由的准确度较低。"
+      },
+      "laya": {
+        "baseUrl": "Laya 地址",
+        "baseUrlHint": "laya-serve 的地址，例如 http://127.0.0.1:8100",
+        "apiKey": "API Key",
+        "apiKeyHint": "仅当 laya-serve 配置了 LAYA_API_KEY 时需要",
+        "model": "检查点",
+        "modelHint": "自动：按请求的语言选择 english 或 multilingual",
+        "modelAuto": "自动（按语言）"
       }
     },
     "rules": {
@@ -1328,8 +1344,8 @@
         "translate": "把这段话翻译成英文",
         "proof": "证明：任意连续函数在闭区间上一致连续"
       },
-      "jevUnused": "TypeSafe Jev 不使用",
-      "jevLead": "TypeSafe Jev 不接收系统提示词。它回答一个 Choice 问题，选项是模型目录中的各个模型，每个选项的说明取自该模型的 <code>description</code>——因此真正影响决策的是模型描述。下方模板会保留，切回 LLM 决策模型时继续生效。预览展示的是实际发送的请求（不含 API Key）。",
+      "jevUnused": "System One 模型不使用",
+      "jevLead": "TypeSafe Jev 和 Laya 都不接收系统提示词。它们回答一个 Choice 问题，选项是模型目录中的各个模型，每个选项的说明取自该模型的 <code>description</code>——因此真正影响决策的是模型描述。下方模板会保留，切回 LLM 决策模型时继续生效。预览展示的是实际发送的请求（不含 API Key）。",
       "jevNoKey": "未设置 API Key"
     },
     "list": {

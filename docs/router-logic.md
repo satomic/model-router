@@ -129,8 +129,9 @@ sent to the decision model**:
    - you can type a sample request to preview what the user message looks like after being truncated
      to `max_prompt_chars`.
 
-   **The TypeSafe Jev decision engine (optional, Go backend)**: ticking "Use TypeSafe Jev as the
-   decision model" on the same page sets `ai_router.decision_engine: typesafe`, and the decision is
+   **The TypeSafe Jev decision engine (optional, Go backend)**: ticking "Use a System One decision
+   model" on the same page and choosing **TypeSafe Jev (hosted API)** sets
+   `ai_router.decision_engine: typesafe`, and the decision is
    made by [TypeSafe's Jev](https://typesafe.ai/blog/introducing-system-one-models-and-jev) instead
    of an LLM. Jev is a "System One" model built to pick one option out of a closed set, which is
    exactly the routing question — measured end to end from this router it answers in ~300 ms, against
@@ -160,6 +161,37 @@ sent to the decision model**:
      error, a timeout, an answer outside the catalog, or a catalog with fewer than 2 or more than 255
      models all fall back to the default model (`ai-fallback-default`) with the reason in the trace.
    - Jev reads English best; model descriptions written in English give the most reliable picks.
+
+   **Self-hosted Laya (optional, Go backend)**: [Laya](https://github.com/NandhaKishorM/laya) is an
+   open-source alternative to Jev. Its `laya-serve` exposes the same `POST /v1/systemone` protocol, so
+   choosing **Self-hosted Laya** under the same checkbox (`ai_router.decision_engine: laya`) sends the
+   exact request described above to your own server instead of TypeSafe's.
+
+   ```yaml
+   ai_router:
+     decision_engine: laya
+     laya:
+       base_url: http://127.0.0.1:8100   # required: where laya-serve listens
+       api_key: laya_...                 # only if laya-serve was started with LAYA_API_KEY
+       model: english                    # optional: english / multilingual / typed-decisions;
+                                         # omit to let Laya pick by the request's language
+   ```
+
+   - **What differs from Jev**: without a pinned checkpoint the request carries no `model` field, and
+     Laya routes English text to its `english` checkpoint and other languages to `multilingual`. The
+     trace records which one answered (`decision_checkpoint`). The key is optional, and is never the
+     TypeSafe key. A Choice question may carry at most 100 options, so a catalog larger than that
+     falls back to the default model.
+   - **Accuracy.** Laya's base checkpoints are not fine-tuned for model routing. In our test against
+     a 5-model catalog, Laya picked the expected model for 7 of 9 prompts, with flat probabilities
+     (confidence 0.02–0.41), where Jev picked all of them with confidence above 0.85. Laya's own README
+     says its base checkpoints are weak zero-shot and meant to be fine-tuned. Its `confidence` is also
+     computed differently (1 minus normalised entropy), so thresholds don't carry over from Jev.
+   - **Speed and cost.** On an Apple M4 Pro a warm decision takes about 30–200 ms, with no per-call
+     cost, and the prompt never leaves your network.
+   - Everything else is shared with Jev: the fallback to the default model on any error (a wrong key
+     answers `401: invalid or missing bearer token` in the trace), stickiness, and model-policy
+     narrowing. The TypeSafe and Laya settings are both kept when you switch between them.
 
 **4. Both at once (`strategy: rule-then-ai`)**: the rules and the decision model are **both** active
 (`route_combined`). The rules are evaluated first, exactly as in step 2; a match returns that rule's

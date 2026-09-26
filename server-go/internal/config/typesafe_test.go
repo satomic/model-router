@@ -38,6 +38,14 @@ func TestValidateDecisionEngine(t *testing.T) {
 		// An unused section is kept as-is: switching back to the LLM must not demand clearing it.
 		{"unused section without key", "decision_engine: llm\ntypesafe:\n  model: jev-latest\n", ""},
 		{"bad base_url", "decision_engine: typesafe\ntypesafe:\n  api_key: k\n  base_url: api.typesafe.ai\n", "base_url must start"},
+		{"laya with address", "decision_engine: laya\nlaya:\n  base_url: http://127.0.0.1:8100\n", ""},
+		{"laya with key and checkpoint", "decision_engine: laya\nlaya:\n  base_url: http://h:8100\n  api_key: k\n  model: multilingual\n", ""},
+		{"laya without address", "decision_engine: laya\nlaya:\n  api_key: k\n", "laya.base_url is required"},
+		{"laya without section", "decision_engine: laya\n", "laya.base_url is required"},
+		{"laya bad address", "decision_engine: laya\nlaya:\n  base_url: 127.0.0.1:8100\n", "laya.base_url must start"},
+		{"laya unknown checkpoint", "decision_engine: laya\nlaya:\n  base_url: http://h\n  model: jev-latest\n", "laya.model must be one of"},
+		// Kept but unused while another engine is selected.
+		{"unused laya section", "decision_engine: llm\nlaya:\n  model: english\n", ""},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

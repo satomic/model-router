@@ -47,7 +47,9 @@ export default function RoutingFlow({
       value:
         cfg.ai_router.decision_engine === 'typesafe'
           ? `TypeSafe ${cfg.ai_router.typesafe?.model || 'jev-latest'}`
-          : cfg.ai_router.decision_model || notSet,
+          : cfg.ai_router.decision_engine === 'laya'
+            ? `Laya ${cfg.ai_router.laya?.model || 'auto'}`
+            : cfg.ai_router.decision_model || notSet,
       note: t('config.flow.aiNote'),
       mono: true,
     },
